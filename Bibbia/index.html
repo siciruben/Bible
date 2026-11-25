@@ -435,7 +435,7 @@ html{background:var(--bg)}
     <main id="reader" tabindex="-1"><article id="chapter"><div class="loading"><div><div class="spin"></div>Caricamento…</div></div></article><div class="pager" id="pager"></div></main>
     <aside id="insp" aria-label="Strumenti di studio">
       <div class="grab" id="grab"><i></i></div>
-      <div class="ihead"><div style="flex:1;min-width:0"><div class="rf" id="irf">Studio</div><div class="sb" id="isb"></div></div><button class="ibtn x" id="iclose" aria-label="Chiudi"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
+      <div class="ihead"><div style="flex:1;min-width:0"><div class="rf" id="irf">Studio</div><div class="sb" id="isb"></div></div><button type="button" class="btn" id="lexTranslateHeader" hidden>Traduci in italiano</button><button class="ibtn x" id="iclose" aria-label="Chiudi"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
       <div class="tabs"><div class="seg" id="tabs" role="tablist">
         <button role="tab" data-t="int" aria-selected="true">Interlineare</button>
         <button role="tab" data-t="lex" aria-selected="false">Lessico</button>
@@ -736,6 +736,7 @@ function revealVerse(){
 function curKey(){return B[S.bi].id+'.'+S.c+'.'+S.v;}
 async function renderInspector(){
   const pane=$('#pane');
+  $('#lexTranslateHeader').hidden=!(S.tab==='lex'&&S.word);
   $$('#tabs button').forEach(b=>b.setAttribute('aria-selected',b.dataset.t===S.tab));
   if(S.tab==='lex'&&S.word){$('#irf').textContent=S.word.standalone?'Lessico':B[S.bi].n+' '+S.c+':'+S.v;$('#isb').textContent=S.word.standalone?'Numero Strong '+sdisp(S.word.s):'Parola selezionata';return paneLex();}
   if(!S.v){
@@ -838,12 +839,11 @@ async function paneLex(){
   if(!word.standalone)pane.append(h('button',{type:'button',class:'back',on:{click:()=>{S.tab='int';S.word=null;renderInspector();}}},h('span',{html:''}),'‹ Interlineare'));
   if(!e){pane.append(h('div',{class:'card'},h('div',{class:'hint',text:'Questa voce non è nel lessico.'})));return;}
   const lang=kind==='g'?'el':'he';
-  const verse=verseCard();
-  const translateBtn=h('button',{type:'button',class:'btn',text:lexItalianMode?'Italiano attivo':'Traduci in italiano'});
+  const translateBtn=$('#lexTranslateHeader');
+  translateBtn.hidden=false;
+  translateBtn.textContent=lexItalianMode?'Italiano attivo':'Traduci in italiano';
   const translateStatus=h('span',{class:'hint'});
-  const verseBar=h('div',{style:'display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:12px'});
-  verseBar.append(verse,translateBtn,translateStatus);
-  pane.append(verseBar);
+  pane.append(verseCard(),translateStatus);
   let translating=false;
   const gloss=h('div',{style:'font-size:18px;font-weight:600',text:e[2]});
   const head=h('div',{class:'card'},
@@ -866,12 +866,12 @@ async function paneLex(){
     }catch(err){translateStatus.textContent='Traduzione non disponibile. Riprova.';}
     finally{translating=false;translateBtn.disabled=false;}
   }
-  translateBtn.addEventListener('click',()=>{
+  translateBtn.onclick=()=>{
     if(translating)return;
     lexItalianMode=!lexItalianMode;
     translateBtn.textContent=lexItalianMode?'Italiano attivo':'Traduci in italiano';
     renderLexLanguage();
-  });
+  };
   if(lexItalianMode)renderLexLanguage();
   const variants=(lex.c[cl]||[]);
   if(variants.length>1){const row=h('div',{style:'display:flex;gap:6px;flex-wrap:wrap;margin-top:10px'});variants.slice(0,10).forEach(k=>row.append(h('button',{type:'button',class:'pill btn'+(k===key?' on':''),text:lex.e[k][2].slice(0,22)||k,title:k,on:{click:()=>{S.word={...word,s:k};renderInspector();}}})));head.append(row);}
