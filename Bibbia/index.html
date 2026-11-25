@@ -331,7 +331,7 @@ body.home-on #prev,body.home-on #next,body.home-on #titlebtn{visibility:hidden}
   .ihead{touch-action:none}
   #insp{height:66%;bottom:var(--kb,0px)}
   #insp.tall{height:92%}
-  body.sheet-open .pager{padding-bottom:calc(66vh + 24px)}
+  body.sheet-open .pager{padding-bottom:calc(66svh + 24px)}
   body.kb #insp{height:calc(var(--vvh) - env(safe-area-inset-top) - 10px)}
   body.kb #tabbar{display:none}
   .modal{top:var(--vvt,0px);height:var(--vvh,100%)}
@@ -356,22 +356,14 @@ body.home-on #prev,body.home-on #next,body.home-on #titlebtn{visibility:hidden}
   #bar{background:var(--bg)!important;-webkit-backdrop-filter:none!important;backdrop-filter:none!important;box-shadow:none!important}
   #tabbar{box-shadow:0 2px 10px rgba(0,0,0,.10)!important;background:var(--card)!important;-webkit-backdrop-filter:none!important;backdrop-filter:none!important}
 }
-/* ===== MOBILE v7: compensa l'altezza errata di iOS nelle app salvate ===== */
+/* ===== FIX iOS 26 (WebKit 301108): nelle app salvate sulla Home con black-translucent + viewport-fit=cover
+   il viewport e' piu' corto dello schermo della altezza della barra di stato, finche' il documento e' piu' basso
+   dello schermo. JS imposta --sh = altezza reale dello schermo (solo iPhone, app salvata, verticale):
+   html alto almeno quanto lo schermo => iOS da' al viewport l'altezza piena e #app arriva fino al bordo. ===== */
+html.ios-sa{min-height:var(--sh)}
+html.ios-sa body{min-height:var(--sh)}
 @media (max-width:760px){
-  body.kb{--gap:0px}
-  #app{bottom:calc(0px - var(--gap,0px))}
-  #tabbar{bottom:calc(max(env(safe-area-inset-bottom) - 14px,0px) + 6px - var(--gap,0px))}
-  #nav{bottom:calc(0px - var(--gap,0px));height:calc(88% + var(--gap,0px))}
-  #insp{bottom:calc(var(--kb,0px) - var(--gap,0px))}
-  .modal{bottom:calc(0px - var(--gap,0px))}
-  .scrim{bottom:calc(0px - var(--gap,0px))}
-  .pop{bottom:calc(0px - var(--gap,0px));padding-bottom:calc(24px + env(safe-area-inset-bottom))}
-}
-/* ===== FIX iOS 26 (WebKit 301108): nelle app salvate sulla Home il viewport e' piu' corto dello schermo
-   della altezza della barra di stato, finche' il documento e' piu' basso dello schermo.
-   Rendere html alto quanto lo schermo fa espandere il viewport (tetto 100lvh: nessun effetto altrove). ===== */
-@media (display-mode: standalone){
-  html{min-height:min(100lvh, calc(100% + env(safe-area-inset-top, 0px)))}
+  #tabbar{bottom:calc(max(env(safe-area-inset-bottom) - 14px,0px) + 6px)}
 }
 </style>
 </head>
@@ -971,14 +963,6 @@ function bindMobile(){
     root.setProperty('--kb',kb>80?kb+'px':'0px');root.setProperty('--vvh',vv.height+'px');root.setProperty('--vvt',vv.offsetTop+'px');
     document.body.classList.toggle('kb',kb>80);};
     vv.addEventListener('resize',upd);vv.addEventListener('scroll',upd);upd();}
-  /* misura quanto il viewport di iOS e' piu' corto dello schermo (app salvata sulla Home) */
-  const probe=document.createElement('div');probe.style.cssText='position:fixed;top:0;bottom:0;left:0;width:0;visibility:hidden;pointer-events:none';document.body.append(probe);
-  const sa=()=>{if(document.body.classList.contains('kb'))return;
-    const stand=navigator.standalone||matchMedia('(display-mode: standalone)').matches;
-    let g=0;if(stand&&isPhone()&&screen.height>screen.width)g=Math.round(screen.height-probe.offsetHeight);
-    g=0; /* compensazione disattivata: iOS ritaglia comunque il disegno oltre il viewport */root.setProperty('--gap',g+'px');};
-  sa();['resize','orientationchange','pageshow','focus'].forEach(ev=>addEventListener(ev,()=>setTimeout(sa,120)));
-  document.addEventListener('visibilitychange',()=>{if(!document.hidden)setTimeout(sa,120);});
   q.setAttribute('enterkeyhint','search');q.setAttribute('autocapitalize','off');q.setAttribute('autocorrect','off');
   q.addEventListener('keydown',e=>{if(e.key==='Enter')q.blur();});
   $('#sres').addEventListener('touchmove',()=>{if(document.activeElement===q)q.blur();},{passive:true});
@@ -999,7 +983,7 @@ function bindHeal(){
   const veil=document.createElement('div');
   veil.style.cssText='position:fixed;inset:0;z-index:998;background:var(--bg);opacity:0;pointer-events:none;transition:opacity .14s ease-out';
   document.body.append(veil);
-  function stuck(){return !document.documentElement.classList.contains('vhfix')&&stand()&&isPhone()&&!document.body.classList.contains('kb')&&(maxVH-innerHeight>4||screen.height-innerHeight>4);}
+  function stuck(){return stand()&&isPhone()&&!document.body.classList.contains('kb')&&(maxVH-innerHeight>4||screen.height-innerHeight>4);}
   function heal(){
     if(busy||!stuck())return;busy=true;
     const app=$('#app'),rd=$('#reader'),st=rd?rd.scrollTop:0;
@@ -1022,32 +1006,39 @@ function bindDiag(){
     'screen: '+screen.width+'x'+screen.height,'inner: '+innerWidth+'x'+innerHeight,'visualViewport: '+(vv?Math.round(vv.height)+' (top '+Math.round(vv.offsetTop)+')':'-'),
     'fixed top/bottom 0: '+P.fix.offsetHeight,'100vh: '+P.vh.offsetHeight,'100dvh: '+P.dvh.offsetHeight,'100svh: '+P.svh.offsetHeight,
     'safe top: '+P.sat.offsetHeight+'  bottom: '+P.sab.offsetHeight,'html h: '+document.documentElement.clientHeight,'body h: '+document.body.clientHeight,
-    '#app bottom: '+r('#app')+'  #tabbar bottom: '+r('#tabbar'),'scrollY: '+Math.round(scrollY),'vhfix: '+document.documentElement.classList.contains('vhfix')+'  gap var: '+getComputedStyle(document.documentElement).getPropertyValue('--gap')].join('\n');};
+    '#app bottom: '+r('#app')+'  #tabbar bottom: '+r('#tabbar'),'scrollY: '+Math.round(scrollY),'html.ios-sa: '+document.documentElement.classList.contains('ios-sa')+'  --sh: '+getComputedStyle(document.documentElement).getPropertyValue('--sh')].join('\n');};
   $('#pdiag').onclick=()=>{$('#pop').classList.remove('on');$('#scrim').classList.remove('on');
     if(box){box.remove();box=null;clearInterval(tm);return;}
     box=document.createElement('pre');box.style.cssText='position:fixed;z-index:999;left:8px;right:8px;top:calc(env(safe-area-inset-top) + 8px);margin:0;padding:10px;border-radius:12px;background:rgba(0,0,0,.82);color:#fff;font:12px/1.5 ui-monospace,Menlo,monospace;white-space:pre-wrap';
     box.onclick=()=>{box.remove();box=null;clearInterval(tm);};document.body.append(box);upd();tm=setInterval(upd,600);};
 }
-/* Se iOS (app salvata) da' alla pagina meno altezza di 100vh, ancoriamo tutto a 100vh (l'altezza vera dello schermo) */
+/* Fix altezza iOS 26 (app salvata): vedi commento CSS. Misura con una sonda fixed top/bottom 0. */
 (function(){
-  let pr=null;
-  function vhFix(){
-    try{
-      const de=document.documentElement,bd=document.body;if(!bd)return;
-      if(!pr){pr=document.createElement('div');pr.style.cssText='position:fixed;top:0;left:0;width:0;height:100vh;visibility:hidden;pointer-events:none';bd.append(pr);}
-      if(bd.classList.contains('kb'))return;
-      const stand=navigator.standalone||matchMedia('(display-mode: standalone)').matches;
-      const diff=pr.offsetHeight-innerHeight;
-      const need=stand&&innerWidth<=760&&innerHeight>innerWidth&&diff>4&&diff<120;
-      de.classList.toggle('vhfix',need);
-    }catch(e){}
+  const de=document.documentElement;
+  const ios=/iPhone|iPod/.test(navigator.userAgent);
+  let probe=null,fell=false;
+  const stand=()=>navigator.standalone===true||matchMedia('(display-mode: standalone)').matches;
+  const portrait=()=>innerHeight>innerWidth;
+  const full=()=>Math.max(screen.width,screen.height);
+  function apply(){
+    if(!ios||!stand()||!portrait()||document.body&&document.body.classList.contains('kb')){return;}
+    de.style.setProperty('--sh',full()+'px');de.classList.add('ios-sa');
   }
-  window.vhFix=vhFix;
-  ['resize','orientationchange','pageshow','focus'].forEach(ev=>addEventListener(ev,()=>setTimeout(vhFix,80)));
-  document.addEventListener('visibilitychange',()=>{if(!document.hidden)setTimeout(vhFix,80);});
-  document.addEventListener('focusout',()=>setTimeout(vhFix,300));
-  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',vhFix);else vhFix();
-  setTimeout(vhFix,400);setTimeout(vhFix,1500);
+  /* Se dopo il fix il viewport e' ancora corto, ripiego su viewport-fit=auto: il layout parte sotto la barra di stato e arriva in fondo */
+  function check(){
+    if(!ios||!stand()||!portrait()||fell)return;
+    const b=document.body;if(!b||b.classList.contains('kb'))return;
+    if(!probe){probe=document.createElement('div');probe.style.cssText='position:fixed;top:0;bottom:0;left:0;width:0;visibility:hidden;pointer-events:none';b.append(probe);}
+    if(full()-probe.offsetHeight>8){
+      fell=true;const m=document.querySelector('meta[name=viewport]');
+      if(m)m.setAttribute('content',m.getAttribute('content').replace('viewport-fit=cover','viewport-fit=auto'));
+    }
+  }
+  const run=()=>{apply();setTimeout(check,350);};
+  apply();
+  addEventListener('DOMContentLoaded',run);
+  ['orientationchange','pageshow','focus','resize'].forEach(ev=>addEventListener(ev,()=>setTimeout(run,100)));
+  document.addEventListener('visibilitychange',()=>{if(!document.hidden)setTimeout(run,100);});
 })();
 if('serviceWorker' in navigator&&/^https?:$/.test(location.protocol))addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));
 </script>
