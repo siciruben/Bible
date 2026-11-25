@@ -798,6 +798,34 @@ function paneLexHint(){
   const pane=$('#pane');
   pane.replaceChildren(h('div',{class:'placeholder'},h('b',{text:'Scegli una parola'}),h('span',{text:'Apri la scheda Interlineare e tocca una parola, oppure cerca un numero Strong come G25 o H1254.'}),h('button',{type:'button',class:'btn',text:'Vai all\'interlineare',on:{click:()=>{S.tab='int';renderInspector();}}})));
 }
+const lexTranslationCache=new Map();
+async function translateLexText(input){
+  // Mantiene intatti i marcatori di formattazione e i riferimenti interni del lessico.
+  const parts=String(input).split(/(\u0003|\u0004|\u0001|\u0002|\[\[[^\]]*\]\])/);
+  const out=[];
+  for(const part of parts){
+    if(!part||/^\u000[1-4]$/.test(part)||part.startsWith('[[')){out.push(part);continue;}
+    if(!part.trim()){out.push(part);continue;}
+    if(!lexTranslationCache.has(part)){
+      const chunks=[];let rest=part;
+      while(rest.length>450){
+        let cut=rest.lastIndexOf(' ',450);if(cut<180)cut=450;
+        chunks.push(rest.slice(0,cut));rest=rest.slice(cut);
+      }
+      if(rest)chunks.push(rest);
+      const translated=await Promise.all(chunks.map(async chunk=>{
+        const url='https://api.mymemory.translated.net/get?q='+encodeURIComponent(chunk)+'&langpair=en|it';
+        const response=await fetch(url);if(!response.ok)throw new Error('Traduzione non disponibile');
+        const data=await response.json();
+        if(!data.responseData||data.responseStatus!==200)throw new Error('Traduzione non disponibile');
+        return data.responseData.translatedText;
+      }));
+      lexTranslationCache.set(part,translated.join(''));
+    }
+    out.push(lexTranslationCache.get(part));
+  }
+  return out.join('');
+}
 async function paneLex(){
   const pane=$('#pane'),word=S.word,tok=S.tok;const s=word.s;
   const kind=s[0]==='G'?'g':'h';
@@ -809,11 +837,34 @@ async function paneLex(){
   if(!word.standalone)pane.append(h('button',{type:'button',class:'back',on:{click:()=>{S.tab='int';S.word=null;renderInspector();}}},h('span',{html:''}),'‹ Interlineare'));
   if(!e){pane.append(h('div',{class:'card'},h('div',{class:'hint',text:'Questa voce non è nel lessico.'})));return;}
   const lang=kind==='g'?'el':'he';
+  let translated=false, translating=false;
+  const gloss=h('div',{style:'font-size:18px;font-weight:600',text:e[2]});
   const head=h('div',{class:'card'},
     h('div',{class:'lemma-row'},h('div',{class:'lemma',lang,dir:kind==='g'?'ltr':'rtl',text:e[0]}),h('span',{class:'pill',text:sdisp(s)})),
-    h('div',{style:'font-style:italic;color:var(--ink2);margin-bottom:6px',text:e[1]}),
-    h('div',{style:'font-size:18px;font-weight:600',text:e[2]}));
-  pane.append(head);
+    h('div',{style:'font-style:italic;color:var(--ink2);margin-bottom:6px',text:e[1]}),gloss);
+  const translateBtn=h('button',{type:'button',class:'btn',text:'Traduci in italiano'});
+  const translateStatus=h('span',{class:'hint',style:'margin-left:8px'});
+  const translateBar=h('div',{style:'display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin:0 0 12px'},translateBtn,translateStatus);
+  pane.append(translateBar,head);
+  const originalDef=e[3];
+  let italianDef=null,italianGloss=null;
+  translateBtn.addEventListener('click',async()=>{
+    if(translating)return;
+    if(translated){
+      gloss.textContent=e[2];def.replaceChildren();richDef(def,originalDef);
+      translated=false;translateBtn.textContent='Traduci in italiano';translateStatus.textContent='';return;
+    }
+    translating=true;translateBtn.disabled=true;translateStatus.textContent='Traduzione in corso…';
+    try{
+      if(italianGloss===null){
+        italianGloss=await translateLexText(e[2]);
+        italianDef=await translateLexText(originalDef);
+      }
+      gloss.textContent=italianGloss;def.replaceChildren();richDef(def,italianDef);
+      translated=true;translateBtn.textContent='Mostra originale';translateStatus.textContent='';
+    }catch(err){translateStatus.textContent='Traduzione non disponibile. Riprova.';}
+    finally{translating=false;translateBtn.disabled=false;}
+  });
   const variants=(lex.c[cl]||[]);
   if(variants.length>1){const row=h('div',{style:'display:flex;gap:6px;flex-wrap:wrap;margin-top:10px'});variants.slice(0,10).forEach(k=>row.append(h('button',{type:'button',class:'pill btn'+(k===key?' on':''),text:lex.e[k][2].slice(0,22)||k,title:k,on:{click:()=>{S.word={...word,s:k};renderInspector();}}})));head.append(row);}
   if(word.w){const m=morphLine(word.w[4],word.ot);pane.append(h('div',{class:'card'},h('h4',{text:'In questo versetto'}),h('dl',{class:'kv'},
