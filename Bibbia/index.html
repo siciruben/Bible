@@ -367,6 +367,12 @@ body.home-on #prev,body.home-on #next,body.home-on #titlebtn{visibility:hidden}
   .scrim{bottom:calc(0px - var(--gap,0px))}
   .pop{bottom:calc(0px - var(--gap,0px));padding-bottom:calc(24px + env(safe-area-inset-bottom))}
 }
+/* ===== MOBILE v8: iOS app salvata, viewport piu' corto dello schermo ===== */
+html.vhfix{height:100vh;overflow:hidden;overscroll-behavior:none}
+html.vhfix body{position:relative;height:100vh;overflow:hidden}
+html.vhfix #app,html.vhfix #tabbar,html.vhfix #insp,html.vhfix #nav,html.vhfix .scrim,html.vhfix .modal,html.vhfix .pop{position:absolute}
+html.vhfix .scrim{top:0;left:0;right:0;bottom:0}
+@media (max-width:760px){html.vhfix #app{top:0;left:0;right:0;bottom:0;height:auto}}
 </style>
 </head>
 <body>
@@ -993,7 +999,7 @@ function bindHeal(){
   const veil=document.createElement('div');
   veil.style.cssText='position:fixed;inset:0;z-index:998;background:var(--bg);opacity:0;pointer-events:none;transition:opacity .14s ease-out';
   document.body.append(veil);
-  function stuck(){return stand()&&isPhone()&&!document.body.classList.contains('kb')&&(maxVH-innerHeight>4||screen.height-innerHeight>4);}
+  function stuck(){return !document.documentElement.classList.contains('vhfix')&&stand()&&isPhone()&&!document.body.classList.contains('kb')&&(maxVH-innerHeight>4||screen.height-innerHeight>4);}
   function heal(){
     if(busy||!stuck())return;busy=true;
     const app=$('#app'),rd=$('#reader'),st=rd?rd.scrollTop:0;
@@ -1016,12 +1022,33 @@ function bindDiag(){
     'screen: '+screen.width+'x'+screen.height,'inner: '+innerWidth+'x'+innerHeight,'visualViewport: '+(vv?Math.round(vv.height)+' (top '+Math.round(vv.offsetTop)+')':'-'),
     'fixed top/bottom 0: '+P.fix.offsetHeight,'100vh: '+P.vh.offsetHeight,'100dvh: '+P.dvh.offsetHeight,'100svh: '+P.svh.offsetHeight,
     'safe top: '+P.sat.offsetHeight+'  bottom: '+P.sab.offsetHeight,'html h: '+document.documentElement.clientHeight,'body h: '+document.body.clientHeight,
-    '#app bottom: '+r('#app')+'  #tabbar bottom: '+r('#tabbar'),'scrollY: '+Math.round(scrollY),'gap var: '+getComputedStyle(document.documentElement).getPropertyValue('--gap')].join('\n');};
+    '#app bottom: '+r('#app')+'  #tabbar bottom: '+r('#tabbar'),'scrollY: '+Math.round(scrollY),'vhfix: '+document.documentElement.classList.contains('vhfix')+'  gap var: '+getComputedStyle(document.documentElement).getPropertyValue('--gap')].join('\n');};
   $('#pdiag').onclick=()=>{$('#pop').classList.remove('on');$('#scrim').classList.remove('on');
     if(box){box.remove();box=null;clearInterval(tm);return;}
     box=document.createElement('pre');box.style.cssText='position:fixed;z-index:999;left:8px;right:8px;top:calc(env(safe-area-inset-top) + 8px);margin:0;padding:10px;border-radius:12px;background:rgba(0,0,0,.82);color:#fff;font:12px/1.5 ui-monospace,Menlo,monospace;white-space:pre-wrap';
     box.onclick=()=>{box.remove();box=null;clearInterval(tm);};document.body.append(box);upd();tm=setInterval(upd,600);};
 }
+/* Se iOS (app salvata) da' alla pagina meno altezza di 100vh, ancoriamo tutto a 100vh (l'altezza vera dello schermo) */
+(function(){
+  let pr=null;
+  function vhFix(){
+    try{
+      const de=document.documentElement,bd=document.body;if(!bd)return;
+      if(!pr){pr=document.createElement('div');pr.style.cssText='position:fixed;top:0;left:0;width:0;height:100vh;visibility:hidden;pointer-events:none';bd.append(pr);}
+      if(bd.classList.contains('kb'))return;
+      const stand=navigator.standalone||matchMedia('(display-mode: standalone)').matches;
+      const diff=pr.offsetHeight-innerHeight;
+      const need=stand&&innerWidth<=760&&innerHeight>innerWidth&&diff>4&&diff<120;
+      de.classList.toggle('vhfix',need);
+    }catch(e){}
+  }
+  window.vhFix=vhFix;
+  ['resize','orientationchange','pageshow','focus'].forEach(ev=>addEventListener(ev,()=>setTimeout(vhFix,80)));
+  document.addEventListener('visibilitychange',()=>{if(!document.hidden)setTimeout(vhFix,80);});
+  document.addEventListener('focusout',()=>setTimeout(vhFix,300));
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',vhFix);else vhFix();
+  setTimeout(vhFix,400);setTimeout(vhFix,1500);
+})();
 if('serviceWorker' in navigator&&/^https?:$/.test(location.protocol))addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));
 </script>
 </body>
