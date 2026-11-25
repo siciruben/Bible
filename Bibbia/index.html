@@ -151,7 +151,7 @@ input,textarea{font:inherit;color:inherit}
 .w .o[lang="he"]{font-family:var(--hebrew);font-size:26px}
 .w .t{font-size:12px;color:var(--ink2);font-style:italic}
 .w .t,.w .g{direction:ltr;unicode-bidi:isolate}
-.w .g{font-size:13px;font-weight:600;line-height:1.25}
+.w .g{font-size:13px;font-weight:600;line-height:1.25;color:var(--accent);min-height:1.25em}
 .w .s{margin-top:4px;font-size:11px;font-weight:600;color:var(--accent);background:var(--accent-soft);padding:2px 7px;border-radius:99px;font-variant-numeric:tabular-nums}
 .w.var{opacity:.62;border-style:dashed}
 .w .vb{font-size:10px;color:var(--ink2);text-transform:uppercase;letter-spacing:.05em}
@@ -777,23 +777,63 @@ function flipVerseCard(){
   wrap.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();toggle();}});
   sync();return wrap;
 }
+// KJV CrossWire: le parole inglesi sono marcate con Strong's. Le associamo
+// alle parole originali tramite il numero Strong, senza dividere il versetto a caso.
+const kjvWordCache={};
+const kjvBookCode=id=>Object.keys(STEP).find(k=>STEP[k]===id)||id;
+const normStrong=s=>{const m=String(s||'').toUpperCase().match(/([HG])0*(\d+)/);return m?m[1]+m[2].padStart(4,'0'):'';};
+async function getKjvTagged(id,c){
+  const key=id+'.'+c;
+  if(!kjvWordCache[key])kjvWordCache[key]=fetch('https://bible.helloao.org/api/eng_kjv/'+kjvBookCode(id)+'/'+c+'.words.json')
+    .then(r=>{if(!r.ok)throw new Error('KJV con Strong non disponibile');return r.json();})
+    .catch(e=>{delete kjvWordCache[key];throw e;});
+  return kjvWordCache[key];
+}
+function kjvVerseWords(data,verseNo){
+  const verses=data.verses||data.chapter?.content||data.content||[];
+  const verse=verses.find(x=>Number(x.verse??x.number)===Number(verseNo));
+  if(!verse)return [];
+  const out=[];
+  const walk=(items)=>{if(!Array.isArray(items))return;for(const x of items){if(!x||typeof x!=='object')continue;
+    const raw=x.strongs??x.strong??x.lemma;
+    const word=x.text??x.word??x.value??x.content;
+    if(raw&&typeof word==='string'&&word.trim()){
+      const tags=(Array.isArray(raw)?raw:[raw]).map(z=>typeof z==='string'?z:(z?.strongs||z?.strong||z?.lemma||'')).map(normStrong).filter(Boolean);
+      if(tags.length)out.push({text:word.trim(),tags});
+    }
+    if(Array.isArray(x.words))walk(x.words);if(Array.isArray(x.content))walk(x.content);
+  }};
+  walk(verse.words||verse.content||[]);
+  return out;
+}
+function alignKjvToOriginal(ws,tagged){
+  const queues={};tagged.forEach(t=>t.tags.forEach(tag=>(queues[tag]??=[]).push(t.text)));
+  const used={};return ws.map(w=>{const tag=normStrong(w[3]);if(!tag||!queues[tag]?.length)return '';
+    const n=used[tag]||0;used[tag]=n+1;return queues[tag][n]||'';
+  });
+}
 async function paneInt(){
-  const pane=$('#pane'),tok=S.tok,v=S.v,c=S.c,bi=S.bi;
+  const pane=$('#pane'),tok=S.tok,v=S.v,c=S.c,bi=S.bi,id=B[bi].id;
   pane.replaceChildren(flipVerseCard(),h('div',{class:'loading',style:'padding:30px 0'},h('div',null,h('div',{class:'spin'}),'Carico il testo originale…')));
-  let od;try{od=await getOr(B[bi].id);}catch(e){pane.append(h('div',{class:'empty',text:e.message}));return;}
+  let od;try{od=await getOr(id);}catch(e){pane.append(h('div',{class:'empty',text:e.message}));return;}
   if(tok!==S.tok||S.v!==v||S.tab!=='int')return;
   const ws=od.c[c-1][v-1]||[];const ot=B[bi].t===1;
   pane.replaceChildren(flipVerseCard());
   if(!ws.length){pane.append(h('div',{class:'card'},h('div',{class:'hint',text:'Per questo versetto l\'originale ha una numerazione diversa dalla Riveduta, quindi non c\'è un interlineare allineato.'})));return;}
-  const wrap=h('div',{class:'words'+(ot?' rtl':''),dir:ot?'rtl':'ltr'});
+  const wrap=h('div',{class:'words'+(ot?' rtl':''),dir:ot?'rtl':'ltr'}),kjvLabels=[];
   ws.forEach(w=>{
-    const variant=w.length>5;
+    const variant=w.length>5,g=h('span',{class:'g',text:'—'});kjvLabels.push(g);
     wrap.append(h('button',{type:'button',class:'w'+(variant?' var':''),title:variant?'Variante testuale: '+w[5]:morphLine(w[4],ot),on:{click:()=>{S.word={w,ot,s:w[3]};S.tab='lex';renderInspector();}}},
-      h('span',{class:'o',lang:ot?'he':'el',text:w[0]}),h('span',{class:'t',text:w[1]}),h('span',{class:'g',text:w[2]}),
+      h('span',{class:'o',lang:ot?'he':'el',text:w[0]}),h('span',{class:'t',text:w[1]}),g,
       variant?h('span',{class:'vb',text:'variante'}):null,
       w[3]?h('span',{class:'s',text:sdisp(w[3])}):null));
   });
-  pane.append(h('div',{class:'card'},h('h4',{text:ot?'Ebraico · da destra a sinistra':'Greco'}),wrap),h('div',{class:'hint',text:'Tocca una parola per aprire lessico, analisi e occorrenze. Le glosse inglesi seguono l\'originale e non la traduzione italiana.'}));
+  pane.append(h('div',{class:'card'},h('h4',{text:(ot?'Ebraico · da destra a sinistra':'Greco')+' · KJV sotto ogni parola'}),wrap),h('div',{class:'hint',text:'La parola KJV è collegata tramite il numero Strong. Alcune parole funzionali o varianti non hanno un’associazione KJV univoca e restano vuote. Tocca una parola per aprire lessico, analisi e occorrenze.'}));
+  getKjvTagged(id,c).then(data=>{
+    if(tok!==S.tok||S.v!==v||S.tab!=='int')return;
+    const aligned=alignKjvToOriginal(ws,kjvVerseWords(data,v));
+    aligned.forEach((word,i)=>{kjvLabels[i].textContent=word||'—';});
+  }).catch(()=>{kjvLabels.forEach(x=>x.textContent='—');});
 }
 const morphLine=(m,ot)=>(ot?morphH(m):morphG(m)).join(' · ');
 function paneLexHint(){
