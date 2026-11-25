@@ -438,6 +438,7 @@ body.home-on #prev,body.home-on #next,body.home-on #titlebtn{visibility:hidden}
   <label>Tema</label><div class="seg" id="thseg"><button data-th="light">Chiaro</button><button data-th="dark">Scuro</button><button data-th="pergamena">Pergamena</button></div>
   <label>Uso offline</label><button type="button" class="btn rowbtn" id="offbtn">Scarica tutto (circa 38 MB)</button><div class="hint" id="offhint">Dopo il download la Bibbia funziona anche senza connessione.</div>
   <label>App</label><button type="button" class="btn rowbtn" id="pinfo">Informazioni</button>
+  <button type="button" class="btn rowbtn" id="pdiag">Diagnostica schermo</button>
 </div>
 
 <script>
@@ -928,7 +929,7 @@ function renderHome(){
 }
 function lastPos(){const l=store.last;if(!l)return null;const bi=idIdx(l.id);return bi<0?null:{bi,c:Math.min(l.c,B[bi].v.length),v:null};}
 function setNavView(v){S.navView=v;$$('#navseg button').forEach(x=>x.setAttribute('aria-selected',x.dataset.v===v));buildNav();}
-function bindExtra(){setTimeout(bindMobile,0);
+function bindExtra(){setTimeout(bindMobile,0);setTimeout(bindDiag,0);setTimeout(bindHeal,0);
   $('#tb-books').onclick=()=>{setNavView('books');openNav();};
   $('#tb-saved').onclick=()=>{setNavView('saved');openNav();};
   $('#tb-search').onclick=openSearch;
@@ -982,6 +983,44 @@ function bindMobile(){
   const en=()=>{if(y0==null)return;y0=null;insp.style.transition='';insp.style.transform='';
     if(dy>90||(Date.now()-t0<250&&dy>40)){insp.classList.contains('tall')?insp.classList.remove('tall'):closeSheet();}else if(dy<-60)insp.classList.add('tall');};
   [$('#grab'),$('.ihead')].forEach(el=>{el.addEventListener('touchstart',st,{passive:true});el.addEventListener('touchmove',mv,{passive:true});el.addEventListener('touchend',en);el.addEventListener('touchcancel',en);});
+}
+/* iOS (app salvata sulla Home): dopo la tastiera il viewport resta ~59px piu' corto.
+   Rimedio noto: far ricalcolare il viewport alternando display su un elemento a tutta altezza. */
+function bindHeal(){
+  const stand=()=>navigator.standalone||matchMedia('(display-mode: standalone)').matches;
+  let maxVH=innerHeight,busy=false;
+  addEventListener('resize',()=>{maxVH=Math.max(maxVH,innerHeight);});
+  const veil=document.createElement('div');
+  veil.style.cssText='position:fixed;inset:0;z-index:998;background:var(--bg);opacity:0;pointer-events:none;transition:opacity .14s ease-out';
+  document.body.append(veil);
+  function stuck(){return stand()&&isPhone()&&!document.body.classList.contains('kb')&&(maxVH-innerHeight>4||screen.height-innerHeight>4);}
+  function heal(){
+    if(busy||!stuck())return;busy=true;
+    const app=$('#app'),rd=$('#reader'),st=rd?rd.scrollTop:0;
+    veil.style.opacity='1';
+    setTimeout(()=>{app.style.display='none';void app.offsetHeight;app.style.display='';if(rd)rd.scrollTop=st;
+      setTimeout(()=>{veil.style.opacity='0';busy=false;},120);},150);
+  }
+  const later=ms=>setTimeout(heal,ms);
+  document.addEventListener('focusout',()=>later(220));
+  addEventListener('pageshow',()=>later(300));
+  document.addEventListener('visibilitychange',()=>{if(!document.hidden)later(300);});
+  later(500);
+}
+function bindDiag(){
+  let box=null,tm=null;
+  const mk=(css)=>{const d=document.createElement('div');d.style.cssText='position:fixed;left:0;width:0;visibility:hidden;pointer-events:none;box-sizing:border-box;'+css;document.body.append(d);return d;};
+  const P={fix:mk('top:0;bottom:0'),vh:mk('top:0;height:100vh'),dvh:mk('top:0;height:100dvh'),svh:mk('top:0;height:100svh'),sat:mk('top:0;height:0;padding-top:env(safe-area-inset-top)'),sab:mk('top:0;height:0;padding-bottom:env(safe-area-inset-bottom)')};
+  const upd=()=>{const vv=window.visualViewport,r=id=>{const e=$(id);return e?Math.round(e.getBoundingClientRect().bottom):'-';};
+    box.textContent=['standalone: '+(navigator.standalone||matchMedia('(display-mode: standalone)').matches),
+    'screen: '+screen.width+'x'+screen.height,'inner: '+innerWidth+'x'+innerHeight,'visualViewport: '+(vv?Math.round(vv.height)+' (top '+Math.round(vv.offsetTop)+')':'-'),
+    'fixed top/bottom 0: '+P.fix.offsetHeight,'100vh: '+P.vh.offsetHeight,'100dvh: '+P.dvh.offsetHeight,'100svh: '+P.svh.offsetHeight,
+    'safe top: '+P.sat.offsetHeight+'  bottom: '+P.sab.offsetHeight,'html h: '+document.documentElement.clientHeight,'body h: '+document.body.clientHeight,
+    '#app bottom: '+r('#app')+'  #tabbar bottom: '+r('#tabbar'),'scrollY: '+Math.round(scrollY),'gap var: '+getComputedStyle(document.documentElement).getPropertyValue('--gap')].join('\n');};
+  $('#pdiag').onclick=()=>{$('#pop').classList.remove('on');$('#scrim').classList.remove('on');
+    if(box){box.remove();box=null;clearInterval(tm);return;}
+    box=document.createElement('pre');box.style.cssText='position:fixed;z-index:999;left:8px;right:8px;top:calc(env(safe-area-inset-top) + 8px);margin:0;padding:10px;border-radius:12px;background:rgba(0,0,0,.82);color:#fff;font:12px/1.5 ui-monospace,Menlo,monospace;white-space:pre-wrap';
+    box.onclick=()=>{box.remove();box=null;clearInterval(tm);};document.body.append(box);upd();tm=setInterval(upd,600);};
 }
 if('serviceWorker' in navigator&&/^https?:$/.test(location.protocol))addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));
 </script>
