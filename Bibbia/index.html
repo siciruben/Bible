@@ -356,6 +356,17 @@ body.home-on #prev,body.home-on #next,body.home-on #titlebtn{visibility:hidden}
   #bar{background:var(--bg)!important;-webkit-backdrop-filter:none!important;backdrop-filter:none!important;box-shadow:none!important}
   #tabbar{box-shadow:0 2px 10px rgba(0,0,0,.10)!important;background:var(--card)!important;-webkit-backdrop-filter:none!important;backdrop-filter:none!important}
 }
+/* ===== MOBILE v7: compensa l'altezza errata di iOS nelle app salvate ===== */
+@media (max-width:760px){
+  body.kb{--gap:0px}
+  #app{bottom:calc(0px - var(--gap,0px))}
+  #tabbar{bottom:calc(max(env(safe-area-inset-bottom) - 14px,0px) + 6px - var(--gap,0px))}
+  #nav{bottom:calc(0px - var(--gap,0px));height:calc(88% + var(--gap,0px))}
+  #insp{bottom:calc(var(--kb,0px) - var(--gap,0px))}
+  .modal{bottom:calc(0px - var(--gap,0px))}
+  .scrim{bottom:calc(0px - var(--gap,0px))}
+  .pop{bottom:calc(0px - var(--gap,0px));padding-bottom:calc(24px + env(safe-area-inset-bottom))}
+}
 </style>
 </head>
 <body>
@@ -953,6 +964,14 @@ function bindMobile(){
     root.setProperty('--kb',kb>80?kb+'px':'0px');root.setProperty('--vvh',vv.height+'px');root.setProperty('--vvt',vv.offsetTop+'px');
     document.body.classList.toggle('kb',kb>80);};
     vv.addEventListener('resize',upd);vv.addEventListener('scroll',upd);upd();}
+  /* misura quanto il viewport di iOS e' piu' corto dello schermo (app salvata sulla Home) */
+  const probe=document.createElement('div');probe.style.cssText='position:fixed;top:0;bottom:0;left:0;width:0;visibility:hidden;pointer-events:none';document.body.append(probe);
+  const sa=()=>{if(document.body.classList.contains('kb'))return;
+    const stand=navigator.standalone||matchMedia('(display-mode: standalone)').matches;
+    let g=0;if(stand&&isPhone()&&screen.height>screen.width)g=Math.round(screen.height-probe.offsetHeight);
+    if(g<0||g>120)g=0;root.setProperty('--gap',g+'px');};
+  sa();['resize','orientationchange','pageshow','focus'].forEach(ev=>addEventListener(ev,()=>setTimeout(sa,120)));
+  document.addEventListener('visibilitychange',()=>{if(!document.hidden)setTimeout(sa,120);});
   q.setAttribute('enterkeyhint','search');q.setAttribute('autocapitalize','off');q.setAttribute('autocorrect','off');
   q.addEventListener('keydown',e=>{if(e.key==='Enter')q.blur();});
   $('#sres').addEventListener('touchmove',()=>{if(document.activeElement===q)q.blur();},{passive:true});
