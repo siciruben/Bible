@@ -843,7 +843,7 @@ async function paneLex(){
   translateBtn.hidden=false;
   translateBtn.textContent=lexItalianMode?'Italiano attivo':'Traduci in italiano';
   const translateStatus=h('span',{class:'hint'});
-  pane.append(verseCard(),translateStatus);
+  pane.append(flipVerseCard(),translateStatus);
   let translating=false;
   const gloss=h('div',{style:'font-size:18px;font-weight:600',text:e[2]});
   const head=h('div',{class:'card'},
