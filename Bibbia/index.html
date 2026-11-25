@@ -1,0 +1,750 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>GODEEP Bibbia</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Gentium+Plus:ital,wght@0,400;0,700;1,400&family=Noto+Serif+Hebrew:wght@400;600&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,400&display=swap" rel="stylesheet">
+<style>
+/* Layout idea: three-pane split view (books | reading | study inspector); the inspector becomes a bottom sheet on phones. */
+:root{
+  --bg:#ffffff; --bg2:#f2f2f7; --card:#ffffff; --ink:#1c1c1e; --ink2:#6c6c70; --ink3:#a1a1a6;
+  --line:rgba(60,60,67,.16); --accent:#0071e3; --accent-ink:#ffffff; --accent-soft:rgba(0,113,227,.10); --sel:rgba(0,113,227,.12);
+  --hl-yellow:rgba(255,204,0,.38); --hl-green:rgba(52,199,89,.30); --hl-blue:rgba(10,132,255,.26); --hl-pink:rgba(255,55,95,.24);
+  --glass:rgba(255,255,255,.74); --shadow:0 10px 40px rgba(0,0,0,.14);
+  --ui:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+  --serif:"Source Serif 4","New York",Georgia,"Times New Roman",serif;
+  --greek:"Gentium Plus","Palatino Linotype","Times New Roman",serif;
+  --hebrew:"Noto Serif Hebrew","Ezra SIL","Times New Roman",serif;
+  --fs:20px; --read:var(--serif);
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --bg:#000000; --bg2:#1c1c1e; --card:#2c2c2e; --ink:#f5f5f7; --ink2:#a1a1a6; --ink3:#6c6c70;
+    --line:rgba(84,84,88,.55); --accent:#0a84ff; --accent-soft:rgba(10,132,255,.18); --sel:rgba(10,132,255,.22);
+    --hl-yellow:rgba(255,214,10,.30); --hl-green:rgba(48,209,88,.28); --hl-blue:rgba(10,132,255,.34); --hl-pink:rgba(255,69,58,.30);
+    --glass:rgba(28,28,30,.72); --shadow:0 10px 40px rgba(0,0,0,.6); color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#000000; --bg2:#1c1c1e; --card:#2c2c2e; --ink:#f5f5f7; --ink2:#a1a1a6; --ink3:#6c6c70;
+  --line:rgba(84,84,88,.55); --accent:#0a84ff; --accent-soft:rgba(10,132,255,.18); --sel:rgba(10,132,255,.22);
+  --hl-yellow:rgba(255,214,10,.30); --hl-green:rgba(48,209,88,.28); --hl-blue:rgba(10,132,255,.34); --hl-pink:rgba(255,69,58,.30);
+  --glass:rgba(28,28,30,.72); --shadow:0 10px 40px rgba(0,0,0,.6); color-scheme:dark;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;margin:0}
+body{background:var(--bg);color:var(--ink);font-family:var(--ui);font-size:15px;line-height:1.4;-webkit-font-smoothing:antialiased;overflow:hidden}
+button{font:inherit;color:inherit;background:none;border:0;padding:0;cursor:pointer}
+input,textarea{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:6px}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+
+#app{height:100%;display:grid;grid-template-rows:auto minmax(0,1fr)}
+/* top bar */
+#bar{display:flex;align-items:center;gap:6px;padding:calc(env(safe-area-inset-top) + 8px) 14px 8px;background:var(--glass);-webkit-backdrop-filter:saturate(180%) blur(22px);backdrop-filter:saturate(180%) blur(22px);border-bottom:1px solid var(--line);z-index:30}
+.brand{font-weight:700;letter-spacing:.14em;font-size:12px;color:var(--ink2);margin-right:6px}
+.brand b{color:var(--accent)}
+.ibtn{width:36px;height:36px;border-radius:10px;display:grid;place-items:center;color:var(--ink2)}
+.ibtn:hover{background:var(--accent-soft);color:var(--accent)}
+.ibtn svg{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.titlebtn{display:flex;align-items:center;gap:6px;padding:6px 12px;border-radius:10px;font-weight:600;font-size:17px;min-width:0}
+.titlebtn:hover{background:var(--accent-soft)}
+.titlebtn span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.titlebtn svg{width:14px;height:14px;stroke:var(--ink3);fill:none;stroke-width:2.2;flex:none}
+.spacer{flex:1}
+#navtoggle{display:none}
+
+#body{display:grid;grid-template-columns:288px minmax(0,1fr) 430px;min-height:0}
+/* nav */
+#nav{background:var(--bg2);border-right:1px solid var(--line);overflow:auto;min-height:0;display:flex;flex-direction:column}
+.navhead{position:sticky;top:0;background:var(--bg2);padding:12px 14px 8px;z-index:2}
+.seg{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;background:rgba(120,120,128,.16);border-radius:9px;padding:2px;gap:2px}
+.seg button{padding:6px 8px;border-radius:7px;font-size:13px;font-weight:500;color:var(--ink);text-align:center;white-space:nowrap}
+.seg button[aria-selected="true"]{background:var(--card);box-shadow:0 1px 3px rgba(0,0,0,.16);font-weight:600}
+:root[data-theme="dark"] .seg button[aria-selected="true"]{background:#636366}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .seg button[aria-selected="true"]{background:#636366}}
+.grouplabel{padding:14px 18px 6px;font-size:12px;font-weight:600;color:var(--ink2);text-transform:uppercase;letter-spacing:.06em}
+.books{padding:0 8px 24px;margin:0;list-style:none}
+.book>button{width:100%;text-align:left;padding:8px 12px;border-radius:9px;font-size:15px;display:flex;justify-content:space-between;align-items:center}
+.book>button:hover{background:rgba(120,120,128,.12)}
+.book.on>button{color:var(--accent);font-weight:600}
+.book .cnt{font-size:12px;color:var(--ink3);font-variant-numeric:tabular-nums}
+.chips{display:grid;grid-template-columns:repeat(auto-fill,minmax(40px,1fr));gap:6px;padding:6px 8px 12px}
+.chips button{height:34px;border-radius:9px;background:var(--card);font-size:14px;font-variant-numeric:tabular-nums;box-shadow:0 0 0 1px var(--line) inset}
+.chips button:hover{background:var(--accent-soft);color:var(--accent)}
+.chips button.on{background:var(--accent);color:var(--accent-ink);font-weight:600}
+.saved-item{display:block;width:100%;text-align:left;padding:10px 12px;border-radius:12px;background:var(--card);margin:0 0 8px;box-shadow:0 0 0 1px var(--line) inset}
+.saved-item .r{font-weight:600;font-size:14px;display:flex;gap:8px;align-items:center}
+.saved-item .t{font-size:13px;color:var(--ink2);margin-top:3px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.saved-item .n{font-size:13px;margin-top:4px;color:var(--ink)}
+.dot{width:10px;height:10px;border-radius:50%;display:inline-block;flex:none}
+.empty{padding:28px 22px;color:var(--ink2);font-size:14px;text-align:center}
+
+/* reader */
+#reader{overflow:auto;min-height:0;scroll-behavior:smooth;background:var(--bg)}
+#chapter{max-width:44rem;margin:0 auto;padding:36px 28px 28px;font-family:var(--read);font-size:var(--fs);line-height:1.72}
+.eyebrow{font-family:var(--ui);font-size:12px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--accent)}
+#chapter h1{font-family:var(--ui);font-size:40px;line-height:1.1;margin:6px 0 2px;letter-spacing:-.02em;font-weight:700;text-wrap:balance}
+.chnum{font-family:var(--ui);font-size:17px;color:var(--ink2);margin-bottom:22px}
+.sec{margin:1.8em 0 .5em;font-family:var(--ui);font-size:.82em;line-height:1.3;font-weight:700;letter-spacing:-.005em;text-wrap:balance}
+.secnote{font-family:var(--ui);font-size:.7em;color:var(--ink2);margin:-.2em 0 .5em}
+.par{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 .9em;font-family:var(--ui)}
+.par button{font-size:12.5px;padding:3px 10px;border-radius:99px;background:var(--accent-soft);color:var(--accent);font-weight:500}
+.par button:hover{background:var(--accent);color:var(--accent-ink)}
+.para{margin:0 0 .7em}
+.v{border-radius:5px;cursor:pointer;-webkit-box-decoration-break:clone;box-decoration-break:clone;transition:background .15s}
+.v:hover{background:rgba(120,120,128,.10)}
+.v.sel{background:var(--sel)}
+.v[data-hl="yellow"]{background:var(--hl-yellow)}.v[data-hl="green"]{background:var(--hl-green)}.v[data-hl="blue"]{background:var(--hl-blue)}.v[data-hl="pink"]{background:var(--hl-pink)}
+.v.sel[data-hl]{box-shadow:0 0 0 2px var(--accent)}
+.vn{font-family:var(--ui);font-size:.55em;font-weight:700;color:var(--accent);vertical-align:.55em;margin-right:.28em;font-variant-numeric:tabular-nums;user-select:none}
+.v.poem{display:block;margin:.05em 0}
+.v.poem .ln{display:block}
+.v.poem .ln+.ln{padding-left:1.6em}
+.v i{font-style:italic}
+.v .mark{display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--accent);margin-left:4px;vertical-align:.5em}
+.pager{max-width:44rem;margin:0 auto;padding:6px 28px calc(60px + env(safe-area-inset-bottom));display:grid;grid-template-columns:1fr 1fr;gap:12px;font-family:var(--ui)}
+.pager button{padding:14px 16px;border-radius:14px;background:var(--bg2);text-align:left}
+.pager button:hover{background:var(--accent-soft)}
+.pager button.next{text-align:right}
+.pager small{display:block;color:var(--ink2);font-size:12px}
+.pager b{font-size:16px}
+.loading{display:grid;place-items:center;padding:80px 0;color:var(--ink2);font-family:var(--ui);font-size:14px}
+.spin{width:22px;height:22px;border-radius:50%;border:2.5px solid var(--line);border-top-color:var(--accent);animation:sp .8s linear infinite;margin-bottom:10px}
+@keyframes sp{to{transform:rotate(360deg)}}
+
+/* inspector */
+#insp{background:var(--bg2);border-left:1px solid var(--line);min-height:0;display:flex;flex-direction:column}
+.grab{display:none}
+.ihead{display:flex;align-items:flex-start;gap:10px;padding:16px 18px 10px}
+.ihead .rf{font-size:20px;font-weight:700;letter-spacing:-.01em}
+.ihead .sb{font-size:13px;color:var(--ink2);margin-top:2px}
+.ihead .x{display:none}
+.tabs{padding:0 16px 10px}
+.pane{overflow:auto;min-height:0;flex:1;padding:4px 16px calc(28px + env(safe-area-inset-bottom))}
+.card{background:var(--card);border-radius:14px;padding:14px;box-shadow:0 0 0 1px var(--line) inset;margin-bottom:12px}
+.card h4{margin:0 0 8px;font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink2);font-weight:600}
+.verse-quote{font-family:var(--serif);font-size:16px;line-height:1.55;color:var(--ink)}
+.words{display:flex;flex-wrap:wrap;gap:8px}
+.w{display:flex;flex-direction:column;align-items:center;gap:2px;min-width:68px;max-width:140px;padding:10px 8px 8px;border-radius:12px;background:var(--card);box-shadow:0 0 0 1px var(--line) inset;text-align:center;transition:transform .12s,box-shadow .12s}
+.w:hover{box-shadow:0 0 0 2px var(--accent) inset}
+.w:active{transform:scale(.97)}
+.w .o{font-size:24px;line-height:1.25}
+.w .o[lang="el"]{font-family:var(--greek)}
+.w .o[lang="he"]{font-family:var(--hebrew);font-size:26px}
+.w .t{font-size:12px;color:var(--ink2);font-style:italic}
+.w .t,.w .g{direction:ltr;unicode-bidi:isolate}
+.w .g{font-size:13px;font-weight:600;line-height:1.25}
+.w .s{margin-top:4px;font-size:11px;font-weight:600;color:var(--accent);background:var(--accent-soft);padding:2px 7px;border-radius:99px;font-variant-numeric:tabular-nums}
+.w.var{opacity:.62;border-style:dashed}
+.w .vb{font-size:10px;color:var(--ink2);text-transform:uppercase;letter-spacing:.05em}
+.lemma{font-size:40px;line-height:1.2;margin:2px 0}
+.lemma[lang="el"]{font-family:var(--greek)}
+.lemma[lang="he"]{font-family:var(--hebrew)}
+.lemma-row{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap}
+.pill{display:inline-block;font-size:12px;font-weight:600;color:var(--accent);background:var(--accent-soft);padding:3px 9px;border-radius:99px;font-variant-numeric:tabular-nums}
+.pill.btn{cursor:pointer}.pill.btn:hover{background:var(--accent);color:var(--accent-ink)}
+.pill.on{background:var(--accent);color:var(--accent-ink)}
+.kv{display:grid;grid-template-columns:auto 1fr;gap:4px 12px;font-size:14px;margin:0}
+.kv dt{color:var(--ink2)}.kv dd{margin:0}
+.def{font-size:14.5px;line-height:1.55;white-space:pre-line}
+.def b{font-weight:700}.def i{font-style:italic}
+.def .rl{color:var(--accent);cursor:pointer;text-decoration:underline;text-decoration-color:rgba(0,113,227,.3);text-underline-offset:2px}
+.occ{display:block;width:100%;text-align:left;padding:9px 2px;border-top:1px solid var(--line)}
+.occ:first-child{border-top:0}
+.occ .r{font-weight:600;font-size:13.5px;color:var(--accent)}
+.occ .t{font-family:var(--serif);font-size:14.5px;color:var(--ink);margin-top:2px;line-height:1.45}
+.occ mark{background:var(--hl-yellow);color:inherit;border-radius:3px;padding:0 1px}
+.more{width:100%;margin-top:8px;padding:10px;border-radius:10px;background:var(--accent-soft);color:var(--accent);font-weight:600}
+.back{display:inline-flex;align-items:center;gap:4px;color:var(--accent);font-weight:500;margin:0 0 8px;font-size:14px}
+.hlrow{display:flex;gap:12px;align-items:center}
+.sw{width:30px;height:30px;border-radius:50%;box-shadow:0 0 0 1px var(--line) inset;display:grid;place-items:center}
+.sw[aria-pressed="true"]{box-shadow:0 0 0 2.5px var(--accent)}
+.sw.none{background:var(--card);color:var(--ink2);font-size:16px}
+textarea.note{width:100%;min-height:120px;resize:vertical;border-radius:12px;border:1px solid var(--line);background:var(--bg);padding:10px 12px;line-height:1.5}
+.actions{display:flex;gap:8px;flex-wrap:wrap}
+.btn{padding:8px 14px;border-radius:10px;background:var(--accent-soft);color:var(--accent);font-weight:600;font-size:14px}
+.btn:hover{background:var(--accent);color:var(--accent-ink)}
+.hint{font-size:13px;color:var(--ink2);margin:8px 0 0}
+.placeholder{display:grid;place-items:center;text-align:center;color:var(--ink2);padding:60px 30px;font-size:14px;gap:6px}
+.placeholder b{font-size:17px;color:var(--ink)}
+
+/* overlays */
+.scrim{position:fixed;inset:0;background:rgba(0,0,0,.38);z-index:60;display:none}
+.scrim.on{display:block}
+.modal{position:fixed;z-index:70;left:50%;top:max(5vh,calc(env(safe-area-inset-top) + 12px));transform:translateX(-50%);width:min(680px,calc(100vw - 24px));max-height:88%;background:var(--bg);border-radius:18px;box-shadow:var(--shadow);display:none;flex-direction:column;overflow:hidden;border:1px solid var(--line)}
+.modal.on{display:flex}
+.sbar{display:flex;align-items:center;gap:10px;padding:12px 14px;border-bottom:1px solid var(--line)}
+.sbar input{flex:1;border:0;background:transparent;font-size:18px;outline:none;min-width:0}
+.sbar svg{width:20px;height:20px;stroke:var(--ink2);fill:none;stroke-width:2;flex:none}
+.sopts{padding:10px 14px 0}
+.sres{overflow:auto;padding:6px 14px 18px;min-height:120px}
+.sres .goto{display:flex;align-items:center;justify-content:space-between;width:100%;padding:12px 14px;border-radius:12px;background:var(--accent-soft);color:var(--accent);font-weight:600;margin:8px 0}
+.sres .cnt{font-size:13px;color:var(--ink2);margin:10px 2px 4px}
+.srow{display:block;width:100%;text-align:left;padding:10px 4px;border-top:1px solid var(--line)}
+.srow .r{font-size:13px;font-weight:600;color:var(--accent)}
+.srow .t{font-family:var(--serif);font-size:15.5px;line-height:1.45;margin-top:2px}
+.srow mark{background:var(--hl-yellow);color:inherit;border-radius:3px;padding:0 1px}
+.pop{position:fixed;z-index:70;top:calc(env(safe-area-inset-top) + 56px);right:12px;width:min(300px,calc(100vw - 24px));background:var(--card);border-radius:16px;box-shadow:var(--shadow);border:1px solid var(--line);padding:14px;display:none}
+.pop.on{display:block}
+.pop label{display:block;font-size:12px;font-weight:600;color:var(--ink2);text-transform:uppercase;letter-spacing:.06em;margin:12px 0 6px}
+.pop label:first-child{margin-top:0}
+.pop input[type=range]{width:100%;accent-color:var(--accent)}
+.about{padding:18px 20px 22px;overflow:auto;font-size:14px;line-height:1.55}
+.about h3{margin:0 0 8px;font-size:20px}
+.about p{margin:0 0 10px;color:var(--ink2)}
+.about a{color:var(--accent)}
+
+/* tablet */
+@media (max-width:1180px){
+  #body{grid-template-columns:minmax(0,1fr) 380px}
+  #nav{position:fixed;z-index:65;left:0;top:0;bottom:0;width:min(340px,88vw);padding-top:env(safe-area-inset-top);transform:translateX(-102%);transition:transform .28s cubic-bezier(.2,.8,.2,1);box-shadow:var(--shadow)}
+  #nav.open{transform:none}
+  #navtoggle{display:grid}
+}
+/* phone */
+@media (max-width:760px){
+  #body{grid-template-columns:minmax(0,1fr)}
+  .brand{display:none}
+  #chapter{padding:22px 18px 18px}
+  #chapter h1{font-size:34px}
+  .pager{padding:6px 18px calc(70px + env(safe-area-inset-bottom))}
+  #insp{position:fixed;z-index:40;left:0;right:0;bottom:0;height:62%;border-left:0;border-radius:20px 20px 0 0;box-shadow:0 -8px 40px rgba(0,0,0,.28);transform:translateY(104%);transition:transform .32s cubic-bezier(.2,.8,.2,1),height .25s;background:var(--bg2)}
+  #insp.open{transform:none}
+  #insp.tall{height:92%}
+  .grab{display:block;width:100%;padding:8px 0 2px}
+  .grab i{display:block;width:38px;height:5px;border-radius:3px;background:var(--ink3);opacity:.5;margin:0 auto}
+  .ihead .x{display:grid}
+  .ihead{padding-top:6px}
+  .titlebtn{font-size:16px;padding:6px 8px}
+  .modal{top:0;left:0;transform:none;width:100%;max-height:100%;height:100%;border-radius:0;border:0}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation-duration:.01ms!important;scroll-behavior:auto!important}}
+</style>
+</head>
+<body>
+<div id="app">
+  <header id="bar">
+    <button class="ibtn" id="navtoggle" aria-label="Libri e capitoli"><svg viewBox="0 0 24 24"><path d="M4 5h16M4 12h16M4 19h16"/></svg></button>
+    <span class="brand">GO<b>DEEP</b></span>
+    <button class="ibtn" id="prev" aria-label="Capitolo precedente"><svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg></button>
+    <button class="titlebtn" id="titlebtn" aria-label="Scegli libro e capitolo"><span id="title">Giovanni 3</span><svg viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg></button>
+    <button class="ibtn" id="next" aria-label="Capitolo successivo"><svg viewBox="0 0 24 24"><path d="M9 5l7 7-7 7"/></svg></button>
+    <span class="spacer"></span>
+    <button class="ibtn" id="searchbtn" aria-label="Cerca"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg></button>
+    <button class="ibtn" id="setbtn" aria-label="Aspetto del testo"><svg viewBox="0 0 24 24"><path d="M3 19l5-13 5 13M5 14h6M15 19l3.5-8 3.5 8M16.3 16.5h4.4"/></svg></button>
+    <button class="ibtn" id="infobtn" aria-label="Informazioni"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8v.01"/></svg></button>
+  </header>
+  <div id="body">
+    <nav id="nav" aria-label="Libri della Bibbia">
+      <div class="navhead"><div class="seg" id="navseg" role="tablist"><button role="tab" aria-selected="true" data-v="books">Libri</button><button role="tab" aria-selected="false" data-v="saved">Salvati</button></div></div>
+      <div id="navlist"></div>
+    </nav>
+    <main id="reader" tabindex="-1"><article id="chapter"><div class="loading"><div><div class="spin"></div>Caricamento…</div></div></article><div class="pager" id="pager"></div></main>
+    <aside id="insp" aria-label="Strumenti di studio">
+      <div class="grab" id="grab"><i></i></div>
+      <div class="ihead"><div style="flex:1;min-width:0"><div class="rf" id="irf">Studio</div><div class="sb" id="isb"></div></div><button class="ibtn x" id="iclose" aria-label="Chiudi"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
+      <div class="tabs"><div class="seg" id="tabs" role="tablist">
+        <button role="tab" data-t="int" aria-selected="true">Interlineare</button>
+        <button role="tab" data-t="lex" aria-selected="false">Lessico</button>
+        <button role="tab" data-t="par" aria-selected="false">Paralleli</button>
+        <button role="tab" data-t="note" aria-selected="false">Note</button>
+      </div></div>
+      <div class="pane" id="pane"></div>
+    </aside>
+  </div>
+</div>
+
+<div class="scrim" id="scrim"></div>
+<div class="modal" id="smodal" role="dialog" aria-label="Cerca">
+  <div class="sbar"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg><input id="q" type="search" placeholder="Parola, versetto (Gv 3:16) o Strong (G25, H1254)" autocomplete="off" spellcheck="false"><button class="btn" id="sclose">Chiudi</button></div>
+  <div class="sopts"><div class="seg" id="sscope"><button data-s="text" aria-selected="true">Testo Riveduta</button><button data-s="lex" aria-selected="false">Lessico (inglese)</button></div></div>
+  <div class="sres" id="sres"></div>
+</div>
+<div class="modal" id="amodal" role="dialog" aria-label="Informazioni">
+  <div class="about">
+    <h3>GODEEP Bibbia</h3>
+    <p>Studio biblico con la Riveduta 2020, interlineare ebraico e greco, lessico, concordanza per numero Strong e passi paralleli.</p>
+    <p><b>Testo italiano.</b> Riveduta 2020, dal file fornito. Titoli di sezione e passi paralleli sono quelli del file.</p>
+    <p><b>Originali e lessici.</b> Dati di <a href="https://github.com/STEPBible/STEPBible-Data" target="_blank" rel="noopener">STEPBible.org</a> e Tyndale House, Cambridge, licenza CC BY 4.0: TAHOT (ebraico), TAGNT (greco NA28 con varianti), TBESH e TBESG (lessici, con Abbott-Smith per il greco e BDB per l'ebraico). Le glosse inglesi dell'interlineare non sono allineate parola per parola alla traduzione italiana.</p>
+    <p><b>Concordanza.</b> Costruita dai numeri Strong estesi di STEPBible.</p>
+    <p style="margin-top:14px"><button class="btn" id="aclose">Chiudi</button></p>
+  </div>
+</div>
+<div class="pop" id="pop">
+  <label for="fs">Dimensione del testo</label><input type="range" id="fs" min="16" max="30" step="1">
+  <label>Carattere</label><div class="seg" id="ffseg"><button data-f="serif">Con grazie</button><button data-f="sans">Lineare</button></div>
+  <label>Tema</label><div class="seg" id="thseg"><button data-th="auto">Auto</button><button data-th="light">Chiaro</button><button data-th="dark">Scuro</button></div>
+</div>
+
+<script>
+"use strict";
+/* ---------- utilities ---------- */
+const $=(s,r=document)=>r.querySelector(s), $$=(s,r=document)=>[...r.querySelectorAll(s)];
+function h(tag,props,...kids){
+  const e=document.createElement(tag);
+  if(props)for(const k in props){const v=props[k];if(v==null||v===false)continue;
+    if(k==='class')e.className=v;else if(k==='on'){for(const ev in v)e.addEventListener(ev,v[ev]);}
+    else if(k==='text')e.textContent=v;else e.setAttribute(k,v===true?'':v);}
+  (function add(list){for(const k of list){if(k==null||k===false)continue;if(Array.isArray(k))add(k);else e.append(k.nodeType?k:document.createTextNode(String(k)));}})(kids);
+  return e;
+}
+const fold=s=>s.toLowerCase().replace(/[àáâä]/g,'a').replace(/[èéêë]/g,'e').replace(/[ìíîï]/g,'i').replace(/[òóôö]/g,'o').replace(/[ùúûü]/g,'u').replace(/[’‘`´]/g,"'");
+const ICON_CHEV='<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg>';
+
+/* ---------- storage ---------- */
+let store={hl:{},nt:{},bm:{},set:{fs:20,ff:'serif',th:'auto'}};
+try{const raw=localStorage.getItem('godeep:v1');if(raw){const o=JSON.parse(raw);store={...store,...o,set:{...store.set,...(o.set||{})}};}}catch(e){}
+function save(){try{localStorage.setItem('godeep:v1',JSON.stringify(store));}catch(e){}}
+
+/* ---------- data layer ---------- */
+const B=[];const ORD={bs:[],cs:[],total:0,nt:0};
+const cache={it:{},or:{},lex:{},conc:null};
+async function jget(p){const r=await fetch(p);if(!r.ok)throw new Error('Impossibile caricare '+p);return r.json();}
+const getIt=id=>cache.it[id]??=jget(`data/it/${id}.json`).then(d=>{d.hb={};for(const k in d.h){const [c,v]=k.split(':').map(Number);(d.hb[c]??={})[v]=d.h[k];}return d;});
+const getOr=id=>cache.or[id]??=jget(`data/or/${id}.json`);
+const getLex=k=>cache.lex[k]??=jget(`data/lex_${k}.json`);
+const getConc=()=>cache.conc??=jget('data/conc.json');
+function buildOrd(){let o=0;B.forEach((b,i)=>{ORD.bs[i]=o;ORD.cs[i]=[];b.v.forEach((n,ci)=>{ORD.cs[i][ci]=o;o+=n;});});ORD.total=o;ORD.nt=ORD.bs[B.findIndex(b=>b.t===2)];}
+const refOrd=(bi,c,v)=>ORD.cs[bi][c-1]+v-1;
+function ordRef(o){let lo=0,hi=B.length-1;while(lo<hi){const m=(lo+hi+1)>>1;if(ORD.bs[m]<=o)lo=m;else hi=m-1;}const cs=ORD.cs[lo];let a=0,z=cs.length-1;while(a<z){const m=(a+z+1)>>1;if(cs[m]<=o)a=m;else z=m-1;}return{bi:lo,c:a+1,v:o-cs[a]+1};}
+const decConc=s=>{let o=0;return s.split(',').map(x=>o+=parseInt(x,16));};
+const idIdx=id=>B.findIndex(b=>b.id===id);
+const STEP={Gen:'GEN',Exo:'EXO',Lev:'LEV',Num:'NUM',Deu:'DEU',Jos:'JOS',Jdg:'JDG',Rut:'RUT','1Sa':'1SA','2Sa':'2SA','1Ki':'1KI','2Ki':'2KI','1Ch':'1CH','2Ch':'2CH',Ezr:'EZR',Neh:'NEH',Est:'EST',Job:'JOB',Psa:'PSA',Pro:'PRO',Ecc:'ECC',Sng:'SNG',Isa:'ISA',Jer:'JER',Lam:'LAM',Ezk:'EZK',Dan:'DAN',Hos:'HOS',Jol:'JOL',Amo:'AMO',Oba:'OBA',Jon:'JON',Mic:'MIC',Nam:'NAM',Hab:'HAB',Zep:'ZEP',Hag:'HAG',Zec:'ZEC',Mal:'MAL',Mat:'MAT',Mrk:'MRK',Luk:'LUK',Jhn:'JHN',Act:'ACT',Rom:'ROM','1Co':'1CO','2Co':'2CO',Gal:'GAL',Eph:'EPH',Php:'PHP',Col:'COL','1Th':'1TH','2Th':'2TH','1Ti':'1TI','2Ti':'2TI',Tit:'TIT',Phm:'PHM',Heb:'HEB',Jas:'JAS','1Pe':'1PE','2Pe':'2PE','1Jn':'1JN','2Jn':'2JN','3Jn':'3JN',Jud:'JUD',Rev:'REV'};
+
+/* ---------- reference parsing ---------- */
+const ALIAS={};
+function buildAlias(){
+  const extra={gn:'GEN',es:'EXO',lv:'LEV',nm:'NUM',dt:'DEU',gs:'JOS',gdc:'JDG',rt:'RUT','1sam':'1SA','2sam':'2SA','1re':'1KI','2re':'2KI','1cr':'1CH','2cr':'2CH',esd:'EZR',ne:'NEH',est:'EST',gb:'JOB',sl:'PSA',salmo:'PSA',pr:'PRO',qo:'ECC',eccl:'ECC',ct:'SNG',cant:'SNG',is:'ISA',ger:'JER',gr:'JER',lam:'LAM',ez:'EZK',dn:'DAN',os:'HOS',gl:'JOL',am:'AMO',ab:'OBA',gn1:'JON',mi:'MIC',na:'NAM',ha:'HAB',sof:'ZEP',ag:'HAG',zc:'ZEC',ml:'MAL',mt:'MAT',mc:'MRK',lc:'LUK',gv:'JHN',gio:'JHN',at:'ACT',rm:'ROM','1cor':'1CO','2cor':'2CO',gal:'GAL',ef:'EPH',fil:'PHP',col:'COL','1ts':'1TH','2ts':'2TH','1tm':'1TI','2tm':'2TI',tt:'TIT',fm:'PHM',eb:'HEB',gc:'JAS','1pt':'1PE','2pt':'2PE','1gv':'1JN','2gv':'2JN','3gv':'3JN',gd:'JUD',ap:'REV'};
+  B.forEach((b,i)=>{ALIAS[norm(b.n)]=i;ALIAS[norm(b.ab)]=i;});
+  for(const k in extra){const i=idIdx(extra[k]);if(!(k in ALIAS))ALIAS[k]=i;}
+}
+const norm=s=>fold(s).replace(/[\s.]/g,'');
+function parseRef(q){
+  const m=q.trim().match(/^([1-3]?\s*[a-zà-ù][a-zà-ù.\s]*?)\s*(\d+)?(?:\s*[:,.\s]\s*(\d+)(?:\s*-\s*\d+)?)?$/i);
+  if(!m)return null;
+  const key=norm(m[1]);if(key.length<2&&!/^\d/.test(key))return null;
+  let bi=ALIAS[key];
+  if(bi==null){const ks=Object.keys(ALIAS).filter(k=>k.startsWith(key));if(!ks.length)return null;bi=Math.min(...ks.map(k=>ALIAS[k]));if(!m[2])return{bi,exact:false};}
+  let c=m[2]?+m[2]:1;const max=B[bi].v.length;if(c>max)c=max;
+  let v=m[3]?+m[3]:null;if(v&&v>B[bi].v[c-1])v=B[bi].v[c-1];
+  return{bi,c,v,exact:true,hasNum:!!m[2]};
+}
+function parseStepRef(s){const m=s.match(/^([1-3]?[A-Za-z]{2,3})\.(\d+)\.(\d+)/);if(!m)return null;const id=STEP[m[1]];if(!id)return null;return{bi:idIdx(id),c:+m[2],v:+m[3]};}
+
+/* ---------- morphology (Italian labels) ---------- */
+const G_POS={N:'Nome',V:'Verbo',A:'Aggettivo',T:'Articolo',P:'Pronome personale',R:'Pronome relativo',D:'Pronome dimostrativo',C:'Pronome reciproco',F:'Pronome riflessivo',I:'Pronome interrogativo',K:'Pronome correlativo',Q:'Pronome correl./interrogativo',S:'Pronome possessivo',X:'Pronome indefinito',ADV:'Avverbio',CONJ:'Congiunzione',COND:'Condizionale',PRT:'Particella',PREP:'Preposizione',INJ:'Interiezione',ARAM:'Aramaico',HEB:'Ebraico'};
+const G_CASE={N:'nominativo',G:'genitivo',D:'dativo',A:'accusativo',V:'vocativo'};
+const G_NUM={S:'singolare',P:'plurale'};const G_GEN={M:'maschile',F:'femminile',N:'neutro'};
+const G_TENSE={P:'presente',I:'imperfetto',F:'futuro',A:'aoristo',R:'perfetto',L:'piuccheperfetto',X:'senza tempo'};
+const G_VOICE={A:'attivo',M:'medio',P:'passivo',E:'medio o passivo',D:'deponente',N:'medio deponente',O:'passivo deponente',Q:'deponente',X:''};
+const G_MOOD={I:'indicativo',S:'congiuntivo',O:'ottativo',M:'imperativo',N:'infinito',P:'participio',R:'imperativo'};
+const G_TYPE={P:'nome proprio',T:'titolo',L:'luogo',G:'gentilizio',C:'comparativo',S:'superlativo',N:'negativo',I:'interrogativo',ATT:'attico',K:'forma K'};
+function cng(s){const o=[];for(const ch of s){if(G_CASE[ch]&&!o.some(x=>Object.values(G_CASE).includes(x)))o.push(G_CASE[ch]);else if(G_NUM[ch])o.push(G_NUM[ch]);else if(G_GEN[ch])o.push(G_GEN[ch]);}return o;}
+function morphG(code){
+  if(!code)return[];const p=code.split('-');const pos=p[0];const out=[G_POS[pos]||pos];
+  if(pos==='V'){
+    const tvm=(p[1]||'').replace(/^\d/,'');const t=tvm[0],vo=tvm[1],mo=tvm[2];
+    if(G_TENSE[t])out.push(G_TENSE[t]);if(G_VOICE[vo])out.push(G_VOICE[vo]);if(G_MOOD[mo])out.push(G_MOOD[mo]);
+    const rest=p[2]||'';
+    if(mo==='P'&&rest)out.push(...cng(rest));
+    else if(rest){const pe=rest.match(/^(\d)([SP])$/);if(pe)out.push(pe[1]+'ª persona',G_NUM[pe[2]]);}
+    if(p[3]&&G_TYPE[p[3]])out.push(G_TYPE[p[3]]);
+  }else if(['ADV','CONJ','COND','PRT','PREP','INJ','ARAM','HEB'].includes(pos)||/^[A-Z]{3,}$/.test(pos)){
+    if(p[1]&&G_TYPE[p[1]])out.push(G_TYPE[p[1]]);
+  }else{
+    const s=p[1]||'';const pe=s.match(/^(\d)(.*)$/);
+    if(pe){out.push(pe[1]+'ª persona');out.push(...cng(pe[2]));}else out.push(...cng(s));
+    for(const x of p.slice(2))if(G_TYPE[x])out.push(G_TYPE[x]);
+  }
+  return out;
+}
+const H_POS={A:'Aggettivo',C:'Congiunzione',D:'Avverbio',N:'Nome',P:'Pronome',R:'Preposizione',S:'Suffisso',T:'Particella',V:'Verbo'};
+const H_NT={c:'comune',g:'gentilizio',p:'proprio'};const H_G={m:'maschile',f:'femminile',b:'comune',c:'comune',x:''};
+const H_N={s:'singolare',p:'plurale',d:'duale',x:''};const H_ST={a:'assoluto',c:'costrutto',d:'determinato'};
+const H_STEM={q:'Qal',N:'Nifal',p:'Piel',P:'Pual',h:'Hifil',H:'Hofal',t:'Itpael',o:'Polel',O:'Polal',r:'Pilpel',m:'Poel',k:'Palel',l:'Pulal',i:'Hishtafel',u:'Hitpeel',a:'Afel',s:'Safel',e:'Shafel',Q:'Peil',v:'Ishtafel',w:'Hitafel',f:'Itpalpel',b:'Nitpael',z:'Itpoal',M:'Hitpael'};
+const H_FORM={p:'perfetto',q:'perfetto consecutivo',i:'imperfetto',w:'imperfetto consecutivo',h:'coortativo',j:'iussivo',v:'imperativo',r:'participio attivo',s:'participio passivo',a:'infinito assoluto',c:'infinito costrutto'};
+const H_PRT={a:'affermazione',d:'articolo determinativo',e:'esortazione',i:'interrogativa',j:'interiezione',m:'dimostrativa',n:'negazione',o:'segno dell\'oggetto',r:'relativa'};
+const H_PRN={p:'personale',d:'dimostrativo',f:'indefinito',i:'interrogativo',r:'relativo'};
+function morphH(code){
+  if(!code)return[];const lang=code[0]==='A'?'aramaico':'ebraico';const segs=code.slice(1).split('/');const out=[];
+  segs.forEach(sg=>{
+    const pos=sg[0];const parts=[H_POS[pos]||sg];
+    if(pos==='N'){if(H_NT[sg[1]])parts.push(H_NT[sg[1]]);const r=sg.slice(2);if(H_G[r[0]])parts.push(H_G[r[0]]);if(H_N[r[1]])parts.push(H_N[r[1]]);if(H_ST[r[2]])parts.push(H_ST[r[2]]);}
+    else if(pos==='V'){if(H_STEM[sg[1]])parts.push(H_STEM[sg[1]]);const f=sg[2];if(H_FORM[f])parts.push(H_FORM[f]);const r=sg.slice(3);
+      if(f==='r'||f==='s'){if(H_G[r[0]])parts.push(H_G[r[0]]);if(H_N[r[1]])parts.push(H_N[r[1]]);if(H_ST[r[2]])parts.push(H_ST[r[2]]);}
+      else if(f!=='a'&&f!=='c'){if(/\d/.test(r[0]||''))parts.push(r[0]+'ª persona');if(H_G[r[1]])parts.push(H_G[r[1]]);if(H_N[r[2]])parts.push(H_N[r[2]]);}}
+    else if(pos==='T'){if(H_PRT[sg[1]])parts[0]='Particella: '+H_PRT[sg[1]];}
+    else if(pos==='P'||pos==='S'){if(pos==='P'&&H_PRN[sg[1]])parts.push(H_PRN[sg[1]]);if(pos==='S')parts[0]='Suffisso '+({p:'pronominale',d:'direzionale',h:'he paragogico',n:'nun paragogico'}[sg[1]]||'');const r=sg.slice(2);if(/\d/.test(r[0]||''))parts.push(r[0]+'ª persona');if(H_G[r[1]])parts.push(H_G[r[1]]);if(H_N[r[2]])parts.push(H_N[r[2]]);}
+    else if(pos==='A'){if(H_G[sg[2]])parts.push(H_G[sg[2]]);if(H_N[sg[3]])parts.push(H_N[sg[3]]);if(H_ST[sg[4]])parts.push(H_ST[sg[4]]);}
+    out.push(parts.filter(Boolean).join(', '));
+  });
+  return[out.join(' + ')+(lang==='aramaico'?' (aramaico)':'')];
+}
+const sdisp=s=>s?s[0]+String(parseInt(s.slice(1,5),10)):'';
+const sclass=s=>s?s.slice(0,5):'';
+
+/* ---------- app state ---------- */
+const S={bi:0,c:1,v:null,tab:'int',word:null,navView:'books',tok:0,loaded:null};
+const body=document.body;
+const isPhone=()=>matchMedia('(max-width:760px)').matches;
+
+/* ---------- boot ---------- */
+(async function boot(){
+  try{
+    const meta=await jget('data/meta.json');B.push(...meta.books);buildOrd();buildAlias();
+    applySettings();buildNav();bindUI();
+    const r=fromHash()||{bi:idIdx('JHN'),c:3,v:16};
+    await go(r.bi,r.c,r.v,{noHash:!location.hash,quiet:true});
+    if(!isPhone()&&S.v)renderInspector();
+    window.addEventListener('hashchange',()=>{if(S.ignoreHash){S.ignoreHash=false;return;}const r=fromHash();if(r)go(r.bi,r.c,r.v,{noHash:true,open:!!r.v});});
+  }catch(e){$('#chapter').replaceChildren(h('div',{class:'loading',text:'Errore di caricamento: '+e.message}));}
+})();
+function fromHash(){const m=location.hash.slice(1).match(/^([0-9a-z]{3})-(\d+)(?:-(\d+))?$/);if(!m)return null;const bi=idIdx(m[1].toUpperCase());if(bi<0)return null;const c=Math.min(Math.max(1,+m[2]),B[bi].v.length);return{bi,c,v:m[3]?Math.min(+m[3],B[bi].v[c-1]):null};}
+function setHash(){const t='#'+B[S.bi].id.toLowerCase()+'-'+S.c+(S.v?'-'+S.v:'');if(location.hash!==t){S.ignoreHash=true;try{location.hash=t;}catch(e){S.ignoreHash=false;}}}
+
+/* ---------- settings ---------- */
+function applySettings(){
+  const r=document.documentElement;r.style.setProperty('--fs',store.set.fs+'px');
+  r.style.setProperty('--read',store.set.ff==='sans'?'var(--ui)':'var(--serif)');
+  if(store.set.th==='auto')r.removeAttribute('data-theme');else r.setAttribute('data-theme',store.set.th);
+  $('#fs').value=store.set.fs;
+  $$('#ffseg button').forEach(b=>b.setAttribute('aria-selected',b.dataset.f===store.set.ff));
+  $$('#thseg button').forEach(b=>b.setAttribute('aria-selected',b.dataset.th===store.set.th));
+}
+
+/* ---------- navigation panel ---------- */
+function buildNav(){
+  const list=$('#navlist');list.replaceChildren();
+  if(S.navView==='saved'){return buildSaved(list);}
+  [[1,'Antico Testamento'],[2,'Nuovo Testamento']].forEach(([t,label])=>{
+    list.append(h('div',{class:'grouplabel',text:label}));
+    const ul=h('ul',{class:'books'});
+    B.forEach((b,i)=>{if(b.t!==t)return;
+      const on=i===S.bi;
+      const li=h('li',{class:'book'+(on?' on':''),'data-i':i},
+        h('button',{type:'button',on:{click:()=>{S.navOpenBook=(S.navOpenBook===i?null:i);buildNav();}}},h('span',{text:b.n}),h('span',{class:'cnt',text:b.v.length+(b.v.length===1?' cap.':' capp.')})));
+      if(S.navOpenBook===i||(S.navOpenBook==null&&on)){
+        const chips=h('div',{class:'chips'});
+        for(let c=1;c<=b.v.length;c++)chips.append(h('button',{type:'button',class:(on&&c===S.c)?'on':'','aria-label':b.n+' capitolo '+c,text:c,on:{click:()=>{go(i,c,null);closeNav();}}}));
+        li.append(chips);
+      }
+      ul.append(li);
+    });
+    list.append(ul);
+  });
+  const open=$('.book.on',list);if(open&&!S.navScrolled){S.navScrolled=1;requestAnimationFrame(()=>open.scrollIntoView({block:'center'}));}
+}
+function savedKeys(){const ks=new Set([...Object.keys(store.hl),...Object.keys(store.nt).filter(k=>store.nt[k]),...Object.keys(store.bm).filter(k=>store.bm[k])]);return[...ks].sort((a,b)=>keyOrd(a)-keyOrd(b));}
+function keyOrd(k){const [id,c,v]=k.split('.');return refOrd(idIdx(id),+c,+v);}
+const HLC={yellow:'var(--hl-yellow)',green:'var(--hl-green)',blue:'var(--hl-blue)',pink:'var(--hl-pink)'};
+function buildSaved(list){
+  const ks=savedKeys();
+  if(!ks.length){list.append(h('div',{class:'empty'},h('b',{text:'Nessun versetto salvato'}),h('br'),'Tocca un versetto e usa la scheda Note per evidenziarlo, aggiungere un appunto o un segnalibro.'));return;}
+  const wrap=h('div',{style:'padding:4px 12px 24px'});list.append(wrap);
+  ks.forEach(k=>{const [id,c,v]=k.split('.');const bi=idIdx(id);
+    const t=h('div',{class:'t',text:'…'});
+    getIt(id).then(d=>{t.textContent=plain(d.c[c-1][v-1]);});
+    wrap.append(h('button',{type:'button',class:'saved-item',on:{click:()=>{go(bi,+c,+v,{open:true});closeNav();}}},
+      h('div',{class:'r'},store.hl[k]?h('span',{class:'dot',style:'background:'+HLC[store.hl[k]]+';box-shadow:0 0 0 1px var(--line) inset'}):null,B[bi].n+' '+c+':'+v,store.bm[k]?h('span',{class:'pill',text:'Segnalibro'}):null),t,store.nt[k]?h('div',{class:'n',text:store.nt[k]}):null));
+  });
+}
+const plain=t=>t.replace(/[\u0001\u0002]/g,'').replace(/\n/g,' ');
+function openNav(){$('#nav').classList.add('open');$('#scrim').classList.add('on');S.scrimFor='nav';}
+function closeNav(){$('#nav').classList.remove('open');if(S.scrimFor==='nav'){$('#scrim').classList.remove('on');}}
+
+/* ---------- chapter rendering ---------- */
+async function go(bi,c,v,opt={}){
+  const tok=++S.tok;
+  const prevBook=S.bi;S.bi=bi;S.c=c;S.v=v||null;
+  $('#title').textContent=B[bi].n+' '+c;document.title=B[bi].n+' '+c+' · GODEEP Bibbia';
+  if(prevBook!==bi){S.navOpenBook=null;S.word=null;}
+  if(S.tab==='lex'&&!S.word?.standalone)S.word=null;
+  buildNav();
+  if(!opt.noHash)setHash();
+  let d;
+  try{d=await getIt(B[bi].id);}catch(e){$('#chapter').replaceChildren(h('div',{class:'loading',text:e.message}));return;}
+  if(tok!==S.tok)return;
+  S.loaded=d;
+  renderChapter(d,bi,c);
+  renderPager();
+  const rd=$('#reader');rd.style.scrollBehavior='auto';
+  if(S.v){const el=$('#v'+S.v);if(el)rd.scrollTop=Math.max(0,el.offsetTop-120);}else rd.scrollTop=0;
+  rd.style.scrollBehavior='';
+  renderInspector();
+  if(opt.open&&isPhone()&&S.v)openSheet();
+}
+function renderChapter(d,bi,c){
+  const art=$('#chapter');art.replaceChildren();
+  const b=B[bi];
+  art.append(h('div',{class:'eyebrow',text:b.t===1?'Antico Testamento':'Nuovo Testamento'}),h('h1',{text:b.n}),h('div',{class:'chnum',text:b.id==='PSA'?'Salmo '+c:'Capitolo '+c}));
+  const verses=d.c[c-1],heads=d.hb[c]||{};let para=null;
+  verses.forEach((t,i)=>{
+    const v=i+1,hd=heads[v];
+    if(hd){
+      if(hd.t)art.append(h('h2',{class:'sec',text:hd.t}));
+      (hd.n||[]).forEach(n=>art.append(h('div',{class:'secnote',text:n})));
+      if(hd.p&&hd.p.length)art.append(parallelsRow(hd.p));
+      para=null;
+    }
+    if(!para){para=h('div',{class:'para'});art.append(para);}
+    para.append(verseNode(t,v,b.id,c));
+    if(t.includes('\n'))para=null;
+  });
+}
+function parallelsRow(list){return h('div',{class:'par'},list.map(p=>{const r=parseRefText(p);return h('button',{type:'button',text:p,on:{click:()=>r&&(go(r.bi,r.c,r.v,{open:true}))}});}));}
+function parseRefText(s){const m=s.match(/^((?:I{1,3}\s+)?[1-3]?\s*[A-Za-zÀ-ù ]+?)\s+(\d+)(?:\s*[:,]\s*(\d+))?/);if(!m)return null;let n=m[1].trim().replace(/^III\s+/,'3 ').replace(/^II\s+/,'2 ').replace(/^I\s+/,'1 ');const bi=ALIAS[norm(n)];if(bi==null)return null;const c=Math.min(+m[2],B[bi].v.length);return{bi,c,v:m[3]?Math.min(+m[3],B[bi].v[c-1]):null};}
+function richInto(parent,t){let it=false;for(const tok of t.split(/(\u0001|\u0002|\n)/)){if(tok==='\u0001')it=true;else if(tok==='\u0002')it=false;else if(tok==='\n')parent.append(document.createElement('br'));else if(tok){if(it)parent.append(h('i',{text:tok}));else parent.append(tok);}}}
+function verseNode(t,v,id,c){
+  const k=id+'.'+c+'.'+v;const poem=t.includes('\n');
+  const sp=h(poem?'div':'span',{class:'v'+(poem?' poem':'')+(S.v===v?' sel':''),id:'v'+v,'data-v':v,tabindex:0,role:'button','aria-label':'Versetto '+v,on:{click:()=>selectVerse(v),keydown:e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();selectVerse(v);}}}});
+  if(store.hl[k])sp.dataset.hl=store.hl[k];
+  const vn=h('sup',{class:'vn',text:v});
+  if(poem){t.split('\n').forEach((ln,i)=>{const l=h('span',{class:'ln'});if(i===0)l.append(vn);richInto(l,ln);sp.append(l);});}
+  else{sp.append(vn);richInto(sp,t);}
+  if(store.nt[k]||store.bm[k])sp.append(h('span',{class:'mark',title:'Nota o segnalibro'}));
+  sp.append(' ');
+  return sp;
+}
+function renderPager(){
+  const p=$('#pager');p.replaceChildren();
+  const pv=prevCh(),nx=nextCh();
+  p.append(pv?h('button',{type:'button',on:{click:()=>go(pv.bi,pv.c,null)}},h('small',{text:'Precedente'}),h('b',{text:B[pv.bi].n+' '+pv.c})):h('span'),
+           nx?h('button',{type:'button',class:'next',on:{click:()=>go(nx.bi,nx.c,null)}},h('small',{text:'Successivo'}),h('b',{text:B[nx.bi].n+' '+nx.c})):h('span'));
+}
+function prevCh(){if(S.c>1)return{bi:S.bi,c:S.c-1};if(S.bi>0)return{bi:S.bi-1,c:B[S.bi-1].v.length};return null;}
+function nextCh(){if(S.c<B[S.bi].v.length)return{bi:S.bi,c:S.c+1};if(S.bi<B.length-1)return{bi:S.bi+1,c:1};return null;}
+function selectVerse(v){
+  if(S.v===v&&!isPhone()){return;}
+  S.v=v;S.word=null;if(S.tab==='lex')S.tab='int';
+  $$('#chapter .v.sel').forEach(e=>e.classList.remove('sel'));const el=$('#v'+v);if(el)el.classList.add('sel');
+  setHash();renderInspector();if(isPhone())openSheet();
+}
+function refreshVerse(v){const old=$('#v'+v);if(!old)return;const d=S.loaded;const n=verseNode(d.c[S.c-1][v-1],v,B[S.bi].id,S.c);old.replaceWith(n);}
+
+/* ---------- inspector ---------- */
+function openSheet(){$('#insp').classList.add('open');}
+function closeSheet(){$('#insp').classList.remove('open','tall');}
+function curKey(){return B[S.bi].id+'.'+S.c+'.'+S.v;}
+async function renderInspector(){
+  const pane=$('#pane');
+  $$('#tabs button').forEach(b=>b.setAttribute('aria-selected',b.dataset.t===S.tab));
+  if(S.tab==='lex'&&S.word){$('#irf').textContent=S.word.standalone?'Lessico':B[S.bi].n+' '+S.c+':'+S.v;$('#isb').textContent=S.word.standalone?'Numero Strong '+sdisp(S.word.s):'Parola selezionata';return paneLex();}
+  if(!S.v){
+    $('#irf').textContent='Studio';$('#isb').textContent='';
+    pane.replaceChildren(h('div',{class:'placeholder'},h('b',{text:'Seleziona un versetto'}),h('span',{text:'Tocca un versetto per vedere il testo originale, il lessico, i passi paralleli e le tue note.'})));
+    return;
+  }
+  $('#irf').textContent=B[S.bi].n+' '+S.c+':'+S.v;
+  $('#isb').textContent=B[S.bi].t===1?'Testo masoretico, ebraico':'Testo greco NA28';
+  if(S.tab==='int')return paneInt();
+  if(S.tab==='lex')return paneLexHint();
+  if(S.tab==='par')return paneParallels();
+  return paneNotes();
+}
+function verseCard(){const t=S.loaded.c[S.c-1][S.v-1];const c=h('div',{class:'card'},h('h4',{text:'Riveduta 2020'}));const q=h('div',{class:'verse-quote'});richInto(q,t);c.append(q);return c;}
+async function paneInt(){
+  const pane=$('#pane'),tok=S.tok,v=S.v,c=S.c,bi=S.bi;
+  pane.replaceChildren(verseCard(),h('div',{class:'loading',style:'padding:30px 0'},h('div',null,h('div',{class:'spin'}),'Carico il testo originale…')));
+  let od;try{od=await getOr(B[bi].id);}catch(e){pane.append(h('div',{class:'empty',text:e.message}));return;}
+  if(tok!==S.tok||S.v!==v||S.tab!=='int')return;
+  const ws=od.c[c-1][v-1]||[];const ot=B[bi].t===1;
+  pane.replaceChildren(verseCard());
+  if(!ws.length){pane.append(h('div',{class:'card'},h('div',{class:'hint',text:'Per questo versetto l\'originale ha una numerazione diversa dalla Riveduta, quindi non c\'è un interlineare allineato.'})));return;}
+  const wrap=h('div',{class:'words'+(ot?' rtl':''),dir:ot?'rtl':'ltr'});
+  ws.forEach(w=>{
+    const variant=w.length>5;
+    wrap.append(h('button',{type:'button',class:'w'+(variant?' var':''),title:variant?'Variante testuale: '+w[5]:morphLine(w[4],ot),on:{click:()=>{S.word={w,ot,s:w[3]};S.tab='lex';renderInspector();}}},
+      h('span',{class:'o',lang:ot?'he':'el',text:w[0]}),h('span',{class:'t',text:w[1]}),h('span',{class:'g',text:w[2]}),
+      variant?h('span',{class:'vb',text:'variante'}):null,
+      w[3]?h('span',{class:'s',text:sdisp(w[3])}):null));
+  });
+  pane.append(h('div',{class:'card'},h('h4',{text:ot?'Ebraico · da destra a sinistra':'Greco'}),wrap),h('div',{class:'hint',text:'Tocca una parola per aprire lessico, analisi e occorrenze. Le glosse inglesi seguono l\'originale e non la traduzione italiana.'}));
+}
+const morphLine=(m,ot)=>(ot?morphH(m):morphG(m)).join(' · ');
+function paneLexHint(){
+  const pane=$('#pane');
+  pane.replaceChildren(h('div',{class:'placeholder'},h('b',{text:'Scegli una parola'}),h('span',{text:'Apri la scheda Interlineare e tocca una parola, oppure cerca un numero Strong come G25 o H1254.'}),h('button',{type:'button',class:'btn',text:'Vai all\'interlineare',on:{click:()=>{S.tab='int';renderInspector();}}})));
+}
+async function paneLex(){
+  const pane=$('#pane'),word=S.word,tok=S.tok;const s=word.s;
+  const kind=s[0]==='G'?'g':'h';
+  pane.replaceChildren(h('div',{class:'loading',style:'padding:50px 0'},h('div',null,h('div',{class:'spin'}),'Carico il lessico…')));
+  let lex;try{lex=await getLex(kind);}catch(e){pane.replaceChildren(h('div',{class:'empty',text:e.message}));return;}
+  if(S.word!==word||S.tab!=='lex')return;
+  const cl=sclass(s);let key=lex.e[s]?s:(lex.c[cl]||[])[0];const e=lex.e[key];
+  pane.replaceChildren();
+  if(!word.standalone)pane.append(h('button',{type:'button',class:'back',on:{click:()=>{S.tab='int';S.word=null;renderInspector();}}},h('span',{html:''}),'‹ Interlineare'));
+  if(!e){pane.append(h('div',{class:'card'},h('div',{class:'hint',text:'Questa voce non è nel lessico.'})));return;}
+  const lang=kind==='g'?'el':'he';
+  const head=h('div',{class:'card'},
+    h('div',{class:'lemma-row'},h('div',{class:'lemma',lang,dir:kind==='g'?'ltr':'rtl',text:e[0]}),h('span',{class:'pill',text:sdisp(s)})),
+    h('div',{style:'font-style:italic;color:var(--ink2);margin-bottom:6px',text:e[1]}),
+    h('div',{style:'font-size:18px;font-weight:600',text:e[2]}));
+  pane.append(head);
+  const variants=(lex.c[cl]||[]);
+  if(variants.length>1){const row=h('div',{style:'display:flex;gap:6px;flex-wrap:wrap;margin-top:10px'});variants.slice(0,10).forEach(k=>row.append(h('button',{type:'button',class:'pill btn'+(k===key?' on':''),text:lex.e[k][2].slice(0,22)||k,title:k,on:{click:()=>{S.word={...word,s:k};renderInspector();}}})));head.append(row);}
+  if(word.w){const m=morphLine(word.w[4],word.ot);pane.append(h('div',{class:'card'},h('h4',{text:'In questo versetto'}),h('dl',{class:'kv'},
+    h('dt',{text:'Forma'}),h('dd',{lang,style:'font-size:18px;font-family:'+(kind==='g'?'var(--greek)':'var(--hebrew)'),text:word.w[0]}),
+    h('dt',{text:'Lettura'}),h('dd',{text:word.w[1]}),h('dt',{text:'Significato'}),h('dd',{text:word.w[2]}),
+    h('dt',{text:'Analisi'}),h('dd',{text:m||'—'}),h('dt',{text:'Codice'}),h('dd',{style:'font-variant-numeric:tabular-nums',text:word.w[4]})
+  )));}
+  const defCard=h('div',{class:'card'},h('h4',{text:kind==='g'?'Definizione · Abbott-Smith':'Definizione · BDB'}));const def=h('div',{class:'def'});richDef(def,e[3]);defCard.append(def);pane.append(defCard);
+  const occ=h('div',{class:'card'},h('h4',{text:'Occorrenze'}),h('div',{class:'hint',text:'Calcolo…'}));pane.append(occ);
+  try{
+    const conc=await getConc();if(S.word!==word)return;
+    const str=conc[cl];if(!str){occ.replaceChildren(h('h4',{text:'Occorrenze'}),h('div',{class:'hint',text:'Nessun versetto indicizzato.'}));return;}
+    const ords=decConc(str);
+    occ.replaceChildren(h('h4',{text:'Occorrenze'}),h('div',{style:'font-size:15px;margin-bottom:6px'},h('b',{text:ords.length.toLocaleString('it-IT')}),' '+(ords.length===1?'versetto contiene':'versetti contengono')+' '+sdisp(cl)));
+    const list=h('div');occ.append(list);let shown=0;
+    const more=h('button',{type:'button',class:'more',on:{click:()=>step()}});
+    async function step(){
+      const slice=ords.slice(shown,shown+20);shown+=slice.length;
+      const rows=slice.map(o=>{const r=ordRef(o);const t=h('div',{class:'t',text:'…'});const row=h('button',{type:'button',class:'occ',on:{click:()=>{go(r.bi,r.c,r.v,{open:true});}}},h('div',{class:'r',text:B[r.bi].n+' '+r.c+':'+r.v}),t);list.append(row);return{r,t};});
+      more.remove();
+      await Promise.all(rows.map(async({r,t})=>{try{const d=await getIt(B[r.bi].id);t.textContent=plain(d.c[r.c-1][r.v-1]);}catch(e){}}));
+      if(shown<ords.length){more.textContent='Mostra altri ('+(ords.length-shown).toLocaleString('it-IT')+')';occ.append(more);}
+    }
+    step();
+  }catch(e){occ.append(h('div',{class:'hint',text:e.message}));}
+}
+function richDef(parent,t){
+  const re=/(\u0003|\u0004|\u0001|\u0002|\[\[[^\]]*\]\])/;let b=false,i=false;
+  t=t.replace(/\n__/g,'\n').replace(/__/g,'');
+  for(const tok of t.split(re)){
+    if(tok==='\u0003')b=true;else if(tok==='\u0004')b=false;else if(tok==='\u0001')i=true;else if(tok==='\u0002')i=false;
+    else if(tok.startsWith('[[')){const [ref,label]=tok.slice(2,-2).split('|');const r=parseStepRef(ref);
+      parent.append(r?h('span',{class:'rl',role:'button',tabindex:0,text:label||ref,on:{click:()=>go(r.bi,r.c,r.v,{open:true})}}):(label||ref));}
+    else if(tok){let n=document.createTextNode(tok);if(b||i){const e=h(b?'b':'i');if(b&&i){const ii=h('i');ii.append(n);e.append(ii);}else e.append(n);parent.append(e);}else parent.append(n);}
+  }
+}
+function paneParallels(){
+  const pane=$('#pane'),d=S.loaded;pane.replaceChildren(verseCard());
+  const heads=d.hb[S.c]||{};let best=null;
+  for(let v=S.v;v>=1;v--){if(heads[v]){best=heads[v];break;}}
+  if(!best){for(let c=S.c-1;c>=1&&!best;c--){const hs=d.hb[c];if(hs){const ks=Object.keys(hs).map(Number);best=hs[Math.max(...ks)];}}}
+  const card=h('div',{class:'card'},h('h4',{text:'Sezione'}),h('div',{style:'font-weight:600;font-size:16px;margin-bottom:8px',text:best&&best.t?best.t:'Senza titolo'}));
+  if(best&&best.p&&best.p.length){card.append(h('div',{style:'font-size:13px;color:var(--ink2);margin-bottom:8px',text:'Passi paralleli indicati dalla Riveduta 2020'}),parallelsRow(best.p));}
+  else card.append(h('div',{class:'hint',text:'La Riveduta 2020 non indica passi paralleli per questa sezione.'}));
+  pane.append(card);
+  const nxt=ordsInSection(d);if(nxt)pane.append(nxt);
+}
+function ordsInSection(){return null;}
+function paneNotes(){
+  const pane=$('#pane'),k=curKey();pane.replaceChildren(verseCard());
+  const hl=h('div',{class:'hlrow'});
+  const none=h('button',{type:'button',class:'sw none','aria-label':'Nessuna evidenziazione','aria-pressed':!store.hl[k],text:'×',on:{click:()=>setHl(k,null)}});hl.append(none);
+  Object.keys(HLC).forEach(c=>hl.append(h('button',{type:'button',class:'sw','aria-label':'Evidenzia '+c,'aria-pressed':store.hl[k]===c,style:'background:'+HLC[c],on:{click:()=>setHl(k,c)}})));
+  pane.append(h('div',{class:'card'},h('h4',{text:'Evidenzia'}),hl));
+  const ta=h('textarea',{class:'note',id:'notebox',placeholder:'Scrivi un appunto su questo versetto…','aria-label':'Appunto'});ta.value=store.nt[k]||'';
+  let tm;ta.addEventListener('input',()=>{clearTimeout(tm);tm=setTimeout(()=>{const t=ta.value.trim();if(t)store.nt[k]=t;else delete store.nt[k];save();refreshVerse(S.v);if(S.navView==='saved')buildNav();},350);});
+  pane.append(h('div',{class:'card'},h('h4',{text:'Appunto'}),ta,h('div',{class:'hint',text:'Gli appunti restano su questo dispositivo, in questo browser.'})));
+  const acts=h('div',{class:'actions'});
+  acts.append(h('button',{type:'button',class:'btn',text:store.bm[k]?'Rimuovi segnalibro':'Aggiungi segnalibro',on:{click:()=>{if(store.bm[k])delete store.bm[k];else store.bm[k]=1;save();refreshVerse(S.v);paneNotes();if(S.navView==='saved')buildNav();}}}));
+  const cp=h('button',{type:'button',class:'btn',text:'Copia versetto'});
+  cp.addEventListener('click',async()=>{const t=plain(S.loaded.c[S.c-1][S.v-1]);const s='«'+t+'» — '+B[S.bi].n+' '+S.c+':'+S.v+' (Riveduta 2020)';try{await navigator.clipboard.writeText(s);cp.textContent='Copiato';}catch(e){cp.textContent='Copia non consentita';}setTimeout(()=>cp.textContent='Copia versetto',1600);});
+  acts.append(cp);pane.append(h('div',{class:'card'},acts));
+}
+function setHl(k,c){if(c)store.hl[k]=c;else delete store.hl[k];save();refreshVerse(S.v);paneNotes();if(S.navView==='saved')buildNav();}
+
+/* ---------- search ---------- */
+let TEXT=null,textLoading=null;
+async function loadText(onprog){
+  if(TEXT)return TEXT;
+  if(textLoading)return textLoading;
+  textLoading=(async()=>{const all=[];let done=0;const queue=B.map((b,i)=>i);
+    async function worker(){while(queue.length){const i=queue.shift();const d=await getIt(B[i].id);d.c.forEach((vs,ci)=>vs.forEach((t,vi)=>{const p=plain(t);all.push({bi:i,c:ci+1,v:vi+1,t:p,f:fold(p)});}));done++;onprog&&onprog(done);}}
+    await Promise.all([worker(),worker(),worker(),worker(),worker(),worker()]);
+    all.sort((a,b)=>refOrd(a.bi,a.c,a.v)-refOrd(b.bi,b.c,b.v));TEXT=all;return all;})();
+  return textLoading;
+}
+function openSearch(){$('#smodal').classList.add('on');$('#scrim').classList.add('on');S.scrimFor='search';const q=$('#q');q.focus();q.select();runSearch();}
+function closeSearch(){$('#smodal').classList.remove('on');if(S.scrimFor==='search')$('#scrim').classList.remove('on');}
+let sTimer,sScope='text',sSeq=0;
+function runSearch(){clearTimeout(sTimer);sTimer=setTimeout(doSearch,160);}
+async function doSearch(){
+  const q=$('#q').value.trim(),res=$('#sres'),seq=++sSeq;
+  if(!q){res.replaceChildren(h('div',{class:'empty'},h('b',{text:'Cerca nella Bibbia'}),h('br'),'Scrivi una parola, una frase tra virgolette, un riferimento come Gv 3:16 o Sal 23, oppure un numero Strong come G26 o H430.'));return;}
+  const strong=q.match(/^([gh])\s*0*(\d{1,4})$/i);
+  const frag=[];
+  if(strong){const s=strong[1].toUpperCase()+String(strong[2]).padStart(4,'0');frag.push(h('button',{type:'button',class:'goto',on:{click:()=>openStrong(s)}},h('span',{text:'Apri lessico '+sdisp(s)}),h('span',{text:'›'})));}
+  const ref=sScope==='text'?parseRef(q):null;
+  if(ref&&(ref.hasNum||ref.exact&&ALIAS[norm(q)]!=null)){const lab=B[ref.bi].n+(ref.hasNum?' '+ref.c+(ref.v?':'+ref.v:''):'');frag.push(h('button',{type:'button',class:'goto',on:{click:()=>{closeSearch();go(ref.bi,ref.c,ref.v,{open:true});}}},h('span',{text:'Vai a '+lab}),h('span',{text:'›'})));}
+  if(sScope==='lex')return searchLex(q,frag,seq);
+  if(strong&&!ref){res.replaceChildren(...frag);return;}
+  res.replaceChildren(...frag,h('div',{class:'loading',style:'padding:30px 0'},h('div',null,h('div',{class:'spin'}),TEXT?'Cerco…':'Preparo l\'indice del testo…')));
+  const all=await loadText();if(seq!==sSeq)return;
+  const phrases=[];const rest=q.replace(/"([^"]+)"/g,(m,p)=>{phrases.push(fold(p));return' ';});
+  const terms=fold(rest).split(/\s+/).filter(Boolean);
+  const needles=[...phrases,...terms];
+  const esc=s=>s.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
+  const res_=needles.map(n=>new RegExp('(^|[^a-z0-9])'+esc(n)));
+  const hits=[];for(const r of all){let ok=true;for(const rx of res_){if(!rx.test(r.f)){ok=false;break;}}if(ok){hits.push(r);}}
+  S.rx=needles.map(n=>new RegExp('(^|[^a-z0-9])('+esc(n)+')','g'));
+  const shown=hits.slice(0,80);
+  const out=[h('div',{class:'cnt',text:hits.length.toLocaleString('it-IT')+(hits.length===1?' versetto':' versetti')+(hits.length>80?' · primi 80':'')})];
+  shown.forEach(r=>out.push(h('button',{type:'button',class:'srow',on:{click:()=>{closeSearch();go(r.bi,r.c,r.v,{open:true});}}},h('div',{class:'r',text:B[r.bi].n+' '+r.c+':'+r.v}),h('div',{class:'t'},hlText(r,needles)))));
+  if(!hits.length)out.push(h('div',{class:'empty',text:'Nessun risultato per «'+q+'».'}));
+  res.replaceChildren(...frag,...out);
+}
+function hlText(r,needles){
+  const f=r.f,t=r.t,ranges=[];
+  (S.rx||[]).forEach(rx=>{rx.lastIndex=0;let m;while((m=rx.exec(f))){const a=m.index+m[1].length;ranges.push([a,a+m[2].length]);if(m[2].length===0)rx.lastIndex++;}});
+  ranges.sort((a,b)=>a[0]-b[0]);const m=[];for(const x of ranges){const l=m[m.length-1];if(l&&x[0]<=l[1])l[1]=Math.max(l[1],x[1]);else m.push([...x]);}
+  const out=document.createDocumentFragment();let p=0;m.forEach(([a,z])=>{out.append(t.slice(p,a),h('mark',{text:t.slice(a,z)}));p=z;});out.append(t.slice(p));return out;
+}
+async function searchLex(q,frag,seq){
+  const res=$('#sres');res.replaceChildren(...frag,h('div',{class:'loading',style:'padding:30px 0'},h('div',null,h('div',{class:'spin'}),'Carico i lessici…')));
+  const [g,hb]=await Promise.all([getLex('g'),getLex('h')]);if(seq!==sSeq)return;
+  const n=fold(q);const out=[];
+  for(const [lx,k] of [[g,'g'],[hb,'h']]){
+    for(const key in lx.e){const e=lx.e[key];const gl=fold(e[2]),tr=fold(e[1]);let sc=0;
+      if(gl===n)sc=3;else if(gl.startsWith(n))sc=2;else if(gl.includes(n)||tr===n)sc=1;else if(e[0]===q)sc=3;
+      if(sc)out.push({sc,key,e,k});}
+  }
+  out.sort((a,b)=>b.sc-a.sc||a.e[2].length-b.e[2].length);
+  const seen=new Set();const rows=[];
+  for(const o of out){const cl=o.key.slice(0,5);if(seen.has(cl))continue;seen.add(cl);rows.push(o);if(rows.length>=60)break;}
+  const list=[h('div',{class:'cnt',text:seen.size.toLocaleString('it-IT')+' voci'+(out.length>60?' · prime 60':'')})];
+  rows.forEach(o=>list.push(h('button',{type:'button',class:'srow',on:{click:()=>openStrong(o.key)}},h('div',{class:'r',text:sdisp(o.key)+' · '+(o.k==='g'?'greco':'ebraico')}),h('div',{class:'t'},h('span',{lang:o.k==='g'?'el':'he',style:'font-size:19px;margin-right:8px;font-family:'+(o.k==='g'?'var(--greek)':'var(--hebrew)'),text:o.e[0]}),h('span',{text:o.e[2]})))));
+  if(!rows.length)list.push(h('div',{class:'empty',text:'Nessuna voce per «'+q+'». Il lessico è in inglese.'}));
+  res.replaceChildren(...frag,...list);
+}
+function openStrong(s){closeSearch();S.word={s,standalone:true,w:null};S.tab='lex';renderInspector();if(isPhone())openSheet();}
+
+/* ---------- UI bindings ---------- */
+function bindUI(){
+  $('#navtoggle').onclick=()=>$('#nav').classList.contains('open')?closeNav():openNav();
+  $('#titlebtn').onclick=()=>{if(matchMedia('(max-width:1180px)').matches){$('#nav').classList.contains('open')?closeNav():openNav();}else{S.navOpenBook=S.bi;buildNav();const on=$('.book.on');on&&on.scrollIntoView({block:'center'});}};
+  $('#prev').onclick=()=>{const p=prevCh();p&&go(p.bi,p.c,null);};
+  $('#next').onclick=()=>{const p=nextCh();p&&go(p.bi,p.c,null);};
+  $('#searchbtn').onclick=openSearch;$('#sclose').onclick=closeSearch;
+  $('#q').addEventListener('input',runSearch);
+  $$('#sscope button').forEach(b=>b.onclick=()=>{sScope=b.dataset.s;$$('#sscope button').forEach(x=>x.setAttribute('aria-selected',x===b));doSearch();});
+  $('#scrim').onclick=()=>{closeNav();closeSearch();$('#amodal').classList.remove('on');$('#pop').classList.remove('on');$('#scrim').classList.remove('on');};
+  $('#infobtn').onclick=()=>{$('#amodal').classList.add('on');$('#scrim').classList.add('on');S.scrimFor='about';};
+  $('#aclose').onclick=()=>{$('#amodal').classList.remove('on');$('#scrim').classList.remove('on');};
+  $('#setbtn').onclick=e=>{e.stopPropagation();$('#pop').classList.toggle('on');};
+  document.addEventListener('click',e=>{if(!e.target.closest('#pop')&&!e.target.closest('#setbtn'))$('#pop').classList.remove('on');});
+  $('#fs').oninput=e=>{store.set.fs=+e.target.value;applySettings();save();};
+  $$('#ffseg button').forEach(b=>b.onclick=()=>{store.set.ff=b.dataset.f;applySettings();save();});
+  $$('#thseg button').forEach(b=>b.onclick=()=>{store.set.th=b.dataset.th;applySettings();save();});
+  $$('#navseg button').forEach(b=>b.onclick=()=>{S.navView=b.dataset.v;$$('#navseg button').forEach(x=>x.setAttribute('aria-selected',x===b));buildNav();});
+  $$('#tabs button').forEach(b=>b.onclick=()=>{S.tab=b.dataset.t;if(S.tab!=='lex'&&S.word&&!S.word.standalone)S.word=null;if(S.tab!=='lex'&&S.word&&S.word.standalone){S.word=null;}renderInspector();});
+  $('#iclose').onclick=closeSheet;
+  $('#grab').onclick=()=>$('#insp').classList.toggle('tall');
+  document.addEventListener('keydown',e=>{
+    const typing=/INPUT|TEXTAREA/.test(document.activeElement.tagName);
+    if(e.key==='Escape'){closeSearch();closeNav();$('#amodal').classList.remove('on');$('#pop').classList.remove('on');$('#scrim').classList.remove('on');if(isPhone())closeSheet();}
+    else if((e.key==='/'&&!typing)||((e.metaKey||e.ctrlKey)&&e.key.toLowerCase()==='k')){e.preventDefault();openSearch();}
+    else if(!typing&&e.key==='ArrowRight'&&!e.metaKey){const p=nextCh();p&&go(p.bi,p.c,null);}
+    else if(!typing&&e.key==='ArrowLeft'&&!e.metaKey){const p=prevCh();p&&go(p.bi,p.c,null);}
+  });
+}
+</script>
+</body>
+</html>
