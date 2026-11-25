@@ -342,6 +342,15 @@ body.home-on #prev,body.home-on #next,body.home-on #titlebtn{visibility:hidden}
   .pop input[type=range]{height:34px}
   .pop .seg button{min-height:44px}
 }
+/* ===== MOBILE v5 ===== */
+@media (max-width:760px){
+  #titlebtn{display:none}
+  #prev{margin-right:auto}
+  #bar{background:var(--bg);-webkit-backdrop-filter:none;backdrop-filter:none}
+  .modal{top:0;bottom:0;height:auto;max-height:none}
+  body.kb .modal{top:var(--vvt,0px);bottom:auto;height:var(--vvh,100%)}
+  #tabbar{bottom:calc(max(env(safe-area-inset-bottom) - 14px,0px) + 6px)}
+}
 </style>
 </head>
 <body>
