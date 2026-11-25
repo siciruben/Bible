@@ -310,7 +310,7 @@ body.home-on #prev,body.home-on #next,body.home-on #titlebtn{visibility:hidden}
 /* ===== MOBILE v4: solo telefono (max 760px); desktop e tablet invariati ===== */
 @media (hover:none){.v:hover:not([data-hl]):not(.sel){background:transparent}}
 @media (max-width:760px){
-  #app{height:100%}
+  #app{position:fixed;top:0;left:0;right:0;bottom:0;height:auto}
   body.home-on #app{grid-template-rows:minmax(0,1fr)}
   body{-webkit-text-size-adjust:100%}
   button,.v,.w,.sw,.chip,.hrow{touch-action:manipulation}
