@@ -969,7 +969,7 @@ function bindMobile(){
   const sa=()=>{if(document.body.classList.contains('kb'))return;
     const stand=navigator.standalone||matchMedia('(display-mode: standalone)').matches;
     let g=0;if(stand&&isPhone()&&screen.height>screen.width)g=Math.round(screen.height-probe.offsetHeight);
-    if(g<0||g>120)g=0;root.setProperty('--gap',g+'px');};
+    g=0; /* compensazione disattivata: iOS ritaglia comunque il disegno oltre il viewport */root.setProperty('--gap',g+'px');};
   sa();['resize','orientationchange','pageshow','focus'].forEach(ev=>addEventListener(ev,()=>setTimeout(sa,120)));
   document.addEventListener('visibilitychange',()=>{if(!document.hidden)setTimeout(sa,120);});
   q.setAttribute('enterkeyhint','search');q.setAttribute('autocapitalize','off');q.setAttribute('autocorrect','off');
