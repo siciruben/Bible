@@ -4,36 +4,44 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>GODEEP Bibbia</title>
+<meta name="theme-color" id="tc" content="#1f1e1d">
+<script>(function(){var d=document.documentElement,t;try{t=(JSON.parse(localStorage.getItem('godeep:v1')||'{}').set||{}).th}catch(e){}
+if(t!=='light'&&t!=='dark'&&t!=='pergamena')t=matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';d.setAttribute('data-theme',t);})();</script>
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="GODEEP">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/favicon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Gentium+Plus:ital,wght@0,400;0,700;1,400&family=Noto+Serif+Hebrew:wght@400;600&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,400&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Literata:ital,opsz,wght@0,7..72,400..700;1,7..72,400..700&family=Gentium+Plus:ital,wght@0,400;0,700;1,400&family=Noto+Serif+Hebrew:wght@400;600&display=swap" rel="stylesheet">
 <style>
 /* Layout idea: three-pane split view (books | reading | study inspector); the inspector becomes a bottom sheet on phones. */
 :root{
-  --bg:#ffffff; --bg2:#f2f2f7; --card:#ffffff; --ink:#1c1c1e; --ink2:#6c6c70; --ink3:#a1a1a6;
-  --line:rgba(60,60,67,.16); --accent:#0071e3; --accent-ink:#ffffff; --accent-soft:rgba(0,113,227,.10); --sel:rgba(0,113,227,.12);
-  --hl-yellow:rgba(255,204,0,.38); --hl-green:rgba(52,199,89,.30); --hl-blue:rgba(10,132,255,.26); --hl-pink:rgba(255,55,95,.24);
-  --glass:rgba(255,255,255,.74); --shadow:0 10px 40px rgba(0,0,0,.14);
   --ui:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
-  --serif:"Source Serif 4","New York",Georgia,"Times New Roman",serif;
+  --serif:"Literata",Charter,Georgia,"Times New Roman",serif;
   --greek:"Gentium Plus","Palatino Linotype","Times New Roman",serif;
   --hebrew:"Noto Serif Hebrew","Ezra SIL","Times New Roman",serif;
   --fs:20px; --read:var(--serif);
-  color-scheme:light;
+  --hl-yellow:rgba(255,204,0,.38); --hl-green:rgba(52,199,89,.30); --hl-blue:rgba(10,132,255,.26); --hl-pink:rgba(255,55,95,.24);
 }
-@media (prefers-color-scheme:dark){
-  :root:not([data-theme="light"]){
-    --bg:#000000; --bg2:#1c1c1e; --card:#2c2c2e; --ink:#f5f5f7; --ink2:#a1a1a6; --ink3:#6c6c70;
-    --line:rgba(84,84,88,.55); --accent:#0a84ff; --accent-soft:rgba(10,132,255,.18); --sel:rgba(10,132,255,.22);
-    --hl-yellow:rgba(255,214,10,.30); --hl-green:rgba(48,209,88,.28); --hl-blue:rgba(10,132,255,.34); --hl-pink:rgba(255,69,58,.30);
-    --glass:rgba(28,28,30,.72); --shadow:0 10px 40px rgba(0,0,0,.6); color-scheme:dark;
-  }
+:root,:root[data-theme="light"]{
+  --bg:#faf9f5; --bg2:#f1efe8; --card:#ffffff; --ink:#1f1e1d; --ink2:#6a675f; --ink3:#9d998f;
+  --line:rgba(31,30,29,.11); --accent:#b8532f; --accent-ink:#fffaf5; --accent-soft:rgba(184,83,47,.09); --sel:rgba(217,119,87,.20);
+  --gfill:rgba(31,30,29,.04); --gline:rgba(31,30,29,.10); --glass:rgba(250,249,245,.72); --shadow:0 14px 44px rgba(31,30,29,.16); color-scheme:light;
 }
 :root[data-theme="dark"]{
-  --bg:#000000; --bg2:#1c1c1e; --card:#2c2c2e; --ink:#f5f5f7; --ink2:#a1a1a6; --ink3:#6c6c70;
-  --line:rgba(84,84,88,.55); --accent:#0a84ff; --accent-soft:rgba(10,132,255,.18); --sel:rgba(10,132,255,.22);
+  --bg:#1f1e1d; --bg2:#262624; --card:#2d2c2a; --ink:#f3f0e8; --ink2:#aaa69c; --ink3:#77736b;
+  --line:rgba(243,240,232,.11); --accent:#e08b6b; --accent-ink:#2b1409; --accent-soft:rgba(224,139,107,.15); --sel:rgba(224,139,107,.24);
   --hl-yellow:rgba(255,214,10,.30); --hl-green:rgba(48,209,88,.28); --hl-blue:rgba(10,132,255,.34); --hl-pink:rgba(255,69,58,.30);
-  --glass:rgba(28,28,30,.72); --shadow:0 10px 40px rgba(0,0,0,.6); color-scheme:dark;
+  --gfill:rgba(255,255,255,.055); --gline:rgba(255,255,255,.12); --glass:rgba(31,30,29,.66); --shadow:0 14px 50px rgba(0,0,0,.55); color-scheme:dark;
+}
+:root[data-theme="pergamena"]{
+  --bg:#f2e8d2; --bg2:#e9dcc0; --card:#f8f0dc; --ink:#3b2e1d; --ink2:#7b684a; --ink3:#a8956f;
+  --line:rgba(90,64,28,.17); --accent:#a24d29; --accent-ink:#fcf4e2; --accent-soft:rgba(162,77,41,.11); --sel:rgba(162,77,41,.18);
+  --gfill:rgba(90,64,28,.06); --gline:rgba(90,64,28,.15); --glass:rgba(242,232,210,.72); --shadow:0 14px 44px rgba(90,64,28,.22); color-scheme:light;
 }
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html,body{height:100%;margin:0}
@@ -65,8 +73,6 @@ input,textarea{font:inherit;color:inherit}
 .seg{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;background:rgba(120,120,128,.16);border-radius:9px;padding:2px;gap:2px}
 .seg button{padding:6px 8px;border-radius:7px;font-size:13px;font-weight:500;color:var(--ink);text-align:center;white-space:nowrap}
 .seg button[aria-selected="true"]{background:var(--card);box-shadow:0 1px 3px rgba(0,0,0,.16);font-weight:600}
-:root[data-theme="dark"] .seg button[aria-selected="true"]{background:#636366}
-@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .seg button[aria-selected="true"]{background:#636366}}
 .grouplabel{padding:14px 18px 6px;font-size:12px;font-weight:600;color:var(--ink2);text-transform:uppercase;letter-spacing:.06em}
 .books{padding:0 8px 24px;margin:0;list-style:none}
 .book>button{width:100%;text-align:left;padding:8px 12px;border-radius:9px;font-size:15px;display:flex;justify-content:space-between;align-items:center}
@@ -224,6 +230,82 @@ textarea.note{width:100%;min-height:120px;resize:vertical;border-radius:12px;bor
   .modal{top:0;left:0;transform:none;width:100%;max-height:100%;height:100%;border-radius:0;border:0}
 }
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation-duration:.01ms!important;scroll-behavior:auto!important}}
+
+/* ===== GODEEP v3: tre temi a tinta unica, home "Cerca prima", vetro liquido ===== */
+body{font-feature-settings:"kern","liga";overscroll-behavior:none}
+#body{position:relative}
+#bar{position:relative;background:var(--glass);-webkit-backdrop-filter:saturate(180%) blur(26px);backdrop-filter:saturate(180%) blur(26px)}
+#prog{position:absolute;left:0;right:0;bottom:-1px;height:2px;background:var(--accent);transform:scaleX(0);transform-origin:left;pointer-events:none}
+.brand{font-family:var(--serif);font-weight:600;letter-spacing:.2em;font-size:13px;color:var(--ink);cursor:pointer}
+.titlebtn{font-family:var(--serif);font-size:18px;font-weight:600}
+.seg{background:var(--gfill);box-shadow:0 0 0 1px var(--gline) inset}
+:root[data-theme] .seg button[aria-selected="true"]{background:var(--card);color:var(--ink);box-shadow:0 0 0 1px var(--line),0 1px 3px rgba(0,0,0,.12)}
+#reader{background:var(--bg)}
+#chapter{padding:56px 28px 28px}
+.eyebrow{font-size:11.5px;letter-spacing:.14em;color:var(--accent)}
+#chapter h1{font-family:var(--serif);font-weight:600;font-size:clamp(38px,7vw,56px);letter-spacing:-.025em;line-height:1.05;margin:8px 0 4px}
+.chnum{font-size:15px;color:var(--ink2);margin-bottom:34px}
+.sec{font-family:var(--serif);font-weight:600;font-size:1.05em;margin:2em 0 .5em;letter-spacing:-.01em}
+.vn{color:var(--accent);font-weight:600}
+.v.sel{background:var(--sel)}
+#chapter.enter{animation:rise .45s cubic-bezier(.2,.7,.2,1)}
+@keyframes rise{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+.pager button{background:var(--gfill);border:1px solid var(--gline);border-radius:18px}
+.pager b{font-family:var(--serif);font-weight:600;font-size:18px}
+#insp,#nav{background:var(--bg2)}
+.card{background:var(--card);border-radius:16px;box-shadow:0 0 0 1px var(--line) inset}
+.card h4{color:var(--ink2)}
+.ihead .rf{font-family:var(--serif);font-size:22px;font-weight:600}
+.lemma{color:var(--ink)}
+.def .rl{text-decoration-color:var(--accent-soft)}
+.modal{border-radius:22px;background:var(--bg)}
+.pop{border-radius:22px;background:var(--glass);-webkit-backdrop-filter:saturate(180%) blur(28px);backdrop-filter:saturate(180%) blur(28px)}
+.pop .rowbtn{width:100%;margin-top:4px}
+.btn{border-radius:12px}
+#home{position:absolute;inset:0;z-index:25;overflow:auto;background:var(--bg);display:none}
+body.home-on #home{display:block}
+body.home-on #insp{display:none}
+body.home-on #prev,body.home-on #next,body.home-on #titlebtn{visibility:hidden}
+@media (min-width:1181px){#home{left:288px}}
+.hwrap{max-width:640px;margin:0 auto;padding:calc(env(safe-area-inset-top) + 22px) 22px calc(120px + env(safe-area-inset-bottom))}
+.htop{display:flex;justify-content:space-between;align-items:center;min-height:36px;margin-bottom:30px}
+.hbrand{font-family:var(--serif);font-weight:600;letter-spacing:.2em;font-size:13px;color:var(--ink2);cursor:pointer}
+.hbrand b{color:var(--accent)}
+.hhead{font-family:var(--serif);font-weight:600;font-size:clamp(34px,8vw,50px);line-height:1.08;letter-spacing:-.025em;margin:0 0 24px;text-wrap:balance}
+.hsearch{width:100%;display:flex;align-items:center;gap:12px;padding:16px 20px;border-radius:999px;background:var(--gfill);border:1px solid var(--gline);-webkit-backdrop-filter:blur(20px);backdrop-filter:blur(20px);color:var(--ink2);font-size:16px;text-align:left}
+.hsearch:hover{border-color:var(--accent)}
+.hsearch svg{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:2;flex:none}
+.hchips{display:flex;flex-wrap:wrap;gap:8px;margin:16px 0 34px}
+.chip{padding:8px 15px;border-radius:999px;background:var(--gfill);border:1px solid var(--gline);font-size:14px;color:var(--ink)}
+.chip:hover{background:var(--accent-soft);border-color:var(--accent);color:var(--accent)}
+.hlabel{font-size:12px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--ink2);margin:0 0 10px}
+.hrow{display:block;width:100%;text-align:left;padding:14px 18px;border-radius:20px;background:var(--gfill);border:1px solid var(--gline);margin-bottom:10px;-webkit-backdrop-filter:blur(20px);backdrop-filter:blur(20px)}
+.hrow:hover{border-color:var(--accent)}
+.hrt{display:flex;align-items:center;gap:10px}
+.hrn{font-family:var(--serif);font-weight:600;font-size:18px}
+.ex{font-family:var(--serif);font-size:14px;color:var(--ink2);margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#tabbar{display:none}
+@media (min-width:761px){#home-set{display:none}}
+@media (max-width:760px){
+  body.home-on #bar{display:none}
+  #bar{padding:calc(env(safe-area-inset-top) + 6px) 8px 6px}
+  #navtoggle,#searchbtn,#infobtn,.spacer,.brand{display:none}
+  #titlebtn{flex:1;justify-content:center}
+  #tabbar{display:grid;grid-template-columns:repeat(4,1fr);position:fixed;left:14px;right:14px;bottom:calc(10px + env(safe-area-inset-bottom));z-index:35;height:62px;border-radius:26px;background:var(--glass);-webkit-backdrop-filter:saturate(180%) blur(28px);backdrop-filter:saturate(180%) blur(28px);border:1px solid var(--gline);box-shadow:var(--shadow)}
+  #tabbar button{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;font-size:10.5px;font-weight:600;letter-spacing:.03em;color:var(--ink2)}
+  #tabbar button.on{color:var(--accent)}
+  #tabbar button:active{transform:scale(.94)}
+  #tabbar svg{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+  #chapter{padding:34px 22px 18px}
+  .pager{padding:6px 22px calc(112px + env(safe-area-inset-bottom))}
+  #nav{top:auto;left:0;right:0;bottom:0;width:100%;height:88%;padding-top:0;border-right:0;border-radius:26px 26px 0 0;transform:translateY(104%)}
+  #nav.open{transform:none}
+  .navhead{padding-top:12px}
+  .navhead::before{content:"";display:block;width:38px;height:5px;border-radius:3px;background:var(--ink3);opacity:.5;margin:0 auto 12px}
+  .chips{grid-template-columns:repeat(auto-fill,minmax(52px,1fr));gap:8px}.chips button{height:46px;font-size:16px}
+  .book>button{padding:12px;font-size:16px}
+  #insp{height:66%;border-radius:26px 26px 0 0}
+}
 </style>
 </head>
 <body>
@@ -238,8 +320,16 @@ textarea.note{width:100%;min-height:120px;resize:vertical;border-radius:12px;bor
     <button class="ibtn" id="searchbtn" aria-label="Cerca"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg></button>
     <button class="ibtn" id="setbtn" aria-label="Aspetto del testo"><svg viewBox="0 0 24 24"><path d="M3 19l5-13 5 13M5 14h6M15 19l3.5-8 3.5 8M16.3 16.5h4.4"/></svg></button>
     <button class="ibtn" id="infobtn" aria-label="Informazioni"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8v.01"/></svg></button>
-  </header>
+  <div id="prog"></div></header>
   <div id="body">
+    <section id="home" aria-label="Home"><div class="hwrap">
+      <div class="htop"><span class="hbrand">GO<b>DEEP</b></span><button class="ibtn" id="home-set" type="button" aria-label="Aspetto del testo"><svg viewBox="0 0 24 24"><path d="M3 19l5-13 5 13M5 14h6M15 19l3.5-8 3.5 8M16.3 16.5h4.4"/></svg></button></div>
+      <h1 class="hhead">Cosa cerchi oggi?</h1>
+      <button type="button" class="hsearch" id="hsearch"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg><span>Parola, versetto o numero Strong</span></button>
+      <div class="hchips" id="hchips"></div>
+      <div class="hlabel">Recenti</div>
+      <div id="hrecent"></div>
+    </div></section>
     <nav id="nav" aria-label="Libri della Bibbia">
       <div class="navhead"><div class="seg" id="navseg" role="tablist"><button role="tab" aria-selected="true" data-v="books">Libri</button><button role="tab" aria-selected="false" data-v="saved">Salvati</button></div></div>
       <div id="navlist"></div>
@@ -259,6 +349,12 @@ textarea.note{width:100%;min-height:120px;resize:vertical;border-radius:12px;bor
   </div>
 </div>
 
+<nav id="tabbar" aria-label="Menu principale">
+  <button type="button" id="tb-home" class="on"><svg viewBox="0 0 24 24"><path d="M4 11l8-7 8 7v9a1 1 0 0 1-1 1h-4v-6H9v6H5a1 1 0 0 1-1-1z"/></svg>Oggi</button>
+  <button type="button" id="tb-books"><svg viewBox="0 0 24 24"><path d="M4 5.5C4 4.7 4.7 4 5.5 4H11v16H5.5A1.5 1.5 0 0 1 4 18.5zM20 5.5c0-.8-.7-1.5-1.5-1.5H13v16h5.5a1.5 1.5 0 0 0 1.5-1.5z"/></svg>Libri</button>
+  <button type="button" id="tb-search"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>Cerca</button>
+  <button type="button" id="tb-saved"><svg viewBox="0 0 24 24"><path d="M6 4h12v17l-6-4-6 4z"/></svg>Salvati</button>
+</nav>
 <div class="scrim" id="scrim"></div>
 <div class="modal" id="smodal" role="dialog" aria-label="Cerca">
   <div class="sbar"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg><input id="q" type="search" placeholder="Parola, versetto (Gv 3:16) o Strong (G25, H1254)" autocomplete="off" spellcheck="false"><button class="btn" id="sclose">Chiudi</button></div>
@@ -278,7 +374,9 @@ textarea.note{width:100%;min-height:120px;resize:vertical;border-radius:12px;bor
 <div class="pop" id="pop">
   <label for="fs">Dimensione del testo</label><input type="range" id="fs" min="16" max="30" step="1">
   <label>Carattere</label><div class="seg" id="ffseg"><button data-f="serif">Con grazie</button><button data-f="sans">Lineare</button></div>
-  <label>Tema</label><div class="seg" id="thseg"><button data-th="auto">Auto</button><button data-th="light">Chiaro</button><button data-th="dark">Scuro</button></div>
+  <label>Tema</label><div class="seg" id="thseg"><button data-th="light">Chiaro</button><button data-th="dark">Scuro</button><button data-th="pergamena">Pergamena</button></div>
+  <label>Uso offline</label><button type="button" class="btn rowbtn" id="offbtn">Scarica tutto (circa 38 MB)</button><div class="hint" id="offhint">Dopo il download la Bibbia funziona anche senza connessione.</div>
+  <label>App</label><button type="button" class="btn rowbtn" id="pinfo">Informazioni</button>
 </div>
 
 <script>
@@ -398,8 +496,8 @@ const isPhone=()=>matchMedia('(max-width:760px)').matches;
   try{
     const meta=await jget('data/meta.json');B.push(...meta.books);buildOrd();buildAlias();
     applySettings();buildNav();bindUI();
-    const r=fromHash()||{bi:idIdx('JHN'),c:3,v:16};
-    await go(r.bi,r.c,r.v,{noHash:!location.hash,quiet:true});
+    const hadHash=!!fromHash();const r=fromHash()||lastPos()||{bi:idIdx('JHN'),c:3,v:16};
+    await go(r.bi,r.c,r.v,{noHash:!location.hash,quiet:true});if(!hadHash)showHome();
     if(!isPhone()&&S.v)renderInspector();
     window.addEventListener('hashchange',()=>{if(S.ignoreHash){S.ignoreHash=false;return;}const r=fromHash();if(r)go(r.bi,r.c,r.v,{noHash:true,open:!!r.v});});
   }catch(e){$('#chapter').replaceChildren(h('div',{class:'loading',text:'Errore di caricamento: '+e.message}));}
@@ -411,10 +509,10 @@ function setHash(){const t='#'+B[S.bi].id.toLowerCase()+'-'+S.c+(S.v?'-'+S.v:'')
 function applySettings(){
   const r=document.documentElement;r.style.setProperty('--fs',store.set.fs+'px');
   r.style.setProperty('--read',store.set.ff==='sans'?'var(--ui)':'var(--serif)');
-  if(store.set.th==='auto')r.removeAttribute('data-theme');else r.setAttribute('data-theme',store.set.th);
+  const th=effTheme();r.setAttribute('data-theme',th);const tc=$('#tc');if(tc)tc.content=getComputedStyle(r).getPropertyValue('--bg').trim();
   $('#fs').value=store.set.fs;
   $$('#ffseg button').forEach(b=>b.setAttribute('aria-selected',b.dataset.f===store.set.ff));
-  $$('#thseg button').forEach(b=>b.setAttribute('aria-selected',b.dataset.th===store.set.th));
+  $$('#thseg button').forEach(b=>b.setAttribute('aria-selected',b.dataset.th===th));
 }
 
 /* ---------- navigation panel ---------- */
@@ -459,7 +557,7 @@ function closeNav(){$('#nav').classList.remove('open');if(S.scrimFor==='nav'){$(
 
 /* ---------- chapter rendering ---------- */
 async function go(bi,c,v,opt={}){
-  const tok=++S.tok;
+  hideHome();const tok=++S.tok;
   const prevBook=S.bi;S.bi=bi;S.c=c;S.v=v||null;
   $('#title').textContent=B[bi].n+' '+c;document.title=B[bi].n+' '+c+' · GODEEP Bibbia';
   if(prevBook!==bi){S.navOpenBook=null;S.word=null;}
@@ -469,7 +567,7 @@ async function go(bi,c,v,opt={}){
   let d;
   try{d=await getIt(B[bi].id);}catch(e){$('#chapter').replaceChildren(h('div',{class:'loading',text:e.message}));return;}
   if(tok!==S.tok)return;
-  S.loaded=d;
+  S.loaded=d;store.last={id:B[bi].id,c};store.recent=[{id:B[bi].id,c},...(store.recent||[]).filter(x=>!(x.id===B[bi].id&&x.c===c))].slice(0,6);save();
   renderChapter(d,bi,c);
   renderPager();
   const rd=$('#reader');rd.style.scrollBehavior='auto';
@@ -479,7 +577,7 @@ async function go(bi,c,v,opt={}){
   if(opt.open&&isPhone()&&S.v)openSheet();
 }
 function renderChapter(d,bi,c){
-  const art=$('#chapter');art.replaceChildren();
+  const art=$('#chapter');art.replaceChildren();art.classList.remove('enter');void art.offsetWidth;art.classList.add('enter');
   const b=B[bi];
   art.append(h('div',{class:'eyebrow',text:b.t===1?'Antico Testamento':'Nuovo Testamento'}),h('h1',{text:b.n}),h('div',{class:'chnum',text:b.id==='PSA'?'Salmo '+c:'Capitolo '+c}));
   const verses=d.c[c-1],heads=d.hb[c]||{};let para=null;
@@ -735,7 +833,7 @@ function bindUI(){
   $$('#thseg button').forEach(b=>b.onclick=()=>{store.set.th=b.dataset.th;applySettings();save();});
   $$('#navseg button').forEach(b=>b.onclick=()=>{S.navView=b.dataset.v;$$('#navseg button').forEach(x=>x.setAttribute('aria-selected',x===b));buildNav();});
   $$('#tabs button').forEach(b=>b.onclick=()=>{S.tab=b.dataset.t;if(S.tab!=='lex'&&S.word&&!S.word.standalone)S.word=null;if(S.tab!=='lex'&&S.word&&S.word.standalone){S.word=null;}renderInspector();});
-  $('#iclose').onclick=closeSheet;
+  $('#iclose').onclick=closeSheet;bindExtra();
   $('#grab').onclick=()=>$('#insp').classList.toggle('tall');
   document.addEventListener('keydown',e=>{
     const typing=/INPUT|TEXTAREA/.test(document.activeElement.tagName);
@@ -745,6 +843,54 @@ function bindUI(){
     else if(!typing&&e.key==='ArrowLeft'&&!e.metaKey){const p=prevCh();p&&go(p.bi,p.c,null);}
   });
 }
+
+function effTheme(){const t=store.set.th;return(t==='light'||t==='dark'||t==='pergamena')?t:(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');}
+function updateTabs(){const a=$('#tb-home'),b=$('#tb-books');if(a)a.classList.toggle('on',!!S.home);if(b)b.classList.toggle('on',!S.home);}
+function hideHome(){S.home=false;document.body.classList.remove('home-on');updateTabs();}
+function showHome(){S.home=true;document.body.classList.add('home-on');renderHome();$('#home').scrollTop=0;updateTabs();}
+function renderHome(){
+  const chips=[['Gv 3:16','Gv 3:16'],['agape · G26','G26'],['pace','pace'],['Salmo 23','Salmo 23']];
+  $('#hchips').replaceChildren(...chips.map(([l,q])=>h('button',{type:'button',class:'chip',text:l,on:{click:()=>{$('#q').value=q;openSearch();}}})));
+  const rl=$('#hrecent');rl.replaceChildren();
+  const rec=(store.recent||[]).filter(r=>idIdx(r.id)>=0);
+  if(!rec.length){rl.append(h('div',{class:'empty',text:'Qui compariranno i capitoli che leggi.'}));return;}
+  rec.forEach((r,i)=>{const bi=idIdx(r.id),t=h('div',{class:'ex'});
+    getIt(r.id).then(d=>{t.textContent=plain((d.c[r.c-1]||[''])[0]);}).catch(()=>{});
+    rl.append(h('button',{type:'button',class:'hrow',on:{click:()=>go(bi,r.c,null)}},h('div',{class:'hrt'},h('span',{class:'hrn',text:B[bi].n+' '+r.c}),i===0?h('span',{class:'pill',text:'Continua'}):null),t));
+  });
+}
+function lastPos(){const l=store.last;if(!l)return null;const bi=idIdx(l.id);return bi<0?null:{bi,c:Math.min(l.c,B[bi].v.length),v:null};}
+function setNavView(v){S.navView=v;$$('#navseg button').forEach(x=>x.setAttribute('aria-selected',x.dataset.v===v));buildNav();}
+function bindExtra(){
+  $('#tb-books').onclick=()=>{setNavView('books');openNav();};
+  $('#tb-saved').onclick=()=>{setNavView('saved');openNav();};
+  $('#tb-search').onclick=openSearch;
+  $('#tb-home').onclick=showHome;$('.brand').onclick=showHome;$('.hbrand').onclick=showHome;
+  $('#hsearch').onclick=openSearch;
+  $('#home-set').onclick=e=>{e.stopPropagation();$('#pop').classList.toggle('on');};
+  matchMedia('(prefers-color-scheme: dark)').addEventListener('change',()=>{if(!['light','dark','pergamena'].includes(store.set.th))applySettings();});
+  $('#pinfo').onclick=()=>{$('#pop').classList.remove('on');$('#amodal').classList.add('on');$('#scrim').classList.add('on');S.scrimFor='about';};
+  const rd=$('#reader'),pg=$('#prog');
+  rd.addEventListener('scroll',()=>{const m=rd.scrollHeight-rd.clientHeight;pg.style.transform='scaleX('+(m>0?rd.scrollTop/m:0)+')';},{passive:true});
+  let sx=null,sy=0,st=0;
+  rd.addEventListener('touchstart',e=>{if(e.touches.length===1){sx=e.touches[0].clientX;sy=e.touches[0].clientY;st=Date.now();}else sx=null;},{passive:true});
+  rd.addEventListener('touchend',e=>{if(sx==null)return;const t=e.changedTouches[0],dx=t.clientX-sx,dy=t.clientY-sy;sx=null;
+    if(Date.now()-st<600&&Math.abs(dx)>85&&Math.abs(dy)<45&&!String(getSelection()).length){const p=dx<0?nextCh():prevCh();p&&go(p.bi,p.c,null);}},{passive:true});
+  let gy=null;const insp=$('#insp');
+  $('#grab').addEventListener('touchstart',e=>{gy=e.touches[0].clientY;},{passive:true});
+  $('#grab').addEventListener('touchend',e=>{if(gy==null)return;const dy=e.changedTouches[0].clientY-gy;gy=null;
+    if(dy>70){insp.classList.contains('tall')?insp.classList.remove('tall'):closeSheet();}else if(dy<-50)insp.classList.add('tall');},{passive:true});
+  const ob=$('#offbtn');
+  ob.onclick=async()=>{
+    if(!('caches' in window)){$('#offhint').textContent='Questo browser non supporta l\'uso offline.';return;}
+    ob.disabled=true;const files=['data/meta.json','data/conc.json','data/lex_g.json','data/lex_h.json',...B.flatMap(b=>['data/it/'+b.id+'.json','data/or/'+b.id+'.json'])];
+    const c=await caches.open('godeep-data-v1');let n=0;const q=[...files];
+    async function w(){while(q.length){const f=q.shift();try{if(!(await c.match(f)))await c.add(f);}catch(e){}n++;ob.textContent='Scarico… '+Math.round(n/files.length*100)+'%';}}
+    await Promise.all([w(),w(),w(),w()]);
+    ob.textContent='Disponibile offline ✓';$('#offhint').textContent='Fatto. Puoi usare l\'app anche senza connessione.';
+  };
+}
+if('serviceWorker' in navigator&&/^https?:$/.test(location.protocol))addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));
 </script>
 </body>
 </html>
