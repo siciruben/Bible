@@ -784,26 +784,26 @@ const kjvBookCode=id=>Object.keys(STEP).find(k=>STEP[k]===id)||id;
 const normStrong=s=>{const m=String(s||'').toUpperCase().match(/([HG])0*(\d+)/);return m?m[1]+m[2].padStart(4,'0'):'';};
 async function getKjvTagged(id,c){
   const key=id+'.'+c;
-  if(!kjvWordCache[key])kjvWordCache[key]=fetch('https://bible.helloao.org/api/eng_kjv/'+kjvBookCode(id)+'/'+c+'.words.json')
-    .then(r=>{if(!r.ok)throw new Error('KJV con Strong non disponibile');return r.json();})
+  if(!kjvWordCache[key])kjvWordCache[key]=Promise.all([
+    fetch('https://bible.helloao.org/api/eng_kjv/'+kjvBookCode(id)+'/'+c+'.json').then(r=>{if(!r.ok)throw new Error('Testo KJV non disponibile');return r.json();}),
+    fetch('https://bible.helloao.org/api/eng_kjv/'+kjvBookCode(id)+'/'+c+'.words.json').then(r=>{if(!r.ok)throw new Error('Annotazioni KJV non disponibili');return r.json();})
+  ]).then(([chapter,annotations])=>({chapter,annotations}))
     .catch(e=>{delete kjvWordCache[key];throw e;});
   return kjvWordCache[key];
 }
 function kjvVerseWords(data,verseNo){
-  const verses=data.verses||data.chapter?.content||data.content||[];
-  const verse=verses.find(x=>Number(x.verse??x.number)===Number(verseNo));
-  if(!verse)return [];
+  const ann=data.annotations?.verses?.[String(verseNo)]||data.annotations?.verses?.[Number(verseNo)]||[];
+  const verse=(data.chapter?.chapter?.content||[]).find(x=>x.type==='verse'&&Number(x.number)===Number(verseNo));
+  if(!verse||!Array.isArray(ann))return [];
+  const pieces=Array.isArray(verse.content)?verse.content:[];
   const out=[];
-  const walk=(items)=>{if(!Array.isArray(items))return;for(const x of items){if(!x||typeof x!=='object')continue;
-    const raw=x.strongs??x.strong??x.lemma;
-    const word=x.text??x.word??x.value??x.content;
-    if(raw&&typeof word==='string'&&word.trim()){
-      const tags=(Array.isArray(raw)?raw:[raw]).map(z=>typeof z==='string'?z:(z?.strongs||z?.strong||z?.lemma||'')).map(normStrong).filter(Boolean);
-      if(tags.length)out.push({text:word.trim(),tags});
-    }
-    if(Array.isArray(x.words))walk(x.words);if(Array.isArray(x.content))walk(x.content);
-  }};
-  walk(verse.words||verse.content||[]);
+  for(const a of ann){
+    const source=pieces[a.contentIndex];
+    if(typeof source!=='string'||!Array.isArray(a.strongs))continue;
+    const word=source.slice(Number(a.start),Number(a.end)).trim();
+    const tags=a.strongs.map(normStrong).filter(Boolean);
+    if(word&&tags.length)out.push({text:word,tags});
+  }
   return out;
 }
 function alignKjvToOriginal(ws,tagged){
