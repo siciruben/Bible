@@ -367,12 +367,12 @@ body.home-on #prev,body.home-on #next,body.home-on #titlebtn{visibility:hidden}
   .scrim{bottom:calc(0px - var(--gap,0px))}
   .pop{bottom:calc(0px - var(--gap,0px));padding-bottom:calc(24px + env(safe-area-inset-bottom))}
 }
-/* ===== MOBILE v8: iOS app salvata, viewport piu' corto dello schermo ===== */
-html.vhfix{height:100vh;overflow:hidden;overscroll-behavior:none}
-html.vhfix body{position:relative;height:100vh;overflow:hidden}
-html.vhfix #app,html.vhfix #tabbar,html.vhfix #insp,html.vhfix #nav,html.vhfix .scrim,html.vhfix .modal,html.vhfix .pop{position:absolute}
-html.vhfix .scrim{top:0;left:0;right:0;bottom:0}
-@media (max-width:760px){html.vhfix #app{top:0;left:0;right:0;bottom:0;height:auto}}
+/* ===== FIX iOS 26 (WebKit 301108): nelle app salvate sulla Home il viewport e' piu' corto dello schermo
+   della altezza della barra di stato, finche' il documento e' piu' basso dello schermo.
+   Rendere html alto quanto lo schermo fa espandere il viewport (tetto 100lvh: nessun effetto altrove). ===== */
+@media (display-mode: standalone){
+  html{min-height:min(100lvh, calc(100% + env(safe-area-inset-top, 0px)))}
+}
 </style>
 </head>
 <body>
