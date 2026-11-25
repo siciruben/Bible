@@ -777,38 +777,44 @@ function flipVerseCard(){
   wrap.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();toggle();}});
   sync();return wrap;
 }
-// KJV CrossWire: le parole inglesi sono marcate con Strong's. Le associamo
-// alle parole originali tramite il numero Strong, senza dividere il versetto a caso.
+// KJV: usa le annotazioni a livello di parola dell'API HelloAO.
+// Il formato semplificato allinea direttamente gli offset al testo del versetto.
 const kjvWordCache={};
-const kjvBookCode=id=>Object.keys(STEP).find(k=>STEP[k]===id)||id;
+const kjvBookCode=id=>STEP[id]||Object.keys(STEP).find(k=>STEP[k]===id)||String(id||'').toUpperCase();
 const normStrong=s=>{const m=String(s||'').toUpperCase().match(/([HG])0*(\d+)/);return m?m[1]+m[2].padStart(4,'0'):'';};
 async function getKjvTagged(id,c){
   const key=id+'.'+c;
   if(!kjvWordCache[key])kjvWordCache[key]=Promise.all([
-    fetch('https://bible.helloao.org/api/eng_kjv/'+kjvBookCode(id)+'/'+c+'.json').then(r=>{if(!r.ok)throw new Error('Testo KJV non disponibile');return r.json();}),
-    fetch('https://bible.helloao.org/api/eng_kjv/'+kjvBookCode(id)+'/'+c+'.words.json').then(r=>{if(!r.ok)throw new Error('Annotazioni KJV non disponibili');return r.json();})
+    fetch('https://bible.helloao.org/api/eng_kjv/'+kjvBookCode(id)+'/'+c+'.simple.json').then(r=>{if(!r.ok)throw new Error('Testo KJV non disponibile');return r.json();}),
+    fetch('https://bible.helloao.org/api/eng_kjv/'+kjvBookCode(id)+'/'+c+'.words.simple.json').then(r=>{if(!r.ok)throw new Error('Annotazioni KJV non disponibili');return r.json();})
   ]).then(([chapter,annotations])=>({chapter,annotations}))
     .catch(e=>{delete kjvWordCache[key];throw e;});
   return kjvWordCache[key];
 }
 function kjvVerseWords(data,verseNo){
-  const ann=data.annotations?.verses?.[String(verseNo)]||data.annotations?.verses?.[Number(verseNo)]||[];
-  const verse=(data.chapter?.chapter?.content||[]).find(x=>x.type==='verse'&&Number(x.number)===Number(verseNo));
+  const root=data.chapter?.chapter||data.chapter||data;
+  const verse=(root.content||[]).find(x=>x.type==='verse'&&Number(x.number)===Number(verseNo));
+  const annRoot=data.annotations?.verses?data.annotations:(data.annotations?.chapterWords||data.annotations||{});
+  const ann=annRoot.verses?.[String(verseNo)]||annRoot.verses?.[Number(verseNo)]||[];
   if(!verse||!Array.isArray(ann))return [];
-  const pieces=Array.isArray(verse.content)?verse.content:[];
+  const text=typeof verse.text==='string'?verse.text:(Array.isArray(verse.content)?verse.content.filter(x=>typeof x==='string').join(' '):'');
   const out=[];
   for(const a of ann){
-    const source=pieces[a.contentIndex];
-    if(typeof source!=='string'||!Array.isArray(a.strongs))continue;
-    const word=source.slice(Number(a.start),Number(a.end)).trim();
+    if(!Array.isArray(a.strongs)||!Number.isFinite(Number(a.start))||!Number.isFinite(Number(a.end)))continue;
+    let word='';
+    if(typeof verse.text==='string')word=text.slice(Number(a.start),Number(a.end)).trim();
+    else if(Array.isArray(verse.content)&&Number.isInteger(a.contentIndex)){const part=verse.content[a.contentIndex];if(typeof part==='string')word=part.slice(Number(a.start),Number(a.end)).trim();}
     const tags=a.strongs.map(normStrong).filter(Boolean);
     if(word&&tags.length)out.push({text:word,tags});
   }
   return out;
 }
 function alignKjvToOriginal(ws,tagged){
-  const queues={};tagged.forEach(t=>t.tags.forEach(tag=>(queues[tag]??=[]).push(t.text)));
-  const used={};return ws.map(w=>{const tag=normStrong(w[3]);if(!tag||!queues[tag]?.length)return '';
+  const queues={};
+  tagged.forEach(t=>{const unique=[...new Set(t.tags)];unique.forEach(tag=>(queues[tag]??=[]).push(t.text));});
+  const used={};
+  return ws.map(w=>{
+    const tag=normStrong(w[3]);if(!tag||!queues[tag]?.length)return '';
     const n=used[tag]||0;used[tag]=n+1;return queues[tag][n]||'';
   });
 }
