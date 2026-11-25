@@ -134,6 +134,14 @@ input,textarea{font:inherit;color:inherit}
 .card{background:var(--card);border-radius:14px;padding:14px;box-shadow:0 0 0 1px var(--line) inset;margin-bottom:12px}
 .card h4{margin:0 0 8px;font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink2);font-weight:600}
 .verse-quote{font-family:var(--serif);font-size:16px;line-height:1.55;color:var(--ink)}
+.flip{perspective:1200px;margin-bottom:12px;cursor:pointer;-webkit-tap-highlight-color:transparent;outline:none}
+.flip-in{display:grid;transition:transform .5s cubic-bezier(.2,.8,.2,1);transform-style:preserve-3d}
+.flip.en .flip-in{transform:rotateY(180deg)}
+.flip .face{grid-area:1/1;margin:0;-webkit-backface-visibility:hidden;backface-visibility:hidden}
+.flip .face.kjv{transform:rotateY(180deg)}
+.flip h4{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.flip h4 .fliphint{white-space:nowrap;font-size:11px;letter-spacing:.02em;text-transform:none;font-weight:500;opacity:.75}
+.flip:focus-visible .face{box-shadow:0 0 0 2px var(--ink2) inset}
 .words{display:flex;flex-wrap:wrap;gap:8px}
 .w{display:flex;flex-direction:column;align-items:center;gap:2px;min-width:68px;max-width:140px;padding:10px 8px 8px;border-radius:12px;background:var(--card);box-shadow:0 0 0 1px var(--line) inset;text-align:center;transition:transform .12s,box-shadow .12s}
 .w:hover{box-shadow:0 0 0 2px var(--accent) inset}
@@ -742,13 +750,38 @@ async function renderInspector(){
   return paneNotes();
 }
 function verseCard(){const t=S.loaded.c[S.c-1][S.v-1];const c=h('div',{class:'card'},h('h4',{text:'Riveduta 2020'}));const q=h('div',{class:'verse-quote'});richInto(q,t);c.append(q);return c;}
+/* Interlineare: card girevole Riveduta / KJV. La lingua scelta resta memorizzata (store.set.vl). */
+function getKjv(id,c){
+  const k=id+'.'+c;cache.kjv=cache.kjv||{};
+  if(!cache.kjv[k])cache.kjv[k]=fetch('https://bible-api.com/data/kjv/'+id+'/'+c).then(r=>{if(!r.ok)throw new Error('KJV non disponibile');return r.json();})
+    .then(j=>{const m={};(j.verses||[]).forEach(x=>{m[x.verse]=String(x.text||'').replace(/\s+/g,' ').trim();});return m;})
+    .catch(e=>{delete cache.kjv[k];throw e;});
+  return cache.kjv[k];
+}
+function flipVerseCard(){
+  const t=S.loaded.c[S.c-1][S.v-1],id=B[S.bi].id,c=S.c,v=S.v;
+  const q=h('div',{class:'verse-quote'});richInto(q,t);
+  const eq=h('div',{class:'verse-quote',lang:'en',text:'Caricamento…'});
+  const front=h('div',{class:'card face rv'},h('h4',null,h('span',{text:'Riveduta 2020'}),h('span',{class:'fliphint',text:'Tocca per KJV ↻'})),q);
+  const back=h('div',{class:'card face kjv'},h('h4',null,h('span',{text:'King James Version'}),h('span',{class:'fliphint',text:'Tocca per italiano ↻'})),eq);
+  let loaded=false;
+  const load=()=>{if(loaded)return;loaded=true;
+    getKjv(id,c).then(m=>{eq.textContent=m[v]||'Versetto non presente nella KJV con questa numerazione.';})
+      .catch(()=>{loaded=false;eq.textContent='Impossibile caricare la KJV. Controlla la connessione e tocca di nuovo.';});};
+  const wrap=h('div',{class:'flip'+(store.set.vl==='en'?' en':''),role:'button',tabindex:'0','aria-label':'Gira per cambiare lingua tra italiano e inglese'},h('div',{class:'flip-in'},front,back));
+  const sync=()=>{const en=store.set.vl==='en';wrap.classList.toggle('en',en);front.setAttribute('aria-hidden',en);back.setAttribute('aria-hidden',!en);if(en)load();};
+  const toggle=()=>{store.set.vl=store.set.vl==='en'?'it':'en';save();sync();};
+  wrap.addEventListener('click',e=>{if(e.target.closest('a,button'))return;toggle();});
+  wrap.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();toggle();}});
+  sync();return wrap;
+}
 async function paneInt(){
   const pane=$('#pane'),tok=S.tok,v=S.v,c=S.c,bi=S.bi;
-  pane.replaceChildren(verseCard(),h('div',{class:'loading',style:'padding:30px 0'},h('div',null,h('div',{class:'spin'}),'Carico il testo originale…')));
+  pane.replaceChildren(flipVerseCard(),h('div',{class:'loading',style:'padding:30px 0'},h('div',null,h('div',{class:'spin'}),'Carico il testo originale…')));
   let od;try{od=await getOr(B[bi].id);}catch(e){pane.append(h('div',{class:'empty',text:e.message}));return;}
   if(tok!==S.tok||S.v!==v||S.tab!=='int')return;
   const ws=od.c[c-1][v-1]||[];const ot=B[bi].t===1;
-  pane.replaceChildren(verseCard());
+  pane.replaceChildren(flipVerseCard());
   if(!ws.length){pane.append(h('div',{class:'card'},h('div',{class:'hint',text:'Per questo versetto l\'originale ha una numerazione diversa dalla Riveduta, quindi non c\'è un interlineare allineato.'})));return;}
   const wrap=h('div',{class:'words'+(ot?' rtl':''),dir:ot?'rtl':'ltr'});
   ws.forEach(w=>{
