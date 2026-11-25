@@ -587,6 +587,7 @@ const sclass=s=>s?s.slice(0,5):'';
 
 /* ---------- app state ---------- */
 const S={bi:0,c:1,v:null,tab:'int',word:null,navView:'books',tok:0,loaded:null};
+let lexItalianMode=false;
 const body=document.body;
 const isPhone=()=>matchMedia('(max-width:760px)').matches;
 
@@ -837,34 +838,41 @@ async function paneLex(){
   if(!word.standalone)pane.append(h('button',{type:'button',class:'back',on:{click:()=>{S.tab='int';S.word=null;renderInspector();}}},h('span',{html:''}),'‹ Interlineare'));
   if(!e){pane.append(h('div',{class:'card'},h('div',{class:'hint',text:'Questa voce non è nel lessico.'})));return;}
   const lang=kind==='g'?'el':'he';
-  let translated=false, translating=false;
+  const verse=verseCard();
+  const translateBtn=h('button',{type:'button',class:'btn',text:lexItalianMode?'Italiano attivo':'Traduci in italiano'});
+  const translateStatus=h('span',{class:'hint'});
+  const verseBar=h('div',{style:'display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:12px'});
+  verseBar.append(verse,translateBtn,translateStatus);
+  pane.append(verseBar);
+  let translating=false;
   const gloss=h('div',{style:'font-size:18px;font-weight:600',text:e[2]});
   const head=h('div',{class:'card'},
     h('div',{class:'lemma-row'},h('div',{class:'lemma',lang,dir:kind==='g'?'ltr':'rtl',text:e[0]}),h('span',{class:'pill',text:sdisp(s)})),
     h('div',{style:'font-style:italic;color:var(--ink2);margin-bottom:6px',text:e[1]}),gloss);
-  const translateBtn=h('button',{type:'button',class:'btn',text:'Traduci in italiano'});
-  const translateStatus=h('span',{class:'hint',style:'margin-left:8px'});
-  const translateBar=h('div',{style:'display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin:0 0 12px'},translateBtn,translateStatus);
-  pane.append(translateBar,head);
+  pane.append(head);
   const originalDef=e[3];
-  let italianDef=null,italianGloss=null;
-  translateBtn.addEventListener('click',async()=>{
-    if(translating)return;
-    if(translated){
-      gloss.textContent=e[2];def.replaceChildren();richDef(def,originalDef);
-      translated=false;translateBtn.textContent='Traduci in italiano';translateStatus.textContent='';return;
-    }
-    translating=true;translateBtn.disabled=true;translateStatus.textContent='Traduzione in corso…';
+  const defCard=h('div',{class:'card'},h('h4',{text:kind==='g'?'Definizione · Abbott-Smith':'Definizione · BDB'}));
+  const def=h('div',{class:'def'});richDef(def,originalDef);defCard.append(def);pane.append(defCard);
+  let italianGloss=null,italianDef=null;
+  async function renderLexLanguage(){
+    if(!lexItalianMode){gloss.textContent=e[2];def.replaceChildren();richDef(def,originalDef);return;}
+    translating=true;translateBtn.disabled=true;translateStatus.textContent='Traduzione…';
     try{
-      if(italianGloss===null){
-        italianGloss=await translateLexText(e[2]);
-        italianDef=await translateLexText(originalDef);
-      }
+      if(italianGloss===null)italianGloss=await translateLexText(e[2]);
+      if(italianDef===null)italianDef=await translateLexText(originalDef);
+      if(S.word!==word||S.tab!=='lex')return;
       gloss.textContent=italianGloss;def.replaceChildren();richDef(def,italianDef);
-      translated=true;translateBtn.textContent='Mostra originale';translateStatus.textContent='';
+      translateStatus.textContent='';
     }catch(err){translateStatus.textContent='Traduzione non disponibile. Riprova.';}
     finally{translating=false;translateBtn.disabled=false;}
+  }
+  translateBtn.addEventListener('click',()=>{
+    if(translating)return;
+    lexItalianMode=!lexItalianMode;
+    translateBtn.textContent=lexItalianMode?'Italiano attivo':'Traduci in italiano';
+    renderLexLanguage();
   });
+  if(lexItalianMode)renderLexLanguage();
   const variants=(lex.c[cl]||[]);
   if(variants.length>1){const row=h('div',{style:'display:flex;gap:6px;flex-wrap:wrap;margin-top:10px'});variants.slice(0,10).forEach(k=>row.append(h('button',{type:'button',class:'pill btn'+(k===key?' on':''),text:lex.e[k][2].slice(0,22)||k,title:k,on:{click:()=>{S.word={...word,s:k};renderInspector();}}})));head.append(row);}
   if(word.w){const m=morphLine(word.w[4],word.ot);pane.append(h('div',{class:'card'},h('h4',{text:'In questo versetto'}),h('dl',{class:'kv'},
@@ -872,7 +880,6 @@ async function paneLex(){
     h('dt',{text:'Lettura'}),h('dd',{text:word.w[1]}),h('dt',{text:'Significato'}),h('dd',{text:word.w[2]}),
     h('dt',{text:'Analisi'}),h('dd',{text:m||'—'}),h('dt',{text:'Codice'}),h('dd',{style:'font-variant-numeric:tabular-nums',text:word.w[4]})
   )));}
-  const defCard=h('div',{class:'card'},h('h4',{text:kind==='g'?'Definizione · Abbott-Smith':'Definizione · BDB'}));const def=h('div',{class:'def'});richDef(def,e[3]);defCard.append(def);pane.append(defCard);
   const occ=h('div',{class:'card'},h('h4',{text:'Occorrenze'}),h('div',{class:'hint',text:'Calcolo…'}));pane.append(occ);
   try{
     const conc=await getConc();if(S.word!==word)return;
