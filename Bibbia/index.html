@@ -379,6 +379,12 @@ html{background:var(--bg)}
   #smodal .sres{flex:1 1 auto;min-height:0;padding-bottom:calc(var(--kb,0px) + 24px + env(safe-area-inset-bottom))}
   body.search-open #insp,body.search-open #tabbar{visibility:hidden}
 }
+
+/* ===== v8: barra in basso nascosta con Libri o Studio aperti ===== */
+@media (max-width:760px){
+  #tabbar{transition:opacity .2s,transform .25s}
+  body.nav-open #tabbar,body.sheet-open #tabbar,body.search-open #tabbar{opacity:0;transform:translateY(120%);pointer-events:none;visibility:hidden}
+}
 </style>
 </head>
 <body>
@@ -420,6 +426,7 @@ html{background:var(--bg)}
       <div class="pane" id="pane"></div>
     </aside>
   </div>
+  <div class="scrim" id="scrim"></div>
 </div>
 
 <nav id="tabbar" aria-label="Menu principale">
@@ -428,7 +435,6 @@ html{background:var(--bg)}
   <button type="button" id="tb-search"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>Cerca</button>
   <button type="button" id="tb-saved"><svg viewBox="0 0 24 24"><path d="M6 4h12v17l-6-4-6 4z"/></svg>Salvati</button>
 </nav>
-<div class="scrim" id="scrim"></div>
 <div class="modal" id="smodal" role="dialog" aria-label="Cerca">
   <div class="sbar"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg><input id="q" type="search" placeholder="Parola, versetto (Gv 3:16) o Strong (G25, H1254)" autocomplete="off" spellcheck="false"><button class="btn" id="sclose">Chiudi</button></div>
   <div class="sopts"><div class="seg" id="sscope"><button data-s="text" aria-selected="true">Testo Riveduta</button><button data-s="lex" aria-selected="false">Lessico (inglese)</button></div></div>
@@ -626,8 +632,8 @@ function buildSaved(list){
   });
 }
 const plain=t=>t.replace(/[\u0001\u0002]/g,'').replace(/\n/g,' ');
-function openNav(){$('#nav').classList.add('open');$('#scrim').classList.add('on');S.scrimFor='nav';}
-function closeNav(){$('#nav').classList.remove('open');if(S.scrimFor==='nav'){$('#scrim').classList.remove('on');}}
+function openNav(){document.body.classList.add('nav-open');$('#nav').classList.add('open');$('#scrim').classList.add('on');S.scrimFor='nav';}
+function closeNav(){document.body.classList.remove('nav-open');$('#nav').classList.remove('open');if(S.scrimFor==='nav'){$('#scrim').classList.remove('on');}}
 
 /* ---------- chapter rendering ---------- */
 async function go(bi,c,v,opt={}){
