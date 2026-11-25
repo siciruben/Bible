@@ -874,7 +874,19 @@ async function paneLex(){
   };
   if(lexItalianMode)renderLexLanguage();
   const variants=(lex.c[cl]||[]);
-  if(variants.length>1){const row=h('div',{style:'display:flex;gap:6px;flex-wrap:wrap;margin-top:10px'});variants.slice(0,10).forEach(k=>row.append(h('button',{type:'button',class:'pill btn'+(k===key?' on':''),text:lex.e[k][2].slice(0,22)||k,title:k,on:{click:()=>{S.word={...word,s:k};renderInspector();}}})));head.append(row);}
+  if(variants.length>1){
+    const labels=variants.slice(0,10).map(k=>({key:k,text:String(lex.e[k]?.[2]||k)}));
+    const colon=labels[0].text.indexOf(':');
+    const prefix=colon>=0?labels[0].text.slice(0,colon+1):'Varianti:';
+    const row=h('div',{style:'display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-top:10px'});
+    row.append(h('span',{style:'font-size:13px;color:var(--ink2)',text:prefix}));
+    labels.forEach(item=>{
+      const split=item.text.indexOf(':');
+      const label=split>=0?item.text.slice(split+1).trim():item.text;
+      row.append(h('span',{class:'pill',text:label.slice(0,30)||item.key,title:item.key}));
+    });
+    head.append(row);
+  }
   if(word.w){const m=morphLine(word.w[4],word.ot);pane.append(h('div',{class:'card'},h('h4',{text:'In questo versetto'}),h('dl',{class:'kv'},
     h('dt',{text:'Forma'}),h('dd',{lang,style:'font-size:18px;font-family:'+(kind==='g'?'var(--greek)':'var(--hebrew)'),text:word.w[0]}),
     h('dt',{text:'Lettura'}),h('dd',{text:word.w[1]}),h('dt',{text:'Significato'}),h('dd',{text:word.w[2]}),
@@ -901,6 +913,9 @@ async function paneLex(){
 function richDef(parent,t){
   const re=/(\u0003|\u0004|\u0001|\u0002|\[\[[^\]]*\]\])/;let b=false,i=false;
   t=t.replace(/\n__/g,'\n').replace(/__/g,'');
+  // Rende leggibili le etichette editoriali che arrivano dal lessico in formato tecnico.
+  t=t.replace(/([A-Za-z][A-Za-z -]*(?:\/[A-Za-z][A-Za-z -]*)+)(\(([A-Z][A-Z0-9_ ]*)\))/g,(_,items,_group,tag)=>items.replace(/\s*\/\s*/g,', ')+' ('+tag.toLowerCase().replace(/_/g,' ')+')');
+  t=t.replace(/\(([A-Z][A-Z0-9_]*(?:_[A-Z0-9_]+)*)\)/g,(_,tag)=>' ('+tag.toLowerCase().replace(/_/g,' ')+')');
   function render(par,str){
     for(const tok of str.split(re)){
       if(tok==='\u0003')b=true;else if(tok==='\u0004')b=false;else if(tok==='\u0001')i=true;else if(tok==='\u0002')i=false;
