@@ -777,46 +777,52 @@ function flipVerseCard(){
   wrap.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();toggle();}});
   sync();return wrap;
 }
-// KJV: usa le annotazioni a livello di parola dell'API HelloAO.
-// Il formato semplificato allinea direttamente gli offset al testo del versetto.
-const kjvWordCache={};
-const kjvBookCode=id=>STEP[id]||Object.keys(STEP).find(k=>STEP[k]===id)||String(id||'').toUpperCase();
-const normStrong=s=>{const m=String(s||'').toUpperCase().match(/([HG])0*(\d+)/);return m?m[1]+m[2].padStart(4,'0'):'';};
-async function getKjvTagged(id,c){
-  const key=id+'.'+c;
-  if(!kjvWordCache[key])kjvWordCache[key]=Promise.all([
-    fetch('https://bible.helloao.org/api/eng_kjv/'+kjvBookCode(id)+'/'+c+'.simple.json').then(r=>{if(!r.ok)throw new Error('Testo KJV non disponibile');return r.json();}),
-    fetch('https://bible.helloao.org/api/eng_kjv/'+kjvBookCode(id)+'/'+c+'.words.simple.json').then(r=>{if(!r.ok)throw new Error('Annotazioni KJV non disponibili');return r.json();})
-  ]).then(([chapter,annotations])=>({chapter,annotations}))
-    .catch(e=>{delete kjvWordCache[key];throw e;});
-  return kjvWordCache[key];
+// KJV: usa la stessa concordanza Strong adottata dall'app iOS funzionante.
+// Endpoint: un JSON per libro/capitolo; ogni versetto contiene {text, number}.
+const kjvConcordanceCache={};
+const KJV_CONCORDANCE_BASE='https://raw.githubusercontent.com/camertron/cskit-strongs-rb/master/resources/concordance';
+const KJV_BOOK_SLUG={
+  Gen:'genesis',Exo:'exodus',Lev:'leviticus',Num:'numbers',Deu:'deuteronomy',
+  Jos:'joshua',Jdg:'judges',Rut:'ruth','1Sa':'i_samuel','2Sa':'ii_samuel',
+  '1Ki':'i_kings','2Ki':'ii_kings','1Ch':'i_chronicles','2Ch':'ii_chronicles',
+  Ezr:'ezra',Neh:'nehemiah',Est:'esther',Job:'job',Psa:'psalms',Pro:'proverbs',
+  Ecc:'ecclesiastes',Sng:'song_of_solomon',Isa:'isaiah',Jer:'jeremiah',
+  Lam:'lamentations',Ezk:'ezekiel',Dan:'daniel',Hos:'hosea',Jol:'joel',
+  Amo:'amos',Oba:'obadiah',Jon:'jonah',Mic:'micah',Nam:'nahum',Hab:'habakkuk',
+  Zep:'zephaniah',Hag:'haggai',Zec:'zechariah',Mal:'malachi',
+  Mat:'matthew',Mrk:'mark',Luk:'luke',Jhn:'john',Act:'acts',Rom:'romans',
+  '1Co':'i_corinthians','2Co':'ii_corinthians',Gal:'galatians',Eph:'ephesians',
+  Php:'philippians',Col:'colossians','1Th':'i_thessalonians','2Th':'ii_thessalonians',
+  '1Ti':'i_timothy','2Ti':'ii_timothy',Tit:'titus',Phm:'philemon',Heb:'hebrews',
+  Jas:'james','1Pe':'i_peter','2Pe':'ii_peter','1Jn':'i_john','2Jn':'ii_john',
+  '3Jn':'iii_john',Jud:'jude',Rev:'revelation'
+};
+function kjvStrongKey(value){
+  const m=String(value||'').toLowerCase().match(/([hg])\\s*0*(\\d+)/);
+  return m?m[1]+String(parseInt(m[2],10)):'';
 }
-function kjvVerseWords(data,verseNo){
-  const root=data.chapter?.chapter||data.chapter||data;
-  const verse=(root.content||[]).find(x=>x.type==='verse'&&Number(x.number)===Number(verseNo));
-  const annRoot=data.annotations?.verses?data.annotations:(data.annotations?.chapterWords||data.annotations||{});
-  const ann=annRoot.verses?.[String(verseNo)]||annRoot.verses?.[Number(verseNo)]||[];
-  if(!verse||!Array.isArray(ann))return [];
-  const text=typeof verse.text==='string'?verse.text:(Array.isArray(verse.content)?verse.content.filter(x=>typeof x==='string').join(' '):'');
-  const out=[];
-  for(const a of ann){
-    if(!Array.isArray(a.strongs)||!Number.isFinite(Number(a.start))||!Number.isFinite(Number(a.end)))continue;
-    let word='';
-    if(typeof verse.text==='string')word=text.slice(Number(a.start),Number(a.end)).trim();
-    else if(Array.isArray(verse.content)&&Number.isInteger(a.contentIndex)){const part=verse.content[a.contentIndex];if(typeof part==='string')word=part.slice(Number(a.start),Number(a.end)).trim();}
-    const tags=a.strongs.map(normStrong).filter(Boolean);
-    if(word&&tags.length)out.push({text:word,tags});
+async function getKjvConcordance(id,chapter){
+  const slug=KJV_BOOK_SLUG[id];
+  if(!slug)throw new Error('Libro non previsto nella concordanza KJV: '+id);
+  const key=slug+'.'+chapter;
+  if(!kjvConcordanceCache[key]){
+    kjvConcordanceCache[key]=fetch(KJV_CONCORDANCE_BASE+'/'+slug+'/'+chapter+'.json')
+      .then(r=>{if(!r.ok)throw new Error('Concordanza KJV non disponibile');return r.json();})
+      .catch(e=>{delete kjvConcordanceCache[key];throw e;});
   }
-  return out;
+  return kjvConcordanceCache[key];
 }
-function alignKjvToOriginal(ws,tagged){
-  const queues={};
-  tagged.forEach(t=>{const unique=[...new Set(t.tags)];unique.forEach(tag=>(queues[tag]??=[]).push(t.text));});
-  const used={};
-  return ws.map(w=>{
-    const tag=normStrong(w[3]);if(!tag||!queues[tag]?.length)return '';
-    const n=used[tag]||0;used[tag]=n+1;return queues[tag][n]||'';
-  });
+function kjvVerseStrongMap(chapterData,verseNo){
+  const words=chapterData[String(verseNo)]||chapterData[Number(verseNo)]||[];
+  const map=Object.create(null);
+  for(const item of words){
+    const key=kjvStrongKey(item.number);
+    if(key&&!Object.prototype.hasOwnProperty.call(map,key)&&item.text)map[key]=item.text;
+  }
+  return map;
+}
+function alignKjvToOriginal(originalWords,strongMap){
+  return originalWords.map(word=>strongMap[kjvStrongKey(word[3])]||'');
 }
 async function paneInt(){
   const pane=$('#pane'),tok=S.tok,v=S.v,c=S.c,bi=S.bi,id=B[bi].id;
@@ -835,9 +841,9 @@ async function paneInt(){
       w[3]?h('span',{class:'s',text:sdisp(w[3])}):null));
   });
   pane.append(h('div',{class:'card'},h('h4',{text:(ot?'Ebraico · da destra a sinistra':'Greco')+' · KJV sotto ogni parola'}),wrap),h('div',{class:'hint',text:'La parola KJV è collegata tramite il numero Strong. Alcune parole funzionali o varianti non hanno un’associazione KJV univoca e restano vuote. Tocca una parola per aprire lessico, analisi e occorrenze.'}));
-  getKjvTagged(id,c).then(data=>{
+  getKjvConcordance(id,c).then(data=>{
     if(tok!==S.tok||S.v!==v||S.tab!=='int')return;
-    const aligned=alignKjvToOriginal(ws,kjvVerseWords(data,v));
+    const aligned=alignKjvToOriginal(ws,kjvVerseStrongMap(data,v));
     aligned.forEach((word,i)=>{kjvLabels[i].textContent=word||'—';});
   }).catch(()=>{kjvLabels.forEach(x=>x.textContent='—');});
 }
