@@ -135,9 +135,12 @@ input,textarea{font:inherit;color:inherit}
 .card h4{margin:0 0 8px;font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink2);font-weight:600}
 .verse-quote{font-family:var(--serif);font-size:16px;line-height:1.55;color:var(--ink)}
 .flip{perspective:1200px;margin-bottom:12px;cursor:pointer;-webkit-tap-highlight-color:transparent;outline:none}
-.flip-in{display:block;position:relative;height:auto;transition:height .28s cubic-bezier(.2,.8,.2,1),transform .5s cubic-bezier(.2,.8,.2,1);transform-style:preserve-3d}
+.flip-in{display:block;position:relative;height:auto;transition:height .32s cubic-bezier(.2,.8,.2,1),transform .5s cubic-bezier(.2,.8,.2,1);transform-style:preserve-3d}
+.flip-in.nofx{transition:transform .5s cubic-bezier(.2,.8,.2,1)}
 .flip.en .flip-in{transform:rotateY(180deg)}
-.flip .face{position:absolute;inset:0;width:100%;margin:0;-webkit-backface-visibility:hidden;backface-visibility:hidden}
+/* Le facce hanno altezza naturale (non inset:0): l'altezza della card viene misurata sulla faccia visibile. */
+.flip .face{position:absolute;top:0;left:0;right:0;bottom:auto;height:auto;width:100%;margin:0;padding-bottom:20px;-webkit-backface-visibility:hidden;backface-visibility:hidden}
+.card.verse-card{padding-bottom:20px}
 .flip .face.kjv{transform:rotateY(180deg)}
 .flip h4{display:flex;align-items:center;justify-content:space-between;gap:8px}
 .original-verse{font-family:var(--greek);unicode-bidi:isolate;font-size:16px;line-height:1.55;letter-spacing:.01em}
@@ -427,15 +430,25 @@ html{background:var(--bg)}
 .map-selector{display:flex;gap:7px;overflow-x:auto;padding:2px 1px 10px;scrollbar-width:thin}
 .map-choice{flex:0 0 auto;border:1px solid var(--line);background:var(--surface2,var(--card));color:var(--ink);border-radius:999px;padding:7px 12px;font:inherit;font-size:12px;cursor:pointer}
 .map-choice.on{background:var(--accent);border-color:var(--accent);color:white}
-.map-stage{position:relative;width:min(100%,min(72svh,540px));max-width:100%;aspect-ratio:1/1;height:auto;min-height:0;max-height:none;margin-inline:auto;overflow:hidden;contain:paint;border:1px solid var(--line);border-radius:13px;background:#f2f0eb;touch-action:pan-y pinch-zoom;cursor:grab;user-select:none;box-sizing:border-box}
-.map-stage:active{cursor:grabbing}
+/* Proporzioni: il rapporto d'aspetto reale dell'immagine viene impostato via JS al caricamento (3/4 solo come valore iniziale). */
+.map-stage{position:relative;width:100%;max-width:100%;aspect-ratio:3/4;height:auto;min-height:0;margin-inline:auto;overflow:hidden;contain:paint;border:1px solid var(--line);border-radius:13px;background:#f2f0eb;touch-action:auto;cursor:default;user-select:none;box-sizing:border-box;transition:box-shadow .2s}
+/* Modalità Esplora: la mappa cattura trascinamento e pinch, la pagina non scorre sopra di essa */
+.map-stage.exploring{touch-action:none;cursor:grab;box-shadow:0 0 0 2px var(--accent)}
+.map-stage.exploring:active{cursor:grabbing}
 .map-image{position:absolute;inset:0;display:block;width:100%;height:100%;max-width:none;object-fit:contain;transform-origin:0 0;pointer-events:none;user-select:none}
 .map-status{position:absolute;inset:0;display:grid;place-items:center;padding:20px;text-align:center;color:#555;background:#f2f0eb;font-size:13px}
 .map-status[hidden]{display:none}
-.map-controls{display:flex;gap:8px;justify-content:center;margin-top:10px}
+.map-controls{display:flex;gap:8px;justify-content:center;align-items:center;flex-wrap:wrap;margin-top:10px}
 .map-control{min-width:42px}
+.map-control:disabled{opacity:.4;cursor:default;pointer-events:none}
+.map-explore{display:inline-flex;align-items:center;gap:7px;box-shadow:0 0 0 1px var(--accent) inset;transition:background .18s,color .18s}
+.map-explore svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;flex:none}
+.map-explore[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink)}
+.map-explore .st{font-size:11px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;padding:1px 6px;border-radius:99px;background:var(--accent-soft)}
+.map-explore[aria-pressed="true"] .st{background:rgba(255,255,255,.22)}
+.map-sep{width:1px;height:24px;background:var(--line);margin:0 2px}
 .map-unavailable .hint{margin:0}
-@media(max-width:760px){.map-stage{width:min(100%,72svh);aspect-ratio:1/1;height:auto;min-height:0}.map-choice{font-size:11px;padding:7px 10px}}
+@media(max-width:760px){.map-choice{font-size:11px;padding:7px 10px}.map-controls{gap:6px}.map-controls .btn{padding:10px 12px}.map-controls .map-sep{margin:0}}
 
 /* Skeleton loading per contenuti e mappa */
 .skeleton{position:relative;overflow:hidden;border-radius:8px;background:var(--gfill)}
@@ -802,7 +815,7 @@ async function renderInspector(){
   if(S.tab==='par')return paneMaps();
   return paneNotes();
 }
-function verseCard(){const t=S.loaded.c[S.c-1][S.v-1];const c=h('div',{class:'card'},h('h4',{text:'Riveduta 2020'}));const q=h('div',{class:'verse-quote'});richInto(q,t);c.append(q);return c;}
+function verseCard(){const t=S.loaded.c[S.c-1][S.v-1];const c=h('div',{class:'card verse-card'},h('h4',{text:'Riveduta 2020'}));const q=h('div',{class:'verse-quote'});richInto(q,t);c.append(q);return c;}
 /* Interlineare: card girevole Riveduta / KJV. La lingua scelta resta memorizzata (store.set.vl). */
 function getKjv(id,c){
   const k=id+'.'+c;cache.kjv=cache.kjv||{};
@@ -811,13 +824,27 @@ function getKjv(id,c){
     .catch(e=>{delete cache.kjv[k];throw e;});
   return cache.kjv[k];
 }
+/* Altezza della card girevole: misura l'altezza effettiva renderizzata della faccia visibile
+   (font, line-height, padding e larghezza inclusi) e la applica al contenitore con transizione.
+   Un ResizeObserver ricalcola quando cambia il testo (caricamento KJV), la larghezza o il font. */
 function fitFlipHeight(wrap,activeFace){
   const inner=wrap.querySelector('.flip-in');
   if(!inner||!activeFace)return;
-  requestAnimationFrame(()=>{
-    const height=Math.ceil(activeFace.scrollHeight);
-    if(height)inner.style.height=height+'px';
-  });
+  wrap._activeFace=activeFace;
+  const measure=()=>{
+    const face=wrap._activeFace;if(!face)return;
+    const height=Math.ceil(face.offsetHeight);
+    if(!height)return; // non visibile (pannello nascosto): riprova al prossimo resize
+    if(!inner.style.height){inner.classList.add('nofx');inner.style.height=height+'px';void inner.offsetHeight;inner.classList.remove('nofx');}
+    else if(inner.style.height!==height+'px')inner.style.height=height+'px';
+  };
+  wrap._measure=measure;
+  if(!wrap._ro&&'ResizeObserver' in window){
+    wrap._ro=new ResizeObserver(()=>wrap._measure&&wrap._measure());
+    inner.querySelectorAll('.face').forEach(f=>wrap._ro.observe(f));
+    if(document.fonts&&document.fonts.ready)document.fonts.ready.then(()=>wrap._measure&&wrap._measure());
+  }
+  requestAnimationFrame(measure);
 }
 function makeSkeletonCard(kind='text'){
   const card=h('div',{class:'skel-card'});
@@ -1189,20 +1216,38 @@ function paneMaps(){
   card.append(h('h4',{text:'Mappe storiche — Vita di Gesù'}));
   card.append(h('p',{class:'hint',text:'Mappe della Palestina al tempo di Gesù. Seleziona una mappa per esplorarla.'}));
   const selector=h('div',{class:'map-selector','aria-label':'Seleziona una mappa'});
-  const stage=h('div',{class:'map-stage',tabindex:'0','aria-label':'Mappa interattiva: trascina per spostarti, usa i controlli per ingrandire'});
+  const stage=h('div',{class:'map-stage',tabindex:'0','aria-label':'Mappa. Attiva Esplora per spostarti e ingrandire'});
   const img=h('img',{class:'map-image',alt:'Mappa storica della Palestina al tempo di Gesù',draggable:'false'});
   const status=h('div',{class:'map-status'},h('span',{text:'Caricamento mappa…'}));
   stage.append(img,status);
   const controls=h('div',{class:'map-controls'});
-  const zoomOut=h('button',{type:'button',class:'btn map-control',text:'−','aria-label':'Riduci zoom'});
-  const zoomIn=h('button',{type:'button',class:'btn map-control',text:'+','aria-label':'Aumenta zoom'});
+  const exploreState=h('span',{class:'st',text:'Off'});
+  const explore=h('button',{type:'button',class:'btn map-explore','aria-pressed':'false','aria-label':'Esplora: attiva o disattiva lo spostamento e lo zoom della mappa'});
+  explore.innerHTML='<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M15.5 8.5l-2 5-5 2 2-5z"/></svg>';
+  explore.append(h('span',{text:'Esplora'}),exploreState);
+  const zoomOut=h('button',{type:'button',class:'btn map-control',text:'−','aria-label':'Riduci zoom',disabled:true});
+  const zoomIn=h('button',{type:'button',class:'btn map-control',text:'+','aria-label':'Aumenta zoom',disabled:true});
   const reset=h('button',{type:'button',class:'btn map-control',text:'Adatta','aria-label':'Reimposta la mappa'});
-  controls.append(zoomOut,zoomIn,reset);
+  controls.append(explore,h('span',{class:'map-sep','aria-hidden':'true'}),zoomOut,zoomIn,reset);
   card.append(selector,stage,controls);
   pane.append(card);
 
-  let scale=1,tx=0,ty=0,drag=null,pinch=null;
+  let scale=1,tx=0,ty=0,drag=null,pinch=null,exploring=false;
   const pointers=new Map();
+  /* Interruttore Esplora: OFF = mappa passiva (la pagina scorre sopra la mappa); ON = trascinamento, pinch e zoom */
+  const setExplore=on=>{
+    exploring=on;
+    stage.classList.toggle('exploring',on);
+    explore.setAttribute('aria-pressed',on?'true':'false');
+    exploreState.textContent=on?'On':'Off';
+    zoomIn.disabled=!on;zoomOut.disabled=!on;
+    stage.setAttribute('aria-label',on?'Mappa interattiva: trascina per spostarti, pizzica o usa i controlli per ingrandire':'Mappa. Attiva Esplora per spostarti e ingrandire');
+    if(!on){
+      pointers.forEach((_,id)=>{try{if(stage.hasPointerCapture(id))stage.releasePointerCapture(id);}catch(e){}});
+      pointers.clear();drag=null;pinch=null;
+    }
+  };
+  explore.addEventListener('click',()=>setExplore(!exploring));
   const clampPan=()=>{
     if(scale<=1){tx=0;ty=0;return;}
     const sw=stage.clientWidth,sh=stage.clientHeight;
@@ -1224,7 +1269,7 @@ function paneMaps(){
     activeMapIndex=i;
     [...selector.children].forEach((b,j)=>{b.classList.toggle('on',j===i);b.setAttribute('aria-pressed',j===i?'true':'false');});
     status.hidden=false;status.replaceChildren(h('span',{text:'Caricamento mappa…'}));
-    img.onload=()=>{status.hidden=true;resetView();};
+    img.onload=()=>{if(img.naturalWidth&&img.naturalHeight)stage.style.aspectRatio=img.naturalWidth+' / '+img.naturalHeight;status.hidden=true;resetView();};
     img.onerror=()=>{status.hidden=false;status.replaceChildren(h('span',{text:'Impossibile caricare questa mappa. Controlla la connessione.'}));};
     img.src=GOSPEL_MAPS[i].url;
     img.alt='Mappa: '+GOSPEL_MAPS[i].label;
@@ -1237,13 +1282,14 @@ function paneMaps(){
   zoomIn.addEventListener('click',()=>zoom(1.35));
   zoomOut.addEventListener('click',()=>zoom(1/1.35));
   reset.addEventListener('click',resetView);
-  stage.addEventListener('wheel',e=>{e.preventDefault();zoom(e.deltaY<0?1.12:1/1.12,e.offsetX,e.offsetY);},{passive:false});
+  stage.addEventListener('wheel',e=>{if(!exploring)return;e.preventDefault();zoom(e.deltaY<0?1.12:1/1.12,e.offsetX,e.offsetY);},{passive:false});
   const distance=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y);
   stage.addEventListener('pointerdown',e=>{
+    if(!exploring)return;
     if(e.button!==0&&e.pointerType==='mouse')return;
     pointers.set(e.pointerId,{x:e.clientX,y:e.clientY});
-    if(e.pointerType==='mouse'||pointers.size>1||scale>1)stage.setPointerCapture(e.pointerId);
-    if(pointers.size===1)drag=(e.pointerType==='touch'&&scale<=1)?null:{x:e.clientX,y:e.clientY,tx,ty};
+    try{stage.setPointerCapture(e.pointerId);}catch(err){}
+    if(pointers.size===1)drag={x:e.clientX,y:e.clientY,tx,ty};
     else if(pointers.size===2){
       const pts=[...pointers.values()],r=stage.getBoundingClientRect();
       pinch={distance:Math.max(1,distance(pts[0],pts[1])),scale,cx:(pts[0].x+pts[1].x)/2-r.left,cy:(pts[0].y+pts[1].y)/2-r.top,tx,ty};
@@ -1251,7 +1297,7 @@ function paneMaps(){
     }
   });
   stage.addEventListener('pointermove',e=>{
-    if(!pointers.has(e.pointerId))return;
+    if(!exploring||!pointers.has(e.pointerId))return;
     pointers.set(e.pointerId,{x:e.clientX,y:e.clientY});
     if(pointers.size>=2&&pinch){
       const pts=[...pointers.values()],r=stage.getBoundingClientRect(),midX=(pts[0].x+pts[1].x)/2-r.left,midY=(pts[0].y+pts[1].y)/2-r.top;
@@ -1259,7 +1305,6 @@ function paneMaps(){
       const ratio=next/pinch.scale;
       tx=midX-(pinch.cx-pinch.tx)*ratio;ty=midY-(pinch.cy-pinch.ty)*ratio;scale=next;paint();
     }else if(drag){
-      if(e.pointerType==='touch'&&scale<=1){drag=null;return;}
       tx=drag.tx+(e.clientX-drag.x);ty=drag.ty+(e.clientY-drag.y);paint();}
   });
   const stop=e=>{
@@ -1267,7 +1312,7 @@ function paneMaps(){
     if(pointers.size===1){const p=[...pointers.values()][0];drag={x:p.x,y:p.y,tx,ty};}
   };
   stage.addEventListener('pointerup',stop);stage.addEventListener('pointercancel',stop);stage.addEventListener('lostpointercapture',stop);
-  stage.addEventListener('dblclick',e=>{const r=stage.getBoundingClientRect();zoom(scale>1?1/scale:2,e.clientX-r.left,e.clientY-r.top);});
+  stage.addEventListener('dblclick',e=>{if(!exploring)return;const r=stage.getBoundingClientRect();zoom(scale>1?1/scale:2,e.clientX-r.left,e.clientY-r.top);});
   choose(activeMapIndex);
 }
 function paneNotes(){
