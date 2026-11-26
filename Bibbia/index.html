@@ -145,13 +145,13 @@ input,textarea{font:inherit;color:inherit}
 .flip:focus-visible .face{box-shadow:0 0 0 2px var(--ink2) inset}
 .words{display:flex;flex-wrap:wrap;gap:8px}
 /* Disposizione interlineare: modalità in linea con scorrimento orizzontale */
-.words.inline{display:flex;flex-wrap:nowrap;direction:ltr;overflow-x:auto;overflow-y:hidden;gap:8px;padding:2px 2px 12px;scroll-snap-type:x proximity;-webkit-overflow-scrolling:touch;}
-.words.inline .w{flex:0 0 auto;scroll-snap-align:start}
+.words.inline{display:flex;flex-direction:row!important;flex-wrap:nowrap;direction:ltr!important;unicode-bidi:isolate;overflow-x:auto;overflow-y:hidden;gap:8px;padding:2px 2px 12px;scroll-snap-type:x proximity;-webkit-overflow-scrolling:touch;}
+.words.inline .w{flex:0 0 auto;direction:ltr!important;unicode-bidi:isolate;scroll-snap-align:start}
 .word-layout{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:0 0 10px;font-family:var(--ui)}
 .word-layout .layout-label{font-size:12px;color:var(--ink2);font-weight:600}
 .word-layout .seg{width:auto;display:flex}
 .word-layout .seg button{font-size:12px;padding:5px 9px}
-@media(max-width:760px){.words{flex-wrap:nowrap!important;direction:ltr!important;overflow-x:auto;overflow-y:hidden;padding:2px 2px 12px;scroll-snap-type:x proximity;-webkit-overflow-scrolling:touch}.words .w{flex:0 0 auto;scroll-snap-align:start}.word-layout{display:none!important}}
+@media(max-width:760px){.words{display:flex!important;flex-direction:row!important;flex-wrap:nowrap!important;direction:ltr!important;unicode-bidi:isolate;overflow-x:auto;overflow-y:hidden;padding:2px 2px 12px;scroll-snap-type:x proximity;-webkit-overflow-scrolling:touch}.words .w{flex:0 0 auto;direction:ltr!important;unicode-bidi:isolate;scroll-snap-align:start}.word-layout{display:none!important}}
 
 .w{display:flex;flex-direction:column;align-items:center;gap:2px;min-width:68px;max-width:140px;padding:10px 8px 8px;border-radius:12px;background:var(--card);box-shadow:0 0 0 1px var(--line) inset;text-align:center;transition:transform .12s,box-shadow .12s}
 .w:hover{box-shadow:0 0 0 2px var(--accent) inset}
@@ -902,9 +902,9 @@ async function paneInt(){
     layoutBar.append(seg);
   }
   const wrap=h('div',{class:'words'+(mode==='inline'?' inline':''),dir:'ltr'}),kjvLabels=[],glossLabels=[];
-  // L'associazione KJV resta nell'ordine originale dei dati; l'ebraico viene
-  // mostrato sempre da sinistra a destra, nell'ordine di lettura inglese.
-  const displayIndexes=ws.map((_,i)=>i);if(ot)displayIndexes.reverse();
+  // L'array originale è già nell'ordine di allineamento inglese: non invertire
+  // gli indici per l'ebraico. La direzione LTR è applicata al contenitore e alle card.
+  const displayIndexes=ws.map((_,i)=>i);
   displayIndexes.forEach(i=>{
     const w=ws[i],variant=w.length>5,g=h('span',{class:'g',text:'—'});kjvLabels[i]=g;
     const glossLabel=h('span',{class:'t',text:w[1]});glossLabels[i]=glossLabel;
