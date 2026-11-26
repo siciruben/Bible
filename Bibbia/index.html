@@ -515,11 +515,9 @@ html{background:var(--bg)}
 @media (max-width:760px){
   #app{background-color:var(--bg)}
 }
-/* ===== v14: tieni l'header fuori dalla sfocatura "scroll edge" di iOS 26 (solo web app salvata in Home) ===== */
-@supports (-webkit-touch-callout: none) {
-  @media (display-mode: standalone) and (max-width:760px) {
-    #bar{padding-top:calc(env(safe-area-inset-top) + var(--topx,40px))!important}
-  }
+/* ===== v14: regolazione manuale dello spazio sopra l'header (cursore nel pannello Aa); 0 = come prima ===== */
+@media (max-width:760px){
+  #bar{padding-top:calc(env(safe-area-inset-top) + 6px + var(--topx,0px))!important}
 }
 </style>
 </head>
@@ -593,7 +591,7 @@ html{background:var(--bg)}
 </div>
 <div class="pop" id="pop">
   <label for="fs">Dimensione del testo</label><input type="range" id="fs" min="16" max="30" step="1">
-  <label for="topx">Spazio in alto (app salvata in Home): <span id="topxv"></span></label><input type="range" id="topx" min="0" max="80" step="2">
+  <label for="topx">Abbassa la barra in alto: <span id="topxv"></span></label><input type="range" id="topx" min="0" max="80" step="2">
   <label>Carattere</label><div class="seg" id="ffseg"><button data-f="serif">Con grazie</button><button data-f="sans">Lineare</button></div>
   <label>Tema</label><div class="seg" id="thseg"><button data-th="light">Chiaro</button><button data-th="dark">Scuro</button><button data-th="pergamena">Pergamena</button></div>
 </div>
@@ -623,7 +621,7 @@ const fold=s=>s.toLowerCase().replace(/[àáâä]/g,'a').replace(/[èéêë]/g,'
 const ICON_CHEV='<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg>';
 
 /* ---------- storage ---------- */
-let store={hl:{},nt:{},bm:{},set:{fs:20,ff:'serif',th:'auto',vi:'r20',top:40}};
+let store={hl:{},nt:{},bm:{},set:{fs:20,ff:'serif',th:'auto',vi:'r20',top:0}};
 try{const raw=localStorage.getItem('godeep:v1');if(raw){const o=JSON.parse(raw);store={...store,...o,set:{...store.set,...(o.set||{})}};}}catch(e){}
 function save(){try{localStorage.setItem('godeep:v1',JSON.stringify(store));}catch(e){}}
 
