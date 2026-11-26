@@ -592,6 +592,31 @@ html{background:var(--bg)}
 .cuitem{display:flex;gap:4px;margin-top:6px}
 .cuitem .btn:first-child{flex:1;text-align:left}
 .cauth .btn:disabled{opacity:.38;cursor:default}
+
+/* Correzione finestra Cerca su PC: centrata e separata dalla barra superiore.
+   Il rilevamento del puntatore evita che lo zoom del browser attivi il layout mobile. */
+@media (hover: hover) and (pointer: fine){
+  #smodal{
+    position:fixed;
+    top:50%;
+    left:50%;
+    right:auto;
+    bottom:auto;
+    width:min(680px,calc(100vw - 32px));
+    height:auto;
+    min-height:0;
+    max-height:82vh;
+    transform:translate(-50%,-50%);
+    border-radius:22px;
+    border:1px solid var(--line);
+  }
+  #smodal .sres{
+    flex:1 1 auto;
+    min-height:120px;
+    max-height:calc(82vh - 150px);
+    overflow:auto;
+  }
+}
 </style>
 </head>
 <body>
