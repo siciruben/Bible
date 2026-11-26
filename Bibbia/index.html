@@ -815,17 +815,43 @@ async function getKjvConcordance(id,chapter){
   }
   return kjvConcordanceCache[key];
 }
-function kjvVerseStrongMap(chapterData,verseNo){
-  const words=chapterData[String(verseNo)]||chapterData[Number(verseNo)]||[];
-  const map=Object.create(null);
-  for(const item of words){
-    const key=kjvStrongKey(item.number);
-    if(key&&!Object.prototype.hasOwnProperty.call(map,key)&&item.text)map[key]=item.text;
-  }
-  return map;
+function kjvVerseItems(chapterData,verseNo){
+  const items=chapterData[String(verseNo)]||chapterData[Number(verseNo)]||[];
+  return Array.isArray(items)?items:[];
 }
-function alignKjvToOriginal(originalWords,strongMap){
-  return originalWords.map(word=>strongMap[kjvStrongKey(word[3])]||'');
+function alignKjvToOriginal(originalWords,verseItems){
+  // Mantiene TUTTE le occorrenze dello stesso Strong: la concordanza può
+  // contenere più voci con lo stesso numero (es. H1121 o H3068).
+  const queues=Object.create(null);
+  for(const item of verseItems){
+    const key=kjvStrongKey(item.number);
+    if(!key||!item.text)continue;
+    (queues[key]||(queues[key]=[])).push(String(item.text).trim());
+  }
+  const result=Array(originalWords.length).fill('');
+  let previousAnchor=-1;
+  for(let i=0;i<originalWords.length;i++){
+    const key=kjvStrongKey(originalWords[i][3]);
+    const queue=key&&queues[key];
+    if(!queue||!queue.length)continue;
+    const phrase=queue.shift();
+    const parts=phrase.split(/\s+/).filter(Boolean);
+    const start=previousAnchor+1;
+    const slots=i-start+1;
+    if(slots<=1||parts.length<=1){result[i]=phrase;previousAnchor=i;continue;}
+    // Le voci della concordanza spesso raccolgono una locuzione sotto un solo
+    // Strong. Distribuiamo le parole della locuzione sulle parole originali
+    // consecutive rimaste senza corrispondenza, mantenendo l'ordine KJV.
+    const usable=Math.min(parts.length,slots);
+    const firstSlot=slots-usable;
+    for(let slot=0;slot<usable;slot++){
+      const from=Math.floor(slot*parts.length/usable);
+      const to=Math.floor((slot+1)*parts.length/usable);
+      result[start+firstSlot+slot]=parts.slice(from,to).join(' ');
+    }
+    previousAnchor=i;
+  }
+  return result;
 }
 async function paneInt(){
   const pane=$('#pane'),tok=S.tok,v=S.v,c=S.c,bi=S.bi,id=B[bi].id;
@@ -846,7 +872,7 @@ async function paneInt(){
   pane.append(h('div',{class:'card'},h('h4',{text:(ot?'Ebraico · da destra a sinistra':'Greco')+' · KJV sotto ogni parola'}),wrap),h('div',{class:'hint',text:'La parola KJV è collegata tramite il numero Strong. Alcune parole funzionali o varianti non hanno un’associazione KJV univoca e restano vuote. Tocca una parola per aprire lessico, analisi e occorrenze.'}));
   getKjvConcordance(id,c).then(data=>{
     if(tok!==S.tok||S.v!==v||S.tab!=='int')return;
-    const aligned=alignKjvToOriginal(ws,kjvVerseStrongMap(data,v));
+    const aligned=alignKjvToOriginal(ws,kjvVerseItems(data,v));
     aligned.forEach((word,i)=>{kjvLabels[i].textContent=word||'—';});
   }).catch(()=>{kjvLabels.forEach(x=>x.textContent='—');});
 }
