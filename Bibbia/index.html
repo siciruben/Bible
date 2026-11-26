@@ -427,9 +427,9 @@ html{background:var(--bg)}
 .map-selector{display:flex;gap:7px;overflow-x:auto;padding:2px 1px 10px;scrollbar-width:thin}
 .map-choice{flex:0 0 auto;border:1px solid var(--line);background:var(--surface2,var(--card));color:var(--ink);border-radius:999px;padding:7px 12px;font:inherit;font-size:12px;cursor:pointer}
 .map-choice.on{background:var(--accent);border-color:var(--accent);color:white}
-.map-stage{position:relative;height:min(58vh,540px);min-height:280px;overflow:hidden;border-radius:13px;background:#f2f0eb;touch-action:none;cursor:grab;user-select:none}
+.map-stage{position:relative;width:100%;max-width:100%;height:min(58vh,540px);min-height:280px;overflow:hidden;contain:paint;border:1px solid var(--line);border-radius:13px;background:#f2f0eb;touch-action:none;cursor:grab;user-select:none;box-sizing:border-box}
 .map-stage:active{cursor:grabbing}
-.map-image{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;transform-origin:0 0;pointer-events:none;user-select:none}
+.map-image{position:absolute;inset:0;display:block;width:100%;height:100%;max-width:none;object-fit:contain;transform-origin:0 0;pointer-events:none;user-select:none}
 .map-status{position:absolute;inset:0;display:grid;place-items:center;padding:20px;text-align:center;color:#555;background:#f2f0eb;font-size:13px}
 .map-status[hidden]{display:none}
 .map-controls{display:flex;gap:8px;justify-content:center;margin-top:10px}
@@ -1151,7 +1151,7 @@ function paneMaps(){
   }
   const card=h('div',{class:'card map-card'});
   card.append(h('h4',{text:'Mappe storiche — Vita di Gesù'}));
-  card.append(h('p',{class:'hint',text:'Mappe della Palestina al tempo di Gesù, tratte dal progetto di riferimento. Seleziona una mappa per esplorarla.'}));
+  card.append(h('p',{class:'hint',text:'Mappe della Palestina al tempo di Gesù. Seleziona una mappa per esplorarla.'}));
   const selector=h('div',{class:'map-selector','aria-label':'Seleziona una mappa'});
   const stage=h('div',{class:'map-stage',tabindex:'0','aria-label':'Mappa interattiva: trascina per spostarti, usa i controlli per ingrandire'});
   const img=h('img',{class:'map-image',alt:'Mappa storica della Palestina al tempo di Gesù',draggable:'false'});
@@ -1167,7 +1167,17 @@ function paneMaps(){
 
   let scale=1,tx=0,ty=0,drag=null,pinch=null;
   const pointers=new Map();
-  const paint=()=>{img.style.transform=`translate(${tx}px,${ty}px) scale(${scale})`;};
+  const clampPan=()=>{
+    if(scale<=1){tx=0;ty=0;return;}
+    const sw=stage.clientWidth,sh=stage.clientHeight;
+    const nw=img.naturalWidth||sw,nh=img.naturalHeight||sh;
+    const fit=Math.min(sw/nw,sh/nh);
+    const cw=nw*fit,ch=nh*fit,ox=(sw-cw)/2,oy=(sh-ch)/2;
+    const minX=sw-(ox+cw)*scale,maxX=-ox*scale;
+    const minY=sh-(oy+ch)*scale,maxY=-oy*scale;
+    tx=Math.min(maxX,Math.max(minX,tx));ty=Math.min(maxY,Math.max(minY,ty));
+  };
+  const paint=()=>{clampPan();img.style.transform=`translate(${tx}px,${ty}px) scale(${scale})`;};
   const resetView=()=>{scale=1;tx=0;ty=0;paint();};
   const zoom=(factor,cx=stage.clientWidth/2,cy=stage.clientHeight/2)=>{
     const old=scale,next=Math.min(7,Math.max(1,scale*factor));
