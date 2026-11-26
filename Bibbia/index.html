@@ -525,6 +525,9 @@ html{background:var(--bg)}
   /* niente velo scuro dietro pannelli e schede: evita la banda di colore diversa in alto (il tocco fuori chiude ancora) */
   .scrim{background:transparent!important;-webkit-backdrop-filter:none!important;backdrop-filter:none!important}
 }
+/* scheletro del capitolo (caricamento iniziale) */
+.sk-chapter .sk-h{height:30px;width:46%;margin:6px 0 26px;border-radius:10px}
+.sk-chapter .skel-line{height:16px;margin:17px 0;border-radius:6px}
 /* scheletro dei risultati di ricerca */
 .sk-row{padding:12px 4px;border-top:1px solid var(--line)}
 .sk-row .sk-ref{height:11px;width:26%;margin-bottom:10px}
@@ -560,7 +563,7 @@ html{background:var(--bg)}
       <div class="navhead"><div class="seg" id="navseg" role="tablist"><button role="tab" aria-selected="true" data-v="books">Libri</button><button role="tab" aria-selected="false" data-v="saved">Salvati</button></div></div>
       <div id="navlist"></div>
     </nav>
-    <main id="reader" tabindex="-1"><article id="chapter"><div class="loading"><div><div class="spin"></div>Caricamento…</div></div></article><div class="pager" id="pager"></div></main>
+    <main id="reader" tabindex="-1"><article id="chapter"><div class="sk-chapter" aria-busy="true" aria-label="Caricamento"><div class="skeleton sk-h"></div><div class="skeleton skel-line long"></div><div class="skeleton skel-line long"></div><div class="skeleton skel-line mid"></div><div class="skeleton skel-line long"></div><div class="skeleton skel-line long"></div><div class="skeleton skel-line short"></div><div class="skeleton skel-line long"></div><div class="skeleton skel-line long"></div><div class="skeleton skel-line mid"></div><div class="skeleton skel-line long"></div><div class="skeleton skel-line mid"></div><div class="skeleton skel-line short"></div></div></article><div class="pager" id="pager"></div></main>
     <aside id="insp" aria-label="Strumenti di studio">
       <div class="grab" id="grab"><i></i></div>
       <div class="ihead"><div style="flex:1;min-width:0"><div class="rf" id="irf">Studio</div><div class="sb" id="isb"></div></div><button type="button" class="btn" id="lexTranslateHeader" hidden>Traduci in italiano</button><button class="ibtn x" id="iclose" aria-label="Chiudi"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
@@ -603,7 +606,6 @@ html{background:var(--bg)}
   <label for="fs">Dimensione del testo</label><input type="range" id="fs" min="16" max="30" step="1">
   <label for="topx">Abbassa la barra in alto: <span id="topxv"></span></label><input type="range" id="topx" min="0" max="80" step="2">
   <label>Carattere</label><div class="seg" id="ffseg"><button data-f="serif">Con grazie</button><button data-f="sans">Lineare</button></div>
-  <label>Feedback tattile</label><div class="seg" id="hapseg"><button data-hap="1">Attivo</button><button data-hap="0">Spento</button></div>
   <label>Tema</label><div class="seg" id="thseg"><button data-th="light">Chiaro</button><button data-th="dark">Scuro</button><button data-th="pergamena">Pergamena</button></div>
 </div>
 <div class="pop" id="vpop" role="dialog" aria-label="Versione della Bibbia">
@@ -632,33 +634,10 @@ const fold=s=>s.toLowerCase().replace(/[àáâä]/g,'a').replace(/[èéêë]/g,'
 const ICON_CHEV='<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg>';
 
 /* ---------- storage ---------- */
-let store={hl:{},nt:{},bm:{},set:{fs:20,ff:'serif',th:'auto',vi:'r20',top:0,hap:true}};
+let store={hl:{},nt:{},bm:{},set:{fs:20,ff:'serif',th:'auto',vi:'r20',top:0}};
 try{const raw=localStorage.getItem('godeep:v1');if(raw){const o=JSON.parse(raw);store={...store,...o,set:{...store.set,...(o.set||{})}};}}catch(e){}
 function save(){try{localStorage.setItem('godeep:v1',JSON.stringify(store));}catch(e){}}
 
-/* ---------- feedback tattile ----------
-   Android: navigator.vibrate. iPhone: trucco dell'interruttore <input type=checkbox switch> (iOS 18+), non standard:
-   se non funziona, l'app va avanti normalmente. Si spegne dal pannello Aa. */
-const hap=(()=>{
-  let lab=null,last=0;
-  const on=()=>store.set.hap!==false;
-  const fire=(ms)=>{
-    try{
-      if(navigator.vibrate){navigator.vibrate(ms||10);return;}
-      if(!matchMedia('(pointer: coarse)').matches)return;
-      if(!lab){
-        lab=document.createElement('label');lab.setAttribute('aria-hidden','true');lab.style.display='none';
-        const i=document.createElement('input');i.type='checkbox';i.setAttribute('switch','');lab.appendChild(i);
-        (document.body||document.head).appendChild(lab);
-      }
-      lab.click();
-    }catch(e){}
-  };
-  return{
-    tick(){if(!on())return;const n=Date.now();if(n-last<35)return;last=n;fire(10);},
-    double(){if(!on())return;last=Date.now();fire(10);setTimeout(()=>fire(10),110);}
-  };
-})();
 
 /* ---------- data layer ---------- */
 const B=[];const ORD={bs:[],cs:[],total:0,nt:0};
@@ -787,7 +766,6 @@ function applySettings(){
   $('#fs').value=store.set.fs;
   r.style.setProperty('--topx',store.set.top+'px');$('#topx').value=store.set.top;$('#topxv').textContent=store.set.top+'px';
   $$('#ffseg button').forEach(b=>b.setAttribute('aria-selected',b.dataset.f===store.set.ff));
-  $$('#hapseg button').forEach(b=>b.setAttribute('aria-selected',(b.dataset.hap==='1')===(store.set.hap!==false)));
   $$('#thseg button').forEach(b=>b.setAttribute('aria-selected',b.dataset.th===th));
   $$('#vpop [data-vi]').forEach(b=>b.setAttribute('aria-selected',b.dataset.vi===curVi()));
   $$('.vbtn .vabbr').forEach(x=>{x.textContent=VERSIONS[curVi()].abbr;});
@@ -1007,7 +985,7 @@ function selectVerse(v){
     $$('#chapter .v.sel').forEach(e=>e.classList.remove('sel'));
     setHash();renderInspector();closeSheet();return;
   }
-  hap.tick();S.v=v;S.word=null;if(S.tab==='lex')S.tab='int';
+  S.v=v;S.word=null;if(S.tab==='lex')S.tab='int';
   $$('#chapter .v.sel').forEach(e=>e.classList.remove('sel'));const el=$('#v'+v);if(el)el.classList.add('sel');
   setHash();renderInspector();if(isPhone())openSheet();
 }
@@ -1748,12 +1726,12 @@ function paneNotes(){
   let tm;ta.addEventListener('input',()=>{clearTimeout(tm);tm=setTimeout(()=>{const t=ta.value.trim();if(t)store.nt[k]=t;else delete store.nt[k];save();refreshVerse(S.v);if(S.navView==='saved')buildNav();},350);});
   pane.append(h('div',{class:'card'},h('h4',{text:'Appunto'}),ta,h('div',{class:'hint',text:'Gli appunti restano su questo dispositivo, in questo browser.'})));
   const acts=h('div',{class:'actions'});
-  acts.append(h('button',{type:'button',class:'btn',text:store.bm[k]?'Rimuovi segnalibro':'Aggiungi segnalibro',on:{click:()=>{if(store.bm[k]){delete store.bm[k];hap.tick();}else{store.bm[k]=1;hap.double();}save();refreshVerse(S.v);paneNotes();if(S.navView==='saved')buildNav();}}}));
+  acts.append(h('button',{type:'button',class:'btn',text:store.bm[k]?'Rimuovi segnalibro':'Aggiungi segnalibro',on:{click:()=>{if(store.bm[k])delete store.bm[k];else store.bm[k]=1;save();refreshVerse(S.v);paneNotes();if(S.navView==='saved')buildNav();}}}));
   const cp=h('button',{type:'button',class:'btn',text:'Copia versetto'});
   cp.addEventListener('click',async()=>{const t=plain((S.loaded.c[S.c-1]||[])[S.v-1]||'');const s='«'+t+'» — '+B[S.bi].n+' '+S.c+':'+S.v+' ('+VERSIONS[curVi()].name+')';try{await navigator.clipboard.writeText(s);cp.textContent='Copiato';}catch(e){cp.textContent='Copia non consentita';}setTimeout(()=>cp.textContent='Copia versetto',1600);});
   acts.append(cp);pane.append(h('div',{class:'card'},acts));
 }
-function setHl(k,c){if(c){store.hl[k]=c;hap.double();}else{delete store.hl[k];hap.tick();}save();refreshVerse(S.v);paneNotes();if(S.navView==='saved')buildNav();}
+function setHl(k,c){if(c)store.hl[k]=c;else delete store.hl[k];save();refreshVerse(S.v);paneNotes();if(S.navView==='saved')buildNav();}
 
 /* ---------- search ---------- */
 let TEXT=null,textLoading=null;
@@ -1827,8 +1805,8 @@ function openStrong(s){closeSearch();S.word={s,standalone:true,w:null};S.tab='le
 function bindUI(){
   $('#navtoggle').onclick=()=>$('#nav').classList.contains('open')?closeNav():openNav();
   $('#titlebtn').onclick=()=>{if(matchMedia('(max-width:1180px)').matches){$('#nav').classList.contains('open')?closeNav():openNav();}else{S.navOpenBook=S.bi;buildNav();const on=$('.book.on');on&&on.scrollIntoView({block:'center'});}};
-  $('#prev').onclick=()=>{const p=prevCh();if(p){hap.tick();go(p.bi,p.c,null);}};
-  $('#next').onclick=()=>{const p=nextCh();if(p){hap.tick();go(p.bi,p.c,null);}};
+  $('#prev').onclick=()=>{const p=prevCh();p&&go(p.bi,p.c,null);};
+  $('#next').onclick=()=>{const p=nextCh();p&&go(p.bi,p.c,null);};
   $('#searchbtn').onclick=openSearch;$('#sclose').onclick=closeSearch;
   $('#q').addEventListener('input',runSearch);
   $$('#sscope button').forEach(b=>b.onclick=()=>{sScope=b.dataset.s;$$('#sscope button').forEach(x=>x.setAttribute('aria-selected',x===b));doSearch();});
@@ -1836,11 +1814,10 @@ function bindUI(){
   $('#aclose').onclick=()=>{$('#amodal').classList.remove('on');$('#scrim').classList.remove('on');};
   $$('[data-pop]').forEach(b=>b.onclick=e=>togglePop(b.dataset.pop,e));
   document.addEventListener('click',e=>{if(!e.target.closest('.pop')&&!e.target.closest('[data-pop]'))POPS.forEach(id=>$('#'+id).classList.remove('on'));});
-  $('#fs').oninput=e=>{store.set.fs=+e.target.value;hap.tick();applySettings();save();};
-  $('#topx').oninput=e=>{store.set.top=+e.target.value;hap.tick();applySettings();save();};
-  $$('#ffseg button').forEach(b=>b.onclick=()=>{hap.tick();store.set.ff=b.dataset.f;applySettings();save();});
-  $$('#thseg button').forEach(b=>b.onclick=()=>{hap.tick();store.set.th=b.dataset.th;applySettings();save();});
-  $$('#hapseg button').forEach(b=>b.onclick=()=>{store.set.hap=b.dataset.hap==='1';applySettings();save();hap.tick();});
+  $('#fs').oninput=e=>{store.set.fs=+e.target.value;applySettings();save();};
+  $('#topx').oninput=e=>{store.set.top=+e.target.value;applySettings();save();};
+  $$('#ffseg button').forEach(b=>b.onclick=()=>{store.set.ff=b.dataset.f;applySettings();save();});
+  $$('#thseg button').forEach(b=>b.onclick=()=>{store.set.th=b.dataset.th;applySettings();save();});
   $$('#vpop [data-vi]').forEach(b=>b.onclick=()=>setVersion(b.dataset.vi));
   $('#trbtn').onclick=()=>{store.set.tr=!store.set.tr;save();applySettings();if(!S.home){renderChapterKeep();if(S.v)renderInspector();}};
   $$('#navseg button').forEach(b=>b.onclick=()=>{S.navView=b.dataset.v;$$('#navseg button').forEach(x=>x.setAttribute('aria-selected',x===b));buildNav();});
