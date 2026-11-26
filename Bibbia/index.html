@@ -2423,22 +2423,31 @@ function bindDiag(){
     pop.addEventListener('touchcancel',end);
   });
 })();
-/* Aggiornamento manuale: verifica la versione del service worker e ricarica l'app. */
+/* Aggiornamento: scarica la nuova versione in background; si applica al successivo avvio. */
 (function(){
   const btn=document.getElementById('appupdatebtn'),hint=document.getElementById('appupdatehint');if(!btn)return;
   btn.addEventListener('click',async()=>{
-    btn.disabled=true;hint.textContent='Verifica aggiornamenti in corso…';
+    btn.disabled=true;hint.textContent='Controllo aggiornamenti…';
     try{
-      if('serviceWorker' in navigator){
-        const reg=await navigator.serviceWorker.getRegistration();
-        if(reg) await reg.update();
+      if(!('serviceWorker' in navigator)) throw new Error('Service worker non supportato');
+      const reg=await navigator.serviceWorker.getRegistration(new URL('./',location.href).href);
+      if(!reg) throw new Error('Service worker non registrato');
+      await reg.update();
+      if(reg.waiting || reg.installing){
+        hint.textContent='Nuova versione in preparazione. Verrà applicata automaticamente dopo aver chiuso e riaperto l’app.';
+      }else{
+        hint.textContent='Nessun aggiornamento nuovo rilevato. L’app controllerà di nuovo al prossimo avvio.';
       }
-      hint.textContent='Controllo completato. Ricarico l’app…';
-      setTimeout(()=>location.reload(),450);
-    }catch(e){hint.textContent='Impossibile verificare gli aggiornamenti. Riprova tra poco.';btn.disabled=false;}
+    }catch(e){hint.textContent='Non riesco a verificare gli aggiornamenti. Controlla la connessione e riprova.';}
+    finally{btn.disabled=false;}
   });
 })();
-if('serviceWorker' in navigator&&/^https?:$/.test(location.protocol))addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));
+if('serviceWorker' in navigator&&/^https?:$/.test(location.protocol))addEventListener('load',()=>{
+  navigator.serviceWorker.register(new URL('./sw.js',document.baseURI),{updateViaCache:'none'}).catch(err=>{
+    const hint=document.getElementById('appupdatehint');if(hint)hint.textContent='Aggiornamenti automatici non disponibili in questo momento.';
+    console.warn('Registrazione aggiornamenti non riuscita:',err);
+  });
+});
 </script>
 <!-- Invito ad aggiungere l'app alla schermata Home (solo telefoni e tablet) -->
 <style>
