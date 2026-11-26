@@ -201,6 +201,14 @@ input,textarea{font:inherit;color:inherit}
 .sw[aria-pressed="true"]{box-shadow:0 0 0 2.5px var(--accent)}
 .sw.none{background:var(--card);color:var(--ink2);font-size:16px}
 textarea.note{width:100%;min-height:120px;resize:vertical;border-radius:12px;border:1px solid var(--line);background:var(--bg);padding:10px 12px;line-height:1.5}
+.multi-search-wrap{padding:2px 0 10px}
+.multi-ref-search{display:block;width:100%;height:46px;border:1px solid var(--line);border-radius:14px;background:var(--card);color:var(--ink);padding:0 14px 0 42px;font:500 14px var(--ui);outline:none;box-shadow:0 1px 3px rgba(0,0,0,.04);background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23888' stroke-width='2'%3E%3Ccircle cx='11' cy='11' r='7'/%3E%3Cpath d='m20 20-3.5-3.5'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:14px center;background-size:18px}
+.multi-ref-search:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+.multi-result-card{margin-top:2px;padding:16px 18px}
+.multi-result-card>.rf{font-size:13px;font-weight:700;margin-bottom:12px}
+.multi-result-text p{margin:0 0 9px;font-family:var(--serif);font-size:16px;line-height:1.6}
+.multi-result-text p:last-child{margin-bottom:0}
+.multi-gap{display:block;margin:8px 0;color:var(--ink3);font-family:var(--ui);font-size:12px;font-style:italic}
 .actions{display:flex;gap:8px;flex-wrap:wrap}
 .btn{padding:8px 14px;border-radius:10px;background:var(--accent-soft);color:var(--accent);font-weight:600;font-size:14px}
 .btn:hover{background:var(--accent);color:var(--accent-ink)}
@@ -681,6 +689,7 @@ html{background:var(--bg)}
   <input type="file" id="bkfile" accept=".json,application/json" hidden>
   <div class="hint" id="bkhint">Temi, evidenziazioni, note, segnalibri, versione, recenti e impostazioni in un unico file. Il file si chiamerà bibbia-preferenze-AAAA-MM-GG.json (formato JSON, con la data del giorno).</div>
   <div id="instwrap" hidden><label>App</label><button type="button" class="btn rowbtn" id="instbtn">Installa come app</button><div class="hint" id="insthint" hidden></div></div>
+  <label>Aggiornamenti</label><button type="button" class="btn rowbtn" id="appupdatebtn">Aggiorna app</button><div class="hint" id="appupdatedate">Ultimo aggiornamento: 26 novembre 2026</div><div class="hint" id="appupdatehint" aria-live="polite"></div>
 </div>
 
 <script>
@@ -1115,7 +1124,7 @@ function multiCopyText(){
   const chunks=[];let prev=null;
   nums.forEach(v=>{if(prev!==null&&v>prev+1)chunks.push('[...]');chunks.push(v+' '+plain(verses[v-1]||''));prev=v;});
   const refs=B[S.bi].n+' '+S.c+':'+formatVerseRanges(nums);
-  return '«'+chunks.join(' ')+'» — '+refs+' ('+VERSIONS[curVi()].name+')';
+  return chunks.join(' ')+' — '+refs+' ('+VERSIONS[curVi()].name+')';
 }
 async function copyMultiVerses(btn){
   if(!S.multiVerses.length)return;
@@ -1951,17 +1960,23 @@ function renderMultiStudio(){
   $('#irf').textContent='Copia versetti';$('#isb').textContent='Seleziona i versetti o inserisci un riferimento';
   $('#lexTranslateHeader').hidden=true;$('#tabs').parentElement.hidden=true;
   pane.replaceChildren();
-  const search=h('input',{type:'text',class:'note',id:'multiRefInput',placeholder:'Es. Gen 3:4-7,8-9','aria-label':'Riferimento dei versetti'});
+  const search=h('input',{type:'search',class:'multi-ref-search',id:'multiRefInput',placeholder:'Cerca un riferimento · Gen 3:4-7,8-9','aria-label':'Riferimento dei versetti'});
   search.value=S.multiRefText||'';
   search.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();applyMultiReference(search.value);}});
   search.addEventListener('change',()=>applyMultiReference(search.value));
-  pane.append(h('div',{class:'card'},h('h4',{text:'Riferimento biblico'}),search,h('div',{class:'hint',text:'Puoi scrivere intervalli e gruppi separati da virgole, oppure selezionare i versetti direttamente nel testo.'})));
+  pane.append(h('div',{class:'multi-search-wrap'},search));
   const nums=S.multiVerses.slice().sort((a,b)=>a-b);
   const ref=nums.length?B[S.bi].n+' '+S.c+':'+formatVerseRanges(nums):'Nessun versetto selezionato';
   $('#isb').textContent=ref;
   const copy=h('button',{type:'button',class:'btn',text:'Copia versetti',on:{click:()=>copyMultiVerses(null)}});
   pane.append(h('div',{class:'actions',style:'margin:12px 0'},copy));
-  nums.forEach(v=>{const t=plain((S.loaded?.c?.[S.c-1]||[])[v-1]||'');pane.append(h('div',{class:'card verse-quote',style:'margin-bottom:8px'},h('div',{class:'rf',text:B[S.bi].n+' '+S.c+':'+v}),h('div',{text:v+' '+t})));});
+  if(nums.length){
+    const card=h('div',{class:'card verse-quote multi-result-card'});
+    card.append(h('div',{class:'rf',text:ref}));
+    const body=h('div',{class:'multi-result-text'});let prev=null;
+    nums.forEach(v=>{if(prev!==null&&v>prev+1)body.append(h('span',{class:'multi-gap',text:'[...]'}));body.append(h('p',{text:v+' '+plain((S.loaded?.c?.[S.c-1]||[])[v-1]||'')}));prev=v;});
+    card.append(body);pane.append(card);
+  }
 }
 function formatVerseRanges(nums){
   const out=[];let a=null,b=null;
@@ -2387,6 +2402,21 @@ function bindDiag(){
     };
     pop.addEventListener('touchend',end);
     pop.addEventListener('touchcancel',end);
+  });
+})();
+/* Aggiornamento manuale: verifica la versione del service worker e ricarica l'app. */
+(function(){
+  const btn=document.getElementById('appupdatebtn'),hint=document.getElementById('appupdatehint');if(!btn)return;
+  btn.addEventListener('click',async()=>{
+    btn.disabled=true;hint.textContent='Verifica aggiornamenti in corso…';
+    try{
+      if('serviceWorker' in navigator){
+        const reg=await navigator.serviceWorker.getRegistration();
+        if(reg) await reg.update();
+      }
+      hint.textContent='Controllo completato. Ricarico l’app…';
+      setTimeout(()=>location.reload(),450);
+    }catch(e){hint.textContent='Impossibile verificare gli aggiornamenti. Riprova tra poco.';btn.disabled=false;}
   });
 })();
 if('serviceWorker' in navigator&&/^https?:$/.test(location.protocol))addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));
