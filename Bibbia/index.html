@@ -538,10 +538,10 @@ html{background:var(--bg)}
 #tabs{display:flex;overflow-x:auto;scrollbar-width:none;overscroll-behavior-x:contain}
 #tabs::-webkit-scrollbar{display:none}
 #tabs button{flex:1 0 auto;padding:6px 14px}
-.chips{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;margin:0 0 12px}
-.chips::-webkit-scrollbar{display:none}
-.chips .btn{flex:none;padding:6px 12px;font-size:13px}
-.chips .btn[aria-pressed="true"]{font-weight:600;box-shadow:0 0 0 1.5px var(--ink2) inset}
+.cauth{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;margin:0 0 12px}
+.cauth::-webkit-scrollbar{display:none}
+.cauth .btn{flex:none;padding:6px 12px;font-size:13px}
+.cauth .btn[aria-pressed="true"]{font-weight:600;box-shadow:0 0 0 1.5px var(--ink2) inset}
 .ctext{white-space:pre-line}
 .cmore{margin-top:10px}
 </style>
@@ -1141,7 +1141,7 @@ async function paneComments(){
   try{authors=await comAuthors();}catch(e){if(alive())pane.replaceChildren(verseCard(),fail('Commenti non disponibili. Controlla la connessione.',paneComments));return;}
   if(!alive())return;
   if(!authors.some(a=>a.id===S.comAuthor))S.comAuthor=authors[0].id;
-  const chips=h('div',{class:'chips'}),list=h('div');
+  const chips=h('div',{class:'cauth'}),list=h('div');
   authors.forEach(a=>chips.append(h('button',{type:'button',class:'btn','data-a':a.id,text:a.n,on:{click:()=>{S.comAuthor=a.id;load();}}})));
   const load=async()=>{
     const au=S.comAuthor,an=(authors.find(a=>a.id===au)||{}).n||'';
