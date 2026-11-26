@@ -2504,19 +2504,34 @@ function bindDiag(){
   const btn=document.getElementById('appupdatebtn');
   const hint=document.getElementById('appupdatehint');
   const dateEl=document.getElementById('appupdatedatetime');
-  if(dateEl){
-    const buildDate=new Date(APP_BUILD);
-    if(!Number.isNaN(buildDate.getTime())){
-      dateEl.textContent=new Intl.DateTimeFormat('it-IT',{
-        day:'numeric',month:'long',year:'numeric',hour:'2-digit',minute:'2-digit'
-      }).format(buildDate);
+  /* Data e ora mostrate: l'ultimo aggiornamento davvero avvenuto su questo dispositivo.
+     Cambiano quando si applica un aggiornamento (pulsante o automatico) o quando parte una versione piu' recente. */
+  const LS_B='godeep:build',LS_U='godeep:updatedAt';
+  const lsGet=k=>{try{return localStorage.getItem(k);}catch(e){return null;}};
+  const lsSet=(k,v)=>{try{localStorage.setItem(k,v);}catch(e){}};
+  const markUpdated=()=>lsSet(LS_U,String(Date.now()));
+  function showDate(){
+    if(!dateEl)return;
+    let t=Number(lsGet(LS_U));if(!t)t=new Date(APP_BUILD).getTime();
+    if(Number.isNaN(t))return;
+    dateEl.textContent=new Intl.DateTimeFormat('it-IT',{day:'numeric',month:'long',year:'numeric',hour:'2-digit',minute:'2-digit'}).format(new Date(t));
+  }
+  {
+    const prev=lsGet(LS_B);
+    if(prev!==APP_BUILD){
+      lsSet(LS_B,APP_BUILD);
+      if(prev)markUpdated();
+      else if(!lsGet(LS_U))lsSet(LS_U,String(new Date(APP_BUILD).getTime()));
     }
+    showDate();
   }
   if(!('serviceWorker' in navigator) || !/^https?:$/.test(location.protocol)){
     if(btn)btn.addEventListener('click',()=>{if(hint)hint.textContent='L’aggiornamento funziona solo quando l’app è aperta da un indirizzo web (https), non da un file locale.';});
     return;
   }
 
+  const hadController=!!navigator.serviceWorker.controller;
+  navigator.serviceWorker.addEventListener('controllerchange',()=>{if(hadController){markUpdated();showDate();}});
   let panel=null, bar=null, message=null, detail=null;
   let updateDetected=false;
   function ensurePanel(){
@@ -2586,6 +2601,7 @@ function bindDiag(){
     if(hint)hint.textContent='Applico la nuova versione…';
     try{const regs=await navigator.serviceWorker.getRegistrations();await Promise.all(regs.map(r=>r.unregister()));}catch(e){}
     try{const keys=await caches.keys();await Promise.all(keys.filter(k=>!/data/i.test(k)).map(k=>caches.delete(k)));}catch(e){}
+    markUpdated();showDate();
     setTimeout(()=>location.reload(),300);
   }
   /* Legge la copia online della pagina (con un indirizzo sempre diverso, per non pescare dalla cache)
