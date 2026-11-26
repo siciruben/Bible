@@ -346,7 +346,7 @@ body.home-on #prev,body.home-on #next,body.home-on #titlebtn{visibility:hidden}
 .hrn{font-family:var(--serif);font-weight:600;font-size:18px}
 .ex{font-family:var(--serif);font-size:14px;color:var(--ink2);margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 #tabbar{display:none}
-@media (min-width:761px){.hbtns{display:none}}
+@media (min-width:761px){.hbtns #home-off,.hbtns #home-set{display:none}}
 /* Home: con un pannello aperto il velo lascia passare il tocco, cosi' un altro pulsante in alto si attiva al primo tocco */
 body.home-on.pop-open .scrim{pointer-events:none}
 @media (max-width:760px){
@@ -621,6 +621,54 @@ html{background:var(--bg)}
     overflow:auto;
   }
 }
+/* ===== v18: nuova home (Continua, Parola del giorno, sezioni, recenti) ===== */
+.hwrap{max-width:908px;padding-top:calc(env(safe-area-inset-top) + 26px)}
+.htop{margin-bottom:20px;min-height:36px}
+.hid{display:flex;align-items:center;gap:10px;min-width:0}
+.hlogo{width:30px;height:30px;border-radius:9px;background:#1f1e1d;color:#e08b6b;display:grid;place-items:center;font-family:var(--serif);font-weight:700;font-size:18px;flex:none}
+.hidt{display:flex;flex-direction:column;gap:1px;min-width:0}
+.hbrand{font-family:var(--serif);font-weight:700;font-size:16px;color:var(--ink);letter-spacing:0;line-height:1.15}
+.hdate{font-size:12.5px;color:var(--ink2);line-height:1.2}
+.hhead{font-size:clamp(34px,6.4vw,54px);margin:0 0 20px}
+.hsearch{margin:0 0 22px}
+.hcol{min-width:0}
+.heb{font-family:var(--ui);font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--accent)}
+.hcont{background:var(--card);border:1px solid var(--line);border-radius:22px;padding:18px 20px;box-shadow:0 8px 28px rgba(0,0,0,.10);margin-bottom:14px;cursor:pointer}
+.hct{font-family:var(--serif);font-weight:700;font-size:clamp(28px,5.5vw,34px);line-height:1.1;letter-spacing:-.02em;margin:6px 0}
+.hcx{font-family:var(--serif);font-size:15px;line-height:1.5;color:var(--ink2);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.hcx .skel-line{margin:7px 0}
+.hgo{margin-top:14px;display:inline-flex;align-items:center;padding:11px 20px;border-radius:999px;background:var(--accent);color:var(--accent-ink);font-weight:600;font-size:15px}
+.hgo:hover{filter:brightness(1.07)}
+.hword{display:flex;align-items:center;justify-content:space-between;gap:14px;width:100%;text-align:left;padding:14px 16px 14px 20px;border-radius:22px;background:var(--accent-soft);border:1px solid transparent;color:var(--ink);margin-bottom:24px}
+.hword:hover{border-color:var(--accent)}
+.hwb{min-width:0}
+.hwlw{margin:3px 0 1px}
+.hwl{display:inline-block;unicode-bidi:isolate;font-size:40px;line-height:1.2;color:var(--ink)}
+.hwl[lang="el"]{font-family:var(--greek)}
+.hwl[lang="he"]{font-family:var(--hebrew);font-size:42px}
+.hwt{font-size:13px;color:var(--ink2)}
+.hwt i{font-style:italic}
+.hwg{font-size:15px;margin-top:1px}
+.hwgo{flex:none;width:44px;height:44px;border-radius:50%;border:1.5px solid var(--accent);color:var(--accent);display:grid;place-items:center}
+.hwgo svg{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.hsecs{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:26px}
+.hsec{display:block;text-align:left;padding:13px 16px;border-radius:16px;background:var(--gfill);border:1px solid var(--gline)}
+.hsec:hover{border-color:var(--accent);background:var(--accent-soft)}
+.hsn{display:block;font-family:var(--serif);font-weight:700;font-size:17px;line-height:1.2}
+.hss{display:block;font-size:12px;color:var(--ink2);margin-top:3px}
+.hrec{display:block;width:100%;text-align:left;padding:14px 18px;border-radius:18px;background:var(--card);border:1px solid var(--line);box-shadow:0 4px 16px rgba(0,0,0,.07);margin-bottom:10px}
+.hrec:hover{border-color:var(--accent)}
+@media (min-width:761px){
+  .hlogo,.hbrand{display:none}
+  .hdate{font-size:13px}
+  .hgrid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:0 24px;align-items:start}
+}
+@media (max-width:760px){
+  .hsecs{display:flex;flex-wrap:wrap;gap:10px}
+  .hsec{padding:10px 16px;border-radius:999px;border:0}
+  .hsn{font-family:var(--ui);font-weight:500;font-size:14px}
+  .hss{display:none}
+}
 </style>
 </head>
 <body>
@@ -642,12 +690,12 @@ html{background:var(--bg)}
   <div id="prog"></div></header>
   <div id="body">
     <section id="home" aria-label="Home"><div class="hwrap">
-      <div class="htop"><span class="hbrand">Bibbia</span><div class="hbtns"><button class="ibtn vbtn" id="home-ver" type="button" data-pop="vpop" aria-label="Versione della Bibbia"><span class="vabbr">R2020</span></button><button class="ibtn" id="home-off" type="button" data-pop="opop" aria-label="Scarica per uso offline"><svg viewBox="0 0 24 24"><path d="M12 4v11M7.5 10.5L12 15l4.5-4.5M5 19h14"/></svg></button><button class="ibtn" id="home-set" type="button" data-pop="pop" aria-label="Aspetto del testo"><svg viewBox="0 0 24 24"><path d="M3 19l5-13 5 13M5 14h6M15 19l3.5-8 3.5 8M16.3 16.5h4.4"/></svg></button></div></div>
+      <div class="htop"><div class="hid"><span class="hlogo" aria-hidden="true">B</span><div class="hidt"><span class="hbrand">Bibbia</span><span class="hdate" id="hdate"></span></div></div><div class="hbtns"><button class="ibtn vbtn" id="home-ver" type="button" data-pop="vpop" aria-label="Versione della Bibbia"><span class="vabbr">R2020</span></button><button class="ibtn" id="home-off" type="button" data-pop="opop" aria-label="Scarica per uso offline"><svg viewBox="0 0 24 24"><path d="M12 4v11M7.5 10.5L12 15l4.5-4.5M5 19h14"/></svg></button><button class="ibtn" id="home-set" type="button" data-pop="pop" aria-label="Aspetto del testo"><svg viewBox="0 0 24 24"><path d="M3 19l5-13 5 13M5 14h6M15 19l3.5-8 3.5 8M16.3 16.5h4.4"/></svg></button></div></div>
       <h1 class="hhead">Cosa cerchi oggi?</h1>
       <button type="button" class="hsearch" id="hsearch"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg><span>Parola, versetto o numero Strong</span></button>
-      <div class="hchips" id="hchips"></div>
+      <div class="hgrid"><div class="hcol"><div id="hcont"></div><div id="hword"></div></div><div class="hcol"><div class="hlabel">Sfoglia per sezione</div><div class="hsecs" id="hsecs"></div>
       <div class="hlabel">Recenti</div>
-      <div id="hrecent"></div>
+      <div id="hrecent"></div></div></div>
     </div></section>
     <nav id="nav" aria-label="Libri della Bibbia">
       <div class="navhead"><div class="seg" id="navseg" role="tablist"><button role="tab" aria-selected="true" data-v="books">Libri</button><button role="tab" aria-selected="false" data-v="saved">Salvati</button></div></div>
@@ -2249,17 +2297,55 @@ function effTheme(){const t=store.set.th;return(t==='light'||t==='dark'||t==='pe
 function updateTabs(){const a=$('#tb-home'),b=$('#tb-books');if(a)a.classList.toggle('on',!!S.home);if(b)b.classList.toggle('on',!S.home);}
 function hideHome(){S.home=false;document.body.classList.remove('home-on');updateTabs();}
 function showHome(){S.home=true;document.body.classList.add('home-on');renderHome();$('#home').scrollTop=0;updateTabs();}
+/* ---------- Home ---------- */
+const HSECT=[['Pentateuco','GEN','DEU'],['Storici','JOS','EST'],['Sapienziali','JOB','SNG'],['Profeti','ISA','MAL'],['Vangeli','MAT','JHN'],['Lettere','ROM','JUD']];
+/* Parola del giorno: [Strong, originale, traslitterazione, significato]. Una al giorno, alternando greco ed ebraico. */
+const WG=[['G0026','ἀγάπη','agapē','amore'],['G0225','ἀλήθεια','alētheia','verità'],['G0932','βασιλεία','basileia','regno'],['G5485','χάρις','charis','grazia'],['G4102','πίστις','pistis','fede, fiducia'],['G1680','ἐλπίς','elpis','speranza'],['G1515','εἰρήνη','eirēnē','pace'],['G3056','λόγος','logos','parola'],['G2222','ζωή','zōē','vita'],['G5457','φῶς','phōs','luce'],['G4151','πνεῦμα','pneuma','spirito, soffio'],['G1343','δικαιοσύνη','dikaiosynē','giustizia'],['G4991','σωτηρία','sōtēria','salvezza'],['G3341','μετάνοια','metanoia','conversione'],['G5479','χαρά','chara','gioia'],['G0040','ἅγιος','hagios','santo'],['G0746','ἀρχή','archē','principio'],['G0266','ἁμαρτία','hamartia','peccato'],['G0859','ἄφεσις','aphesis','perdono'],['G3875','παράκλητος','paraklētos','consolatore, avvocato'],['G1577','ἐκκλησία','ekklēsia','assemblea, chiesa'],['G4561','σάρξ','sarx','carne'],['G1785','ἐντολή','entolē','comandamento'],['G2588','καρδία','kardia','cuore'],['G5590','ψυχή','psychē','anima, vita'],['G1391','δόξα','doxa','gloria'],['G2842','κοινωνία','koinōnia','comunione'],['G1656','ἔλεος','eleos','misericordia'],['G4678','σοφία','sophia','sapienza'],['G0386','ἀνάστασις','anastasis','risurrezione']];
+const WH=[['H2617','חֶסֶד','chesed','amore fedele, bontà'],['H7965','שָׁלוֹם','shalom','pace, pienezza'],['H0539','אָמַן','aman','essere saldo, credere'],['H0571','אֱמֶת','emet','verità, fedeltà'],['H0157','אָהַב','ahav','amare'],['H7307','רוּחַ','ruach','spirito, vento'],['H1285','בְּרִית','berit','alleanza'],['H6944','קֹדֶשׁ','qodesh','santità'],['H6664','צֶדֶק','tsedeq','giustizia'],['H2451','חָכְמָה','chokmah','sapienza'],['H5315','נֶפֶשׁ','nefesh','anima, vita'],['H3820','לֵב','lev','cuore'],['H1697','דָּבָר','davar','parola, cosa'],['H8451','תּוֹרָה','torah','legge, insegnamento'],['H7225','רֵאשִׁית','reshit','principio'],['H1254','בָּרָא','bara','creare'],['H2580','חֵן','chen','grazia, favore'],['H8104','שָׁמַר','shamar','custodire'],['H3045','יָדַע','yada','conoscere'],['H3444','יְשׁוּעָה','yeshuah','salvezza'],['H2142','זָכַר','zakhar','ricordare'],['H8085','שָׁמַע','shama','ascoltare'],['H7355','רָחַם','racham','avere compassione'],['H2896','טוֹב','tov','buono'],['H8416','תְּהִלָּה','tehillah','lode'],['H3519','כָּבוֹד','kavod','gloria'],['H5769','עוֹלָם','olam','eternità'],['H1288','בָּרַךְ','barakh','benedire'],['H6918','קָדוֹשׁ','qadosh','santo'],['H0982','בָּטַח','batach','confidare']];
+const WOTD=[];WG.forEach((w,i)=>{WOTD.push(w);WOTD.push(WH[i]);});
+const WOTD_ANCHOR=Date.UTC(2026,10,27)/864e5; /* 27 novembre 2026 = ἀγάπη; poi una parola nuova ogni giorno */
+function dayNum(d=new Date()){return Math.floor(Date.UTC(d.getFullYear(),d.getMonth(),d.getDate())/864e5);}
+function wordOfDay(d){const n=WOTD.length;return WOTD[(((dayNum(d)-WOTD_ANCHOR)%n)+n)%n];}
+function homeDateText(){const s=new Intl.DateTimeFormat('it-IT',{weekday:'long',day:'numeric',month:'long'}).format(new Date());return s.charAt(0).toUpperCase()+s.slice(1);}
+let homeDay=null;
+function openSection(id){
+  const bi=idIdx(id);if(bi<0)return;
+  setNavView('books');S.navOpenBook=bi;buildNav();
+  if(matchMedia('(max-width:1180px)').matches)openNav();
+  requestAnimationFrame(()=>{const li=$('#navlist .book[data-i="'+bi+'"]');if(li)li.scrollIntoView({block:'center'});});
+}
 function renderHome(){
-  const chips=[['Gv 3:16','Gv 3:16'],['agape · G26','G26'],['pace','pace'],['Salmo 23','Salmo 23']];
-  $('#hchips').replaceChildren(...chips.map(([l,q])=>h('button',{type:'button',class:'chip',text:l,on:{click:()=>{$('#q').value=q;openSearch();}}})));
+  homeDay=dayNum();
+  $('#hdate').textContent=homeDateText();
+  /* Continua a leggere */
+  const hadLast=!!lastPos(),last=lastPos()||{bi:idIdx('JHN'),c:1};
+  const cont=$('#hcont');cont.replaceChildren();
+  const ex=h('div',{class:'hcx'},h('div',{class:'skeleton skel-line long'}),h('div',{class:'skeleton skel-line mid'}));
+  getIt(B[last.bi].id).then(d=>{ex.textContent=plain((d.c[last.c-1]||[''])[0]);}).catch(()=>ex.replaceChildren());
+  const resume=()=>go(last.bi,last.c,null);
+  cont.append(h('div',{class:'hcont',on:{click:resume}},h('div',{class:'heb',text:hadLast?'Continua a leggere':'Inizia a leggere'}),h('div',{class:'hct',text:B[last.bi].n+' '+last.c}),ex,
+    h('button',{type:'button',class:'hgo',text:hadLast?'Riprendi la lettura':'Comincia',on:{click:e=>{e.stopPropagation();resume();}}})));
+  /* Parola del giorno */
+  const w=wordOfDay(),he=w[0][0]==='H';
+  const arrow=h('span',{class:'hwgo','aria-hidden':'true'});arrow.innerHTML='<svg viewBox="0 0 24 24"><path d="M9 5l7 7-7 7"/></svg>';
+  $('#hword').replaceChildren(h('button',{type:'button',class:'hword','aria-label':'Parola del giorno: '+w[2]+', '+w[3]+'. Apri il lessico',on:{click:()=>openStrong(w[0])}},
+    h('div',{class:'hwb'},h('div',{class:'heb',text:'Parola del giorno'}),h('div',{class:'hwlw'},h('span',{class:'hwl',lang:he?'he':'el',dir:he?'rtl':'ltr',text:w[1]})),h('div',{class:'hwt'},h('i',{text:w[2]}),' · '+sdisp(w[0])),h('div',{class:'hwg',text:w[3]})),arrow));
+  /* Sezioni */
+  $('#hsecs').replaceChildren(...HSECT.filter(([n,a,z])=>idIdx(a)>=0&&idIdx(z)>=0).map(([n,a,z])=>h('button',{type:'button',class:'hsec',on:{click:()=>openSection(a)}},h('span',{class:'hsn',text:n}),h('span',{class:'hss',text:B[idIdx(a)].n+' – '+B[idIdx(z)].n}))));
+  /* Recenti (escluso il capitolo gia' nella card Continua) */
   const rl=$('#hrecent');rl.replaceChildren();
-  const rec=(store.recent||[]).filter(r=>idIdx(r.id)>=0);
+  const rec=(store.recent||[]).filter(r=>idIdx(r.id)>=0&&!(idIdx(r.id)===last.bi&&r.c===last.c)).slice(0,3);
   if(!rec.length){rl.append(h('div',{class:'empty',text:'Qui compariranno i capitoli che leggi.'}));return;}
-  rec.forEach((r,i)=>{const bi=idIdx(r.id),t=h('div',{class:'ex'});
+  rec.forEach(r=>{const bi=idIdx(r.id),t=h('div',{class:'ex'});
     getIt(r.id).then(d=>{t.textContent=plain((d.c[r.c-1]||[''])[0]);}).catch(()=>{});
-    rl.append(h('button',{type:'button',class:'hrow',on:{click:()=>go(bi,r.c,null)}},h('div',{class:'hrt'},h('span',{class:'hrn',text:B[bi].n+' '+r.c}),i===0?h('span',{class:'pill',text:'Continua'}):null),t));
+    rl.append(h('button',{type:'button',class:'hrec',on:{click:()=>go(bi,r.c,null)}},h('div',{class:'hrt'},h('span',{class:'hrn',text:B[bi].n+' '+r.c})),t));
   });
 }
+/* la home si aggiorna da sola al cambio di giorno */
+function homeTick(){if(S.home&&homeDay!==dayNum())renderHome();}
+setInterval(homeTick,60000);
+document.addEventListener('visibilitychange',()=>{if(!document.hidden)homeTick();});
+addEventListener('focus',homeTick);
 function lastPos(){const l=store.last;if(!l)return null;const bi=idIdx(l.id);return bi<0?null:{bi,c:Math.min(l.c,B[bi].v.length),v:null};}
 function setNavView(v){S.navView=v;$$('#navseg button').forEach(x=>x.setAttribute('aria-selected',x.dataset.v===v));buildNav();}
 function bindExtra(){setTimeout(bindMobile,0);setTimeout(bindDiag,0);setTimeout(bindHeal,0);
