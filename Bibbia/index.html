@@ -1177,14 +1177,16 @@ function alignGreekToKjv(ws,verseItems,kjvText){
     const words=nz(text).split(' ').filter(Boolean);let pos=-1;
     if(words.length&&T){
       const find=(from,to)=>{for(let p=from;p<=to;p++){if(claimed[p])continue;let ok=true;for(let j=0;j<words.length;j++){if(p+j>=T||claimed[p+j]||toks[p+j]!==words[j]){ok=false;break;}}if(ok)return p;}return -1;};
-      pos=find(Math.max(0,last-2),T-1);if(pos<0)pos=find(0,T-1);
+      pos=find(0,T-1);
       if(pos>=0){for(let j=0;j<words.length;j++)claimed[pos+j]=true;last=pos;}
     }
     items.push({key,text,pos,len:words.length});
   }
   /* 2) ancore: Strong presenti una sola volta nel greco e nelle voci; si tengono solo quelle in ordine crescente */
+  const ALT={g6063:'g1492'}; /* Strong estesi STEP che la KJV riporta sotto il numero classico */
+  const gkey=w=>{const k=kjvStrongKey(w[3]);return ALT[k]||k;};
   const gBy={},iBy={};
-  ws.forEach((w,i)=>{const k=kjvStrongKey(w[3]);if(k)(gBy[k]||(gBy[k]=[])).push(i);});
+  ws.forEach((w,i)=>{const k=gkey(w);if(k)(gBy[k]||(gBy[k]=[])).push(i);});
   items.forEach((it,j)=>(iBy[it.key]||(iBy[it.key]=[])).push(j));
   let anc=[];
   for(const k in gBy){if(gBy[k].length===1&&iBy[k]&&iBy[k].length===1&&items[iBy[k][0]].pos>=0)anc.push({i:gBy[k][0],p:items[iBy[k][0]].pos});}
@@ -1207,7 +1209,7 @@ function alignGreekToKjv(ws,verseItems,kjvText){
   for(const k in gBy){
     const G=gBy[k],I=iBy[k]||[];if(!I.length)continue;
     const m=G.length,q=I.length;
-    const eff=i=>{if(k!=='g3588')return expected(i);let j=i+1;while(j<n-1&&kjvStrongKey(ws[j][3])==='g3588')j++;return j<n?expected(j)-1:expected(i);};
+    const eff=i=>{if(k!=='g3588')return expected(i);let j=i+1;while(j<n-1&&gkey(ws[j])==='g3588')j++;return j<n?expected(j)-1:expected(i);};
     const cost=(a,b)=>{const p=items[I[b]].pos;if(p<0)return 1.5;return Math.min(Math.abs(eff(G[a])-p),CAP);};
     const dp=Array.from({length:m+1},()=>new Array(q+1).fill(0)),bk=Array.from({length:m+1},()=>new Array(q+1).fill(0));
     for(let a=0;a<=m;a++)for(let b=0;b<=q;b++){
@@ -1220,6 +1222,8 @@ function alignGreekToKjv(ws,verseItems,kjvText){
     let a=m,b=q;
     while(a||b){const mv=bk[a][b];if(mv===3){const it=items[I[b-1]];res[G[a-1]]=it.text;used.add(I[b-1]);a--;b--;}else if(mv===1)a--;else b--;}
   }
+  /* le voci senza parola greca corrispondente (Strong diversi tra KJV e NA28) liberano le loro parole KJV */
+  items.forEach((it,j)=>{if(!used.has(j)&&it.pos>=0)for(let x=0;x<it.len;x++)claimed[it.pos+x]=false;});
   /* 4) recupero con la glossa inglese dell'interlineare (utile anche senza concordanza o con voci mancanti) */
   const STOP=new Set(['the','and','of','to','in','a','an','that','is','it','his','her','he','she','by','for','with','on','as','at','be','not','if','so','or','but','who','which','this','these','those','are','was','were','from','into','upon','shall','will']);
   const COMP={anyone:['any','one|man|men'],anything:['any','thing'],someone:['some','one|man|men'],something:['some','thing'],everyone:['every','one|man|men'],everything:['every','thing'],nothing:['no','thing'],noone:['no','one|man|men']};
@@ -1238,7 +1242,7 @@ function alignGreekToKjv(ws,verseItems,kjvText){
     const strict=!content.length;           /* glossa fatta solo di parole funzionali: corrispondenza esatta e vicina */
     const cand=strict?words.filter(w=>w!=='to'||words.length===1):content;
 
-    const e=(kjvStrongKey(ws[i][3])==='g3588')?expected(Math.min(i+1,n-1))-1:expected(i);
+    const e=(gkey(ws[i])==='g3588')?expected(Math.min(i+1,n-1))-1:expected(i);
     const names=(gl.match(/\b[A-Z][a-z]{3,}/g)||[]).map(x=>x.toLowerCase());
     const maxd=strict?3:6;
     let bp=-1,bd=Infinity;
@@ -1248,7 +1252,7 @@ function alignGreekToKjv(ws,verseItems,kjvText){
       if(!hit)continue;const d=Math.abs(p-e);if(d<bd){bd=d;bp=p;}
     }
     if(bp<0||bd>maxd){
-      const eq=EQ[kjvStrongKey(ws[i][3])]||[];
+      const eq=EQ[gkey(ws[i])]||[];
       if(eq.length){let ep=-1,ed=Infinity;for(let p=0;p<T;p++){if(claimed[p]||!toks[p]||!eq.includes(toks[p]))continue;const d=Math.abs(p-e);if(d<ed){ed=d;ep=p;}}if(ep>=0&&ed<=3){bp=ep;bd=ed;}}
     }
     if(bp>=0&&bd<=maxd){
