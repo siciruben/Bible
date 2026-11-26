@@ -544,6 +544,7 @@ html{background:var(--bg)}
 .cauth .btn[aria-pressed="true"]{font-weight:600;box-shadow:0 0 0 1.5px var(--ink2) inset}
 .ctext{white-space:pre-line}
 .cmore{margin-top:10px}
+.cauth .btn:disabled{opacity:.38;cursor:default}
 </style>
 </head>
 <body>
@@ -1019,10 +1020,10 @@ async function renderInspector(){
   const translateHeader=$('#lexTranslateHeader');
   const onCom=S.tab==='com';
   translateHeader.hidden=!(S.v&&(S.tab==='int'||onCom||(S.tab==='lex'&&S.word)));
-  const trOn=()=>onCom?!!S.comFull:lexItalianMode;
+  const trOn=()=>onCom?comOn():lexItalianMode;
   translateHeader.textContent=trOn()?'Italiano attivo':'Traduci';
   translateHeader.title=onCom?'Traduci il testo completo dei commenti':'';
-  translateHeader.onclick=()=>{if(onCom)S.comFull=!S.comFull;else lexItalianMode=!lexItalianMode;translateHeader.textContent=trOn()?'Italiano attivo':'Traduci';renderInspector();};
+  translateHeader.onclick=()=>{if(onCom){S.comFull=!comOn();store.set.comTr=S.comFull;save();}else lexItalianMode=!lexItalianMode;translateHeader.textContent=trOn()?'Italiano attivo':'Traduci';renderInspector();};
   $$('#tabs button').forEach(b=>b.setAttribute('aria-selected',b.dataset.t===S.tab));
   const at=$('#tabs [aria-selected="true"]');if(at&&at.scrollIntoView)at.scrollIntoView({inline:'center',block:'nearest'});
   if(S.tab==='lex'&&S.word){$('#irf').textContent=S.word.standalone?'Lessico':B[S.bi].n+' '+S.c+':'+S.v;$('#isb').textContent=S.word.standalone?'Numero Strong '+sdisp(S.word.s):'Parola selezionata';return paneLex();}
@@ -1105,13 +1106,14 @@ function paneVersions(){
 /* ---------- scheda Commenti: commentari classici (pubblico dominio) da bible.helloao.org, traduzione automatica ---------- */
 const COM_BASE='https://bible.helloao.org/api/',COM_WANT=[/henry/i,/gill/i,/calvin/i,/jamieson/i];
 let comList=null;const comMem=new Map(),comTrMem=new Map();
+function comOn(){if(S.comFull===undefined)S.comFull=!!store.set.comTr;return S.comFull;}
 function skelLines(){const d=h('div');['long','mid','long','short'].forEach(w=>d.append(h('div',{class:'skeleton skel-line '+w})));return d;}
 async function comAuthors(){
   if(comList)return comList;
   const r=await fetch(COM_BASE+'available_commentaries.json');if(!r.ok)throw new Error('lista');
   const j=await r.json(),all=Array.isArray(j)?j:(j.commentaries||[]);
   const nm=x=>x.englishName||x.english_name||x.name||x.id;
-  comList=COM_WANT.map(re=>all.find(x=>re.test(nm(x)+' '+x.id))).filter(Boolean).map(x=>({id:x.id,n:String(nm(x)).replace(/\s*(Bible )?Commentary.*$/i,'')}));
+  comList=COM_WANT.map(re=>all.find(x=>re.test(nm(x)+' '+x.id))).filter(Boolean).map(x=>({id:x.id,n:/calvin/i.test(nm(x)+' '+x.id)?'Calvino':String(nm(x)).replace(/\s*(Bible )?Commentary.*$/i,'')}));
   if(!comList.length)throw new Error('vuota');return comList;
 }
 function comText(x){if(x==null)return '';if(typeof x==='string')return x;if(Array.isArray(x))return x.map(comText).filter(Boolean).join('\n\n');return comText(x.text!=null?x.text:x.content);}
@@ -1158,18 +1160,28 @@ async function paneComments(){
     const body=h('div',{class:'verse-quote'},skelLines()),more=ex.more?h('button',{type:'button',class:'btn cmore'}):null;
     const rng=e.a===e.b?'':' · vv. '+e.a+'–'+e.b;
     const paint=async()=>{
-      const full=ex.more&&!!S.comOpen[key],src=full?e.t:ex.x,tr=full?!!S.comFull:true;
+      const full=ex.more&&!!S.comOpen[key],src=full?e.t:ex.x,tr=comOn();
       if(more){more.textContent=full?'Riduci':'Leggi tutto';more.onclick=()=>{S.comOpen[key]=!S.comOpen[key];paint();};}
       const orig=(note)=>{body.replaceChildren(h('div',{class:'ctext vorig',style:'border:0;margin:0;padding:0',text:src}));if(note)body.append(h('div',{class:'hint',text:note}));};
-      if(!tr){orig('Testo completo in inglese: tocca «Traduci» in alto per tradurlo.');return;}
+      if(!tr){orig('Testo in inglese: tocca «Traduci» in alto per tradurlo.');return;}
       body.replaceChildren(skelLines());
-      try{const t=await comTr(src);if(!alive()||(ex.more&&!!S.comOpen[key])!==full||tr!==(full?!!S.comFull:true))return;body.replaceChildren(h('div',{class:'vtr ctext',text:t}),h('div',{class:'hint',text:'Traduzione automatica dall’inglese: può contenere errori.'}));}
+      try{const t=await comTr(src);if(!alive()||(ex.more&&!!S.comOpen[key])!==full||tr!==comOn())return;body.replaceChildren(h('div',{class:'vtr ctext',text:t}),h('div',{class:'hint',text:'Traduzione automatica dall’inglese: può contenere errori.'}));}
       catch(err){if(alive())orig('Traduzione non disponibile. Controlla la connessione.');}
     };
     paint();
     return h('div',{class:'card'},h('div',{class:'vhead'},h('h4',{},an+rng)),body,more);
   };
-  pane.replaceChildren(verseCard(),chips,list);load();
+  [...chips.children].forEach(b=>b.disabled=true);
+  pane.replaceChildren(verseCard(),chips,list);
+  list.replaceChildren(makeSkeletonCard('text'));
+  const res=await Promise.allSettled(authors.map(a=>comChapter(a.id,id,c)));
+  if(!alive())return;
+  if(res.every(r=>r.status==='rejected')){list.replaceChildren(fail('Impossibile caricare i commenti.',paneComments));return;}
+  const has=authors.map((a,i)=>res[i].status==='fulfilled'&&res[i].value.some(e=>e.a<=v&&v<=e.b));
+  [...chips.children].forEach((b,i)=>{b.disabled=!has[i];});
+  if(!has.some(Boolean)){list.replaceChildren(h('div',{class:'card'},h('div',{class:'hint',text:'Nessun commento disponibile per questo versetto.'})));return;}
+  if(!has[authors.findIndex(a=>a.id===S.comAuthor)])S.comAuthor=authors[has.indexOf(true)].id;
+  load();
 }
 function verseCard(){const t=(S.loaded.c[S.c-1]||[])[S.v-1]||'';const c=h('div',{class:'card verse-card'},h('h4',{text:VERSIONS[curVi()].name}));const q=h('div',{class:'verse-quote'});
   const tr=trActive()&&trCached(curVi(),B[S.bi].id,S.c),it=tr&&tr[S.v-1];
