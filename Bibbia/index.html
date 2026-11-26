@@ -2170,20 +2170,22 @@ function hlText(r,needles){
   ranges.sort((a,b)=>a[0]-b[0]);const m=[];for(const x of ranges){const l=m[m.length-1];if(l&&x[0]<=l[1])l[1]=Math.max(l[1],x[1]);else m.push([...x]);}
   const out=document.createDocumentFragment();let p=0;m.forEach(([a,z])=>{out.append(t.slice(p,a),h('mark',{text:t.slice(a,z)}));p=z;});out.append(t.slice(p));return out;
 }
+/* traslitterazione: ignora maiuscole, accenti, macron e segni ebraici (ʼ ʻ), cosi' "agape" trova "agapē" */
+const tlFold=s=>String(s==null?'':s).normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[ʼʻʾʿ’‘`´'\u02bc\u02bb\u02be\u02bf\-\s]/g,'');
 async function searchLex(q,frag,seq){
   const res=$('#sres');res.replaceChildren(...frag,skelRows(6));
   const [g,hb]=await Promise.all([getLex('g'),getLex('h')]);if(seq!==sSeq)return;
-  const n=fold(q);const out=[];
+  const n=fold(q),nt=tlFold(q);const out=[];
   for(const [lx,k] of [[g,'g'],[hb,'h']]){
-    for(const key in lx.e){const e=lx.e[key];const gl=fold(e[2]),tr=fold(e[1]);let sc=0;
-      if(gl===n)sc=3;else if(gl.startsWith(n))sc=2;else if(gl.includes(n)||tr===n)sc=1;else if(e[0]===q)sc=3;
+    for(const key in lx.e){const e=lx.e[key];const gl=fold(e[2]),tr=tlFold(e[1]);let sc=0;
+      if(gl===n||tr===nt)sc=3;else if(gl.startsWith(n)||tr.startsWith(nt))sc=2;else if(gl.includes(n)||(nt&&tr.includes(nt)))sc=1;else if(e[0]===q)sc=3;
       if(sc)out.push({sc,key,e,k});}
   }
   out.sort((a,b)=>b.sc-a.sc||a.e[2].length-b.e[2].length);
   const seen=new Set();const rows=[];
   for(const o of out){const cl=o.key.slice(0,5);if(seen.has(cl))continue;seen.add(cl);rows.push(o);if(rows.length>=60)break;}
   const list=[h('div',{class:'cnt',text:seen.size.toLocaleString('it-IT')+' voci'+(out.length>60?' · prime 60':'')})];
-  rows.forEach(o=>list.push(h('button',{type:'button',class:'srow',on:{click:()=>openStrong(o.key)}},h('div',{class:'r',text:sdisp(o.key)+' · '+(o.k==='g'?'greco':'ebraico')}),h('div',{class:'t'},h('span',{lang:o.k==='g'?'el':'he',style:'font-size:19px;margin-right:8px;font-family:'+(o.k==='g'?'var(--greek)':'var(--hebrew)'),text:o.e[0]}),h('span',{text:o.e[2]})))));
+  rows.forEach(o=>list.push(h('button',{type:'button',class:'srow',on:{click:()=>openStrong(o.key)}},h('div',{class:'r',text:sdisp(o.key)+' · '+(o.k==='g'?'greco':'ebraico')}),h('div',{class:'t'},h('span',{lang:o.k==='g'?'el':'he',style:'font-size:19px;margin-right:8px;font-family:'+(o.k==='g'?'var(--greek)':'var(--hebrew)'),text:o.e[0]}),h('span',{style:'font-style:italic;color:var(--ink2);margin-right:8px',text:o.e[1]||''}),h('span',{text:o.e[2]})))));
   if(!rows.length)list.push(h('div',{class:'empty',text:'Nessuna voce per «'+q+'». Il lessico è in inglese.'}));
   res.replaceChildren(...frag,...list);
 }
@@ -2198,7 +2200,9 @@ function bindUI(){
   $('#searchbtn').onclick=openSearch;$('#sclose').onclick=closeSearch;
   $('#q').addEventListener('input',runSearch);
   $$('#sscope button').forEach(b=>b.onclick=()=>{sScope=b.dataset.s;$$('#sscope button').forEach(x=>x.setAttribute('aria-selected',x===b));doSearch();});
-  $('#scrim').onclick=()=>{closeNav();closeSearch();$('#amodal').classList.remove('on');closePops();$('#scrim').classList.remove('on');};
+  $('#scrim').onclick=e=>{
+    if(S.scrimFor==='pop'&&e&&e.clientX!=null){const b=document.elementsFromPoint(e.clientX,e.clientY).find(x=>x.matches&&x.matches('[data-pop]'));if(b){e.stopPropagation();b.click();return;}}
+    closeNav();closeSearch();$('#amodal').classList.remove('on');closePops();$('#scrim').classList.remove('on');};
   $('#aclose').onclick=()=>{$('#amodal').classList.remove('on');$('#scrim').classList.remove('on');};
   $$('[data-pop]').forEach(b=>b.onclick=e=>{if(b.id==='offtop'&&isPhone()&&S.multiMode){e.preventDefault();copyMultiVerses(null);return;}togglePop(b.dataset.pop,e);});
   $('#multiCopyToggle').onclick=()=>{S.multiMode=!S.multiMode;S.multiVerses=S.multiMode?(S.v?[S.v]:[]):[];S.multiRefText='';if(!S.multiMode){S.multiVerses=[];S.v=null;$$('#chapter .v.sel').forEach(e=>e.classList.remove('sel'));}updateMultiToolbar();renderInspector();};
