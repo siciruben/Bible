@@ -345,6 +345,8 @@ body.home-on #prev,body.home-on #next,body.home-on #titlebtn{visibility:hidden}
 .ex{font-family:var(--serif);font-size:14px;color:var(--ink2);margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 #tabbar{display:none}
 @media (min-width:761px){.hbtns{display:none}}
+/* Home: con un pannello aperto il velo lascia passare il tocco, cosi' un altro pulsante in alto si attiva al primo tocco */
+body.home-on.pop-open .scrim{pointer-events:none}
 @media (max-width:760px){
   body.home-on #bar{display:none}
   #bar{padding:calc(env(safe-area-inset-top) + 6px) 8px 6px}
@@ -542,7 +544,7 @@ html{background:var(--bg)}
 /* ===== v15: le tendine dal basso (Libri/Salvati e Studio alto) seguono l'abbassamento della barra (--topx) =====
    Il bordo alto della tendina scende della stessa quantita' della barra, cosi' non copre titolo, versione e icone. */
 @media (max-width:760px){
-  #nav{height:calc(88vh - var(--topx,0px));height:calc(88dvh - var(--topx,0px))}
+  #nav{height:calc(88vh - var(--topx,0px));height:calc(88dvh - var(--topx,0px));height:calc(100dvh - var(--barb,12dvh) - 6px)}
   #insp.tall{height:calc(92% - var(--topx,0px))}
   body.kb #insp{height:calc(var(--vvh) - env(safe-area-inset-top) - 10px - var(--topx,0px))}
 }
@@ -916,9 +918,9 @@ function applySettings(){
 /* Cambio versione: ricarica il capitolo corrente (o la home) con la nuova versione */
 /* Pannelli in alto: Aspetto (pop), Versione (vpop), Download (opop). Uno solo aperto per volta. */
 const POPS=['pop','vpop','opop'];
-function closePops(){POPS.forEach(id=>{const el=document.getElementById(id);if(el)el.classList.remove('on');});if(S.scrimFor==='pop')$('#scrim').classList.remove('on');}
+function closePops(){POPS.forEach(id=>{const el=document.getElementById(id);if(el)el.classList.remove('on');});document.body.classList.remove('pop-open');if(S.scrimFor==='pop')$('#scrim').classList.remove('on');}
 function togglePop(id,e){if(e)e.stopPropagation();const el=document.getElementById(id);const on=!el.classList.contains('on');closePops();
-  if(on){el.classList.add('on');if(isPhone()){$('#scrim').classList.add('on');S.scrimFor='pop';}}}
+  if(on){el.classList.add('on');document.body.classList.add('pop-open');if(isPhone()){$('#scrim').classList.add('on');S.scrimFor='pop';}}}
 function setVersion(code){
   closePops();
   if(!VERSIONS[code]||store.set.vi===code)return;
@@ -979,7 +981,8 @@ function buildSaved(list){
   });
 }
 const plain=t=>t.replace(/[\u0001\u0002]/g,'').replace(/\n/g,' ');
-function openNav(){document.body.classList.add('nav-open');$('#nav').classList.add('open');$('#scrim').classList.add('on');S.scrimFor='nav';}
+function setBarB(){const b=$('#bar');if(!b)return;const r=b.getBoundingClientRect(),st=document.documentElement.style;if(r.height>0)st.setProperty('--barb',Math.round(r.bottom)+'px');else st.removeProperty('--barb');}
+function openNav(){setBarB();document.body.classList.add('nav-open');$('#nav').classList.add('open');$('#scrim').classList.add('on');S.scrimFor='nav';}
 function closeNav(){document.body.classList.remove('nav-open');$('#nav').classList.remove('open');if(S.scrimFor==='nav'){$('#scrim').classList.remove('on');}}
 
 /* ---------- chapter rendering ---------- */
@@ -2201,6 +2204,7 @@ async function openStrong(s){
 
 /* ---------- UI bindings ---------- */
 function bindUI(){
+  setBarB();addEventListener('resize',setBarB);addEventListener('orientationchange',()=>setTimeout(setBarB,250));
   $('#navtoggle').onclick=()=>$('#nav').classList.contains('open')?closeNav():openNav();
   $('#titlebtn').onclick=()=>{if(matchMedia('(max-width:1180px)').matches){$('#nav').classList.contains('open')?closeNav():openNav();}else{S.navOpenBook=S.bi;buildNav();const on=$('.book.on');on&&on.scrollIntoView({block:'center'});}};
   $('#prev').onclick=()=>{const p=prevCh();p&&go(p.bi,p.c,null);};
@@ -2215,7 +2219,9 @@ function bindUI(){
   $$('[data-pop]').forEach(b=>b.onclick=e=>{if(b.id==='offtop'&&isPhone()&&S.multiMode){e.preventDefault();copyMultiVerses(null);return;}togglePop(b.dataset.pop,e);});
   $('#multiCopyToggle').onclick=()=>{S.multiMode=!S.multiMode;S.multiVerses=S.multiMode?(S.v?[S.v]:[]):[];S.multiRefText='';if(!S.multiMode){S.multiVerses=[];S.v=null;$$('#chapter .v.sel').forEach(e=>e.classList.remove('sel'));}updateMultiToolbar();renderInspector();};
   updateMultiToolbar();
-  document.addEventListener('click',e=>{if(!e.target.closest('.pop')&&!e.target.closest('[data-pop]'))POPS.forEach(id=>$('#'+id).classList.remove('on'));});
+  document.addEventListener('click',e=>{if(!e.target.closest('.pop')&&!e.target.closest('[data-pop]'))closePops();});
+  /* Home: un tocco fuori dal pannello lo chiude senza attivare quello che c'e' sotto */
+  document.addEventListener('click',e=>{const b=document.body;if(!b.classList.contains('home-on')||!b.classList.contains('pop-open'))return;if(e.target.closest('.pop')||e.target.closest('[data-pop]'))return;e.stopPropagation();e.preventDefault();closePops();},true);
   $('#fs').oninput=e=>{store.set.fs=+e.target.value;applySettings();save();};
   $('#topx').oninput=e=>{store.set.top=+e.target.value;applySettings();save();};
   $$('#ffseg button').forEach(b=>b.onclick=()=>{store.set.ff=b.dataset.f;applySettings();save();});
