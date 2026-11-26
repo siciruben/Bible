@@ -507,14 +507,13 @@ html{background:var(--bg)}
 .vtop .btn{flex:none}
 @media (max-width:760px){.tabs .seg button{font-size:11.5px;padding:9px 0}}
 /* ===== v13: niente sfocatura iOS 26 sotto la barra di stato (web app salvata in Home) =====
-   iOS 26 disegna una sfocatura "scroll edge" in cima alle web app. La salta se il bordo alto e' coperto da un
-   riquadro fisso, a tutta larghezza, con sfondo pieno (niente blur, niente trasparenza). */
-#sbscrim{display:none}
-@media (display-mode:standalone){
-  #sbscrim{display:block;position:fixed;top:0;left:0;right:0;height:env(safe-area-inset-top,0px);background:var(--bg);z-index:59}
-}
+   iOS 26 disegna da solo una sfocatura "scroll edge" in cima alle web app salvate (~40pt sotto la barra di stato).
+   WebKit la salta se, a 4px dal bordo alto e al centro, trova un riquadro position:fixed largo >= 90% dello schermo,
+   alto > 10px, con sfondo pieno (niente trasparenza, niente backdrop-filter): usa il suo colore al posto della sfocatura.
+   Questa striscia e' alta quanto l'area della barra di stato; fuori dalla web app (inset = 0) non occupa spazio. */
+#sbscrim{display:block;position:fixed;top:0;left:0;right:0;height:env(safe-area-inset-top,0px);background-color:var(--bg);opacity:1;-webkit-backdrop-filter:none;backdrop-filter:none;z-index:59;pointer-events:auto}
 @media (max-width:760px){
-  #app{background:var(--bg)}
+  #app{background-color:var(--bg)}
 }
 </style>
 </head>
