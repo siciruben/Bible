@@ -692,7 +692,7 @@ html{background:var(--bg)}
   <input type="file" id="bkfile" accept=".json,application/json" hidden>
   <div class="hint" id="bkhint">Temi, evidenziazioni, note, segnalibri, versione, recenti e impostazioni in un unico file. Il file si chiamerà bibbia-preferenze-AAAA-MM-GG.json (formato JSON, con la data del giorno).</div>
   <div id="instwrap" hidden><label>App</label><button type="button" class="btn rowbtn" id="instbtn">Installa come app</button><div class="hint" id="insthint" hidden></div></div>
-  <label>Aggiornamenti</label><button type="button" class="btn rowbtn" id="appupdatebtn">Aggiorna app</button><div class="hint" id="appupdatedate">Ultimo aggiornamento: 26 novembre 2026</div><div class="hint" id="appupdatehint" aria-live="polite"></div>
+  <label>Aggiornamenti</label><button type="button" class="btn rowbtn" id="appupdatebtn">Aggiorna app</button><div class="hint" id="appupdatedate">Ultimo aggiornamento: <span id="appupdatedatetime">26 novembre 2026, 20:13</span></div><div class="hint" id="appupdatehint" aria-live="polite"></div>
 </div>
 
 <script>
@@ -2423,24 +2423,41 @@ function bindDiag(){
     pop.addEventListener('touchcancel',end);
   });
 })();
-/* Aggiornamenti PWA: download in background, attivazione al successivo avvio.
-   La pagina NON si ricarica mentre il nuovo service worker viene installato. */
+/* Aggiornamenti PWA: mostra l'indicatore SOLO se esiste davvero un aggiornamento.
+   Nessuna barra durante un controllo senza aggiornamenti. */
 (function(){
   const btn=document.getElementById('appupdatebtn');
   const hint=document.getElementById('appupdatehint');
+  const dateEl=document.getElementById('appupdatedatetime');
+  if(dateEl){
+    const buildDate=new Date('2026-11-26T20:13:00+01:00');
+    if(!Number.isNaN(buildDate.getTime())){
+      dateEl.textContent=new Intl.DateTimeFormat('it-IT',{
+        day:'numeric',month:'long',year:'numeric',hour:'2-digit',minute:'2-digit'
+      }).format(buildDate);
+    }
+  }
   if(!('serviceWorker' in navigator) || !/^https?:$/.test(location.protocol)) return;
 
-  let panel, bar, message, detail;
-  function showStatus(title, text, done=false, error=false){
-    if(!panel){
-      panel=document.createElement('div');
-      panel.id='sw-update-status';
-      panel.innerHTML='<div class="swu-title"></div><div class="swu-detail"></div><div class="swu-track"><div class="swu-bar"></div></div>';
-      document.body.appendChild(panel);
-      message=panel.querySelector('.swu-title');
-      detail=panel.querySelector('.swu-detail');
-      bar=panel.querySelector('.swu-bar');
-    }
+  let panel=null, bar=null, message=null, detail=null;
+  let updateDetected=false;
+  function ensurePanel(){
+    if(panel)return;
+    panel=document.createElement('div');
+    panel.id='sw-update-status';
+    panel.hidden=true;
+    panel.innerHTML='<div class="swu-title"></div><div class="swu-detail"></div><div class="swu-track"><div class="swu-bar"></div></div>';
+    document.body.appendChild(panel);
+    message=panel.querySelector('.swu-title');
+    detail=panel.querySelector('.swu-detail');
+    bar=panel.querySelector('.swu-bar');
+  }
+  const style=document.createElement('style');
+  style.textContent=`#sw-update-status{position:fixed;left:16px;right:16px;bottom:calc(env(safe-area-inset-bottom) + 16px);z-index:100000;max-width:480px;margin:auto;padding:15px 16px;border:1px solid var(--line);border-radius:16px;background:var(--card);color:var(--ink);box-shadow:0 8px 32px #0003;font:inherit}#sw-update-status[hidden]{display:none}#sw-update-status .swu-title{font-weight:700;font-size:14px}#sw-update-status .swu-detail{margin-top:4px;color:var(--ink2);font-size:12px;line-height:1.4}#sw-update-status .swu-track{height:5px;margin-top:12px;border-radius:8px;overflow:hidden;background:var(--line)}#sw-update-status .swu-bar{height:100%;width:38%;border-radius:8px;background:var(--accent,var(--ink));transform:translateX(-110%)}@keyframes swu-progress{0%{transform:translateX(-110%)}100%{transform:translateX(290%)}}#sw-update-status.swu-done .swu-bar{width:100%;transform:none;background:#299d70}#sw-update-status.swu-error .swu-bar{width:100%;transform:none;background:#c65b52}`;
+  document.head.appendChild(style);
+
+  function showStatus(title,text,done=false,error=false){
+    ensurePanel();
     message.textContent=title;
     detail.textContent=text;
     panel.classList.toggle('swu-done',done);
@@ -2451,59 +2468,68 @@ function bindDiag(){
   }
   function hideStatus(){if(panel)panel.hidden=true;}
 
-  const style=document.createElement('style');
-  style.textContent=`#sw-update-status{position:fixed;left:16px;right:16px;bottom:calc(env(safe-area-inset-bottom) + 16px);z-index:100000;max-width:480px;margin:auto;padding:15px 16px;border:1px solid var(--line);border-radius:16px;background:var(--card);color:var(--ink);box-shadow:0 8px 32px #0003;font:inherit}#sw-update-status[hidden]{display:none}#sw-update-status .swu-title{font-weight:700;font-size:14px}#sw-update-status .swu-detail{margin-top:4px;color:var(--ink2);font-size:12px;line-height:1.4}#sw-update-status .swu-track{height:5px;margin-top:12px;border-radius:8px;overflow:hidden;background:var(--line)}#sw-update-status .swu-bar{height:100%;width:38%;border-radius:8px;background:var(--accent,var(--ink));transform:translateX(-110%)}@keyframes swu-progress{0%{transform:translateX(-110%)}100%{transform:translateX(290%)}}#sw-update-status.swu-done .swu-bar{width:100%;transform:none;background:#299d70}#sw-update-status.swu-error .swu-bar{width:100%;transform:none;background:#c65b52}`;
-  document.head.appendChild(style);
+  function watchWorker(worker){
+    if(!worker)return;
+    if(worker.state==='installing' && navigator.serviceWorker.controller){
+      updateDetected=true;
+      showStatus('Aggiornamento in download','Non chiudere l’app: sto preparando la nuova versione.');
+      if(hint)hint.textContent='Download della nuova versione in corso…';
+    }
+    worker.addEventListener('statechange',()=>{
+      if(worker.state==='installed' && navigator.serviceWorker.controller){
+        updateDetected=true;
+        showStatus('Aggiornamento completato','La nuova versione è pronta. Chiudi e riapri l’app per applicarla.',true);
+        if(hint)hint.textContent='Nuova versione pronta: verrà applicata al successivo avvio.';
+      }else if(worker.state==='redundant' && updateDetected){
+        showStatus('Aggiornamento non completato','Il download non è riuscito. La versione attuale continua a funzionare.',false,true);
+        if(hint)hint.textContent='Aggiornamento non riuscito. Riprova con una connessione stabile.';
+        if(btn)btn.disabled=false;
+      }
+    });
+  }
 
   function watchRegistration(reg){
     if(reg.waiting && navigator.serviceWorker.controller){
-      showStatus('Aggiornamento pronto','Il download è completo. Chiudi e riapri l’app per usare la nuova versione.',true);
-      if(hint)hint.textContent='Nuova versione scaricata: verrà applicata al prossimo avvio.';
-    }
-    function watchWorker(worker){
-      if(!worker)return;
-      if(worker.state==='installing' && navigator.serviceWorker.controller){
-        showStatus('Aggiornamento in download','Non chiudere l’app: sto preparando la nuova versione.');
-        if(hint)hint.textContent='Download della nuova versione in corso…';
-      }
-      worker.addEventListener('statechange',()=>{
-        if(worker.state==='installed' && navigator.serviceWorker.controller){
-          showStatus('Aggiornamento completato','Download verificato. Puoi chiudere e riaprire l’app per applicarlo.',true);
-          if(hint)hint.textContent='Nuova versione pronta: verrà applicata al successivo avvio.';
-        }else if(worker.state==='redundant' && navigator.serviceWorker.controller){
-          showStatus('Aggiornamento non completato','Non sono riuscito a scaricare tutti i file. La versione attuale continua a funzionare.',false,true);
-          if(hint)hint.textContent='Aggiornamento non riuscito. Riprova quando hai una connessione stabile.';
-          if(btn)btn.disabled=false;
-        }
-      });
+      updateDetected=true;
+      showStatus('Aggiornamento completato','La nuova versione è pronta. Chiudi e riapri l’app per applicarla.',true);
+      if(hint)hint.textContent='Nuova versione pronta: verrà applicata al successivo avvio.';
     }
     if(reg.installing)watchWorker(reg.installing);
-    reg.addEventListener('updatefound',()=>watchWorker(reg.installing));
+    reg.addEventListener('updatefound',()=>{
+      updateDetected=true;
+      watchWorker(reg.installing);
+    });
   }
 
-  async function registerAndCheck(manual=false){
+  async function checkForUpdate(manual=false){
     if(btn)btn.disabled=true;
-    if(manual&&hint)hint.textContent='Controllo disponibilità aggiornamenti…';
+    updateDetected=false;
+    if(manual && hint)hint.textContent='Controllo aggiornamenti…';
+    // Non mostrare alcuna barra finché il browser non conferma un nuovo worker.
+    hideStatus();
     try{
       const reg=await navigator.serviceWorker.register('./sw.js',{updateViaCache:'none'});
       watchRegistration(reg);
       await reg.update();
-      if(manual && !reg.installing && !reg.waiting){
-        if(hint)hint.textContent='L’app è già aggiornata.';
-        if(!navigator.serviceWorker.controller)hideStatus();
-      }
       if(reg.waiting && navigator.serviceWorker.controller){
-        showStatus('Aggiornamento pronto','Il download è completo. Chiudi e riapri l’app per usare la nuova versione.',true);
+        updateDetected=true;
+        showStatus('Aggiornamento completato','La nuova versione è pronta. Chiudi e riapri l’app per applicarla.',true);
+        if(hint)hint.textContent='Nuova versione pronta: verrà applicata al successivo avvio.';
+      }else if(!reg.installing && !reg.waiting){
+        // Nessun aggiornamento: nessun pannello, solo una nota discreta sotto il pulsante.
+        hideStatus();
+        if(manual && hint)hint.textContent='L’app è già aggiornata.';
       }
     }catch(e){
-      if(manual&&hint)hint.textContent='Non riesco a controllare gli aggiornamenti. Verifica la connessione e riprova.';
+      hideStatus();
+      if(manual && hint)hint.textContent='Controllo aggiornamenti non riuscito. Verifica la connessione e riprova.';
     }finally{
       if(btn)btn.disabled=false;
     }
   }
 
-  if(btn)btn.addEventListener('click',()=>registerAndCheck(true));
-  window.addEventListener('load',()=>registerAndCheck(false),{once:true});
+  if(btn)btn.addEventListener('click',()=>checkForUpdate(true));
+  window.addEventListener('load',()=>checkForUpdate(false),{once:true});
 })();
 </script>
 <!-- Invito ad aggiungere l'app alla schermata Home (solo telefoni e tablet) -->
