@@ -1222,6 +1222,23 @@ function alignGreekToKjv(ws,verseItems,kjvText){
     let a=m,b=q;
     while(a||b){const mv=bk[a][b];if(mv===3){const it=items[I[b-1]];res[G[a-1]]=it.text;used.add(I[b-1]);a--;b--;}else if(mv===1)a--;else b--;}
   }
+  /* stessa voce ripetuta: la concordanza elenca spesso una sola volta una locuzione che nel versetto compare due volte */
+  for(const k in gBy){
+    const texts=[...new Set(gBy[k].map(i=>res[i]).filter(Boolean))];if(!texts.length)continue;
+    for(const i of gBy[k]){
+      if(res[i])continue;
+      const e=(k==='g3588')?expected(Math.min(i+1,n-1))-1:expected(i);
+      let bp=-1,bd=Infinity,bt='';
+      for(const t of texts){
+        const w=nz(t).split(' ').filter(Boolean);if(!w.length)continue;
+        for(let p=0;p+w.length<=T;p++){
+          let ok=true;for(let x=0;x<w.length;x++)if(claimed[p+x]||toks[p+x]!==w[x]){ok=false;break;}
+          if(!ok)continue;const d=Math.abs(p-e);if(d<bd){bd=d;bp=p;bt=t;}
+        }
+      }
+      if(bp>=0&&bd<=6){res[i]=bt;const L=nz(bt).split(' ').filter(Boolean).length;for(let x=0;x<L;x++)claimed[bp+x]=true;}
+    }
+  }
   /* le voci senza parola greca corrispondente (Strong diversi tra KJV e NA28) liberano le loro parole KJV */
   items.forEach((it,j)=>{if(!used.has(j)&&it.pos>=0)for(let x=0;x<it.len;x++)claimed[it.pos+x]=false;});
   /* 4) recupero con la glossa inglese dell'interlineare (utile anche senza concordanza o con voci mancanti) */
