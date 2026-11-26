@@ -421,6 +421,21 @@ html{background:var(--bg)}
   .navhead{touch-action:none;padding-top:6px;cursor:grab}
   .navhead::before{height:5px;margin-bottom:14px;box-shadow:0 0 0 10px transparent}
 }
+
+/* Mappe storiche dei quattro Vangeli */
+.map-card .hint{margin:0 0 12px}
+.map-selector{display:flex;gap:7px;overflow-x:auto;padding:2px 1px 10px;scrollbar-width:thin}
+.map-choice{flex:0 0 auto;border:1px solid var(--line);background:var(--surface2,var(--card));color:var(--ink);border-radius:999px;padding:7px 12px;font:inherit;font-size:12px;cursor:pointer}
+.map-choice.on{background:var(--accent);border-color:var(--accent);color:white}
+.map-stage{position:relative;height:min(58vh,540px);min-height:280px;overflow:hidden;border-radius:13px;background:#f2f0eb;touch-action:none;cursor:grab;user-select:none}
+.map-stage:active{cursor:grabbing}
+.map-image{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;transform-origin:0 0;pointer-events:none;user-select:none}
+.map-status{position:absolute;inset:0;display:grid;place-items:center;padding:20px;text-align:center;color:#555;background:#f2f0eb;font-size:13px}
+.map-status[hidden]{display:none}
+.map-controls{display:flex;gap:8px;justify-content:center;margin-top:10px}
+.map-control{min-width:42px}
+.map-unavailable .hint{margin:0}
+@media(max-width:760px){.map-stage{height:52vh;min-height:240px}.map-choice{font-size:11px;padding:7px 10px}}
 </style>
 </head>
 <body>
@@ -456,7 +471,7 @@ html{background:var(--bg)}
       <div class="tabs"><div class="seg" id="tabs" role="tablist">
         <button role="tab" data-t="int" aria-selected="true">Interlineare</button>
         <button role="tab" data-t="lex" aria-selected="false">Lessico</button>
-        <button role="tab" data-t="par" aria-selected="false">Paralleli</button>
+        <button role="tab" data-t="par" aria-selected="false">Mappe</button>
         <button role="tab" data-t="note" aria-selected="false">Note</button>
       </div></div>
       <div class="pane" id="pane"></div>
@@ -768,7 +783,7 @@ async function renderInspector(){
   $('#isb').textContent=B[S.bi].t===1?'Testo masoretico, ebraico':'Testo greco NA28';
   if(S.tab==='int')return paneInt();
   if(S.tab==='lex')return paneLexHint();
-  if(S.tab==='par')return paneParallels();
+  if(S.tab==='par')return paneMaps();
   return paneNotes();
 }
 function verseCard(){const t=S.loaded.c[S.c-1][S.v-1];const c=h('div',{class:'card'},h('h4',{text:'Riveduta 2020'}));const q=h('div',{class:'verse-quote'});richInto(q,t);c.append(q);return c;}
@@ -1112,18 +1127,101 @@ function richDef(parent,t){
     }
   });
 }
-function paneParallels(){
-  const pane=$('#pane'),d=S.loaded;pane.replaceChildren(verseCard());
-  const heads=d.hb[S.c]||{};let best=null;
-  for(let v=S.v;v>=1;v--){if(heads[v]){best=heads[v];break;}}
-  if(!best){for(let c=S.c-1;c>=1&&!best;c--){const hs=d.hb[c];if(hs){const ks=Object.keys(hs).map(Number);best=hs[Math.max(...ks)];}}}
-  const card=h('div',{class:'card'},h('h4',{text:'Sezione'}),h('div',{style:'font-weight:600;font-size:16px;margin-bottom:8px',text:best&&best.t?best.t:'Senza titolo'}));
-  if(best&&best.p&&best.p.length){card.append(h('div',{style:'font-size:13px;color:var(--ink2);margin-bottom:8px',text:'Passi paralleli indicati dalla Riveduta 2020'}),parallelsRow(best.p));}
-  else card.append(h('div',{class:'hint',text:'La Riveduta 2020 non indica passi paralleli per questa sezione.'}));
+const GOSPEL_MAPS=[
+  {label:'Topografica',url:'https://upload.wikimedia.org/wikipedia/commons/8/87/Herodian_Kingdom_topographic_map.svg'},
+  {label:'Politica',url:'https://upload.wikimedia.org/wikipedia/commons/4/4a/Herodian_Kingdom_political_map.svg'},
+  {label:'Tetrarchia',url:'https://upload.wikimedia.org/wikipedia/commons/9/93/Herodian_Tetrarchy_political_map.svg'},
+  {label:'Archelao',url:'https://upload.wikimedia.org/wikipedia/commons/a/aa/Archelaus_Ethnarchy.svg'},
+  {label:'Provincia Romana',url:'https://upload.wikimedia.org/wikipedia/commons/e/e1/Judaea_Roman_Province.svg'},
+  {label:'Visitazione',url:'https://upload.wikimedia.org/wikipedia/commons/2/27/Visitation_Journey.svg'},
+  {label:'Ministero',url:'https://upload.wikimedia.org/wikipedia/commons/5/59/The_Ministry_of_Jesus.svg'},
+  {label:'Levante Sud',url:'https://upload.wikimedia.org/wikipedia/commons/5/54/Southern_Levant_blank_topographic_map.svg'}
+];
+let activeMapIndex=0;
+function paneMaps(){
+  const pane=$('#pane');
+  pane.replaceChildren(verseCard());
+  const gospelIds=['MAT','MRK','LUK','JHN'];
+  if(!gospelIds.includes(B[S.bi].id)){
+    pane.append(h('div',{class:'card map-unavailable'},
+      h('h4',{text:'Mappe'}),
+      h('div',{class:'hint',text:'Le mappe non sono disponibili per questa sezione.'})
+    ));
+    return;
+  }
+  const card=h('div',{class:'card map-card'});
+  card.append(h('h4',{text:'Mappe storiche — Vita di Gesù'}));
+  card.append(h('p',{class:'hint',text:'Mappe della Palestina al tempo di Gesù, tratte dal progetto di riferimento. Seleziona una mappa per esplorarla.'}));
+  const selector=h('div',{class:'map-selector','aria-label':'Seleziona una mappa'});
+  const stage=h('div',{class:'map-stage',tabindex:'0','aria-label':'Mappa interattiva: trascina per spostarti, usa i controlli per ingrandire'});
+  const img=h('img',{class:'map-image',alt:'Mappa storica della Palestina al tempo di Gesù',draggable:'false'});
+  const status=h('div',{class:'map-status',text:'Caricamento mappa…'});
+  stage.append(img,status);
+  const controls=h('div',{class:'map-controls'});
+  const zoomOut=h('button',{type:'button',class:'btn map-control',text:'−','aria-label':'Riduci zoom'});
+  const zoomIn=h('button',{type:'button',class:'btn map-control',text:'+','aria-label':'Aumenta zoom'});
+  const reset=h('button',{type:'button',class:'btn map-control',text:'Adatta','aria-label':'Reimposta la mappa'});
+  controls.append(zoomOut,zoomIn,reset);
+  card.append(selector,stage,controls);
   pane.append(card);
-  const nxt=ordsInSection(d);if(nxt)pane.append(nxt);
+
+  let scale=1,tx=0,ty=0,drag=null,pinch=null;
+  const pointers=new Map();
+  const paint=()=>{img.style.transform=`translate(${tx}px,${ty}px) scale(${scale})`;};
+  const resetView=()=>{scale=1;tx=0;ty=0;paint();};
+  const zoom=(factor,cx=stage.clientWidth/2,cy=stage.clientHeight/2)=>{
+    const old=scale,next=Math.min(7,Math.max(1,scale*factor));
+    const ratio=next/old;
+    tx=cx-(cx-tx)*ratio;ty=cy-(cy-ty)*ratio;scale=next;paint();
+  };
+  function choose(i){
+    activeMapIndex=i;
+    [...selector.children].forEach((b,j)=>{b.classList.toggle('on',j===i);b.setAttribute('aria-pressed',j===i?'true':'false');});
+    status.hidden=false;status.textContent='Caricamento mappa…';
+    img.onload=()=>{status.hidden=true;resetView();};
+    img.onerror=()=>{status.hidden=false;status.textContent='Impossibile caricare questa mappa. Controlla la connessione.';};
+    img.src=GOSPEL_MAPS[i].url;
+    img.alt='Mappa: '+GOSPEL_MAPS[i].label;
+    resetView();
+  }
+  GOSPEL_MAPS.forEach((m,i)=>{
+    const b=h('button',{type:'button',class:'map-choice'+(i===activeMapIndex?' on':''),text:m.label,'aria-pressed':i===activeMapIndex?'true':'false'});
+    b.addEventListener('click',()=>choose(i));selector.append(b);
+  });
+  zoomIn.addEventListener('click',()=>zoom(1.35));
+  zoomOut.addEventListener('click',()=>zoom(1/1.35));
+  reset.addEventListener('click',resetView);
+  stage.addEventListener('wheel',e=>{e.preventDefault();zoom(e.deltaY<0?1.12:1/1.12,e.offsetX,e.offsetY);},{passive:false});
+  const distance=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y);
+  stage.addEventListener('pointerdown',e=>{
+    if(e.button!==0&&e.pointerType==='mouse')return;
+    pointers.set(e.pointerId,{x:e.clientX,y:e.clientY});
+    stage.setPointerCapture(e.pointerId);
+    if(pointers.size===1)drag={x:e.clientX,y:e.clientY,tx,ty};
+    else if(pointers.size===2){
+      const pts=[...pointers.values()],r=stage.getBoundingClientRect();
+      pinch={distance:Math.max(1,distance(pts[0],pts[1])),scale,cx:(pts[0].x+pts[1].x)/2-r.left,cy:(pts[0].y+pts[1].y)/2-r.top,tx,ty};
+      drag=null;
+    }
+  });
+  stage.addEventListener('pointermove',e=>{
+    if(!pointers.has(e.pointerId))return;
+    pointers.set(e.pointerId,{x:e.clientX,y:e.clientY});
+    if(pointers.size>=2&&pinch){
+      const pts=[...pointers.values()],r=stage.getBoundingClientRect(),midX=(pts[0].x+pts[1].x)/2-r.left,midY=(pts[0].y+pts[1].y)/2-r.top;
+      const next=Math.min(7,Math.max(1,pinch.scale*distance(pts[0],pts[1])/pinch.distance));
+      const ratio=next/pinch.scale;
+      tx=midX-(pinch.cx-pinch.tx)*ratio;ty=midY-(pinch.cy-pinch.ty)*ratio;scale=next;paint();
+    }else if(drag){tx=drag.tx+(e.clientX-drag.x);ty=drag.ty+(e.clientY-drag.y);paint();}
+  });
+  const stop=e=>{
+    pointers.delete(e.pointerId);pinch=null;drag=null;
+    if(pointers.size===1){const p=[...pointers.values()][0];drag={x:p.x,y:p.y,tx,ty};}
+  };
+  stage.addEventListener('pointerup',stop);stage.addEventListener('pointercancel',stop);stage.addEventListener('lostpointercapture',stop);
+  stage.addEventListener('dblclick',e=>{const r=stage.getBoundingClientRect();zoom(scale>1?1/scale:2,e.clientX-r.left,e.clientY-r.top);});
+  choose(activeMapIndex);
 }
-function ordsInSection(){return null;}
 function paneNotes(){
   const pane=$('#pane'),k=curKey();pane.replaceChildren(verseCard());
   const hl=h('div',{class:'hlrow'});
