@@ -625,7 +625,8 @@ html{background:var(--bg)}
 .hwrap{max-width:908px;padding-top:calc(env(safe-area-inset-top) + 26px)}
 .htop{margin-bottom:20px;min-height:36px}
 .hid{display:flex;align-items:center;gap:10px;min-width:0}
-.hlogo{width:30px;height:30px;border-radius:9px;background:#1f1e1d;color:#e08b6b;display:grid;place-items:center;font-family:var(--serif);font-weight:700;font-size:18px;flex:none}
+.hlogo{width:30px;height:30px;display:block;flex:none}
+.hlogo text{font-family:var(--serif)}
 .hidt{display:flex;flex-direction:column;gap:1px;min-width:0}
 .hbrand{font-family:var(--serif);font-weight:700;font-size:16px;color:var(--ink);letter-spacing:0;line-height:1.15}
 .hdate{font-size:12.5px;color:var(--ink2);line-height:1.2}
@@ -669,6 +670,9 @@ html{background:var(--bg)}
   .hsn{font-family:var(--ui);font-weight:500;font-size:14px}
   .hss{display:none}
 }
+@media (min-width:761px){.brand{display:inline-flex;align-items:center}}
+.blogo{width:28px;height:28px;display:block}
+.blogo text{font-family:var(--serif)}
 </style>
 </head>
 <body>
@@ -676,9 +680,9 @@ html{background:var(--bg)}
 <div id="app">
   <header id="bar">
     <button class="ibtn" id="navtoggle" aria-label="Libri e capitoli"><svg viewBox="0 0 24 24"><path d="M4 5h16M4 12h16M4 19h16"/></svg></button>
-    <span class="brand">Bibbia</span>
+    <span class="brand" role="img" aria-label="Bibbia"><svg class="blogo" viewBox="0 0 30 30" aria-hidden="true"><rect width="30" height="30" rx="9" fill="#1f1e1d"/><text x="15" y="21.7" text-anchor="middle" font-size="19" font-weight="700" fill="#e08b6b">B</text></svg></span>
     <button class="ibtn" id="prev" aria-label="Capitolo precedente"><svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg></button>
-    <button class="titlebtn" id="titlebtn" aria-label="Scegli libro e capitolo"><span id="title" data-full="Giovanni 3">Giovanni 3</span><span id="titleab" aria-hidden="true"></span><svg viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg></button>
+    <button class="titlebtn" id="titlebtn" aria-label="Scegli libro e capitolo"><span id="title" data-full="Giovanni 3">Giovanni 3</span><span id="titleab" aria-hidden="true"></span></button>
     <button class="ibtn" id="next" aria-label="Capitolo successivo"><svg viewBox="0 0 24 24"><path d="M9 5l7 7-7 7"/></svg></button>
     <span class="spacer"></span>
     <button class="ibtn" id="searchbtn" aria-label="Cerca"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg></button>
@@ -690,7 +694,7 @@ html{background:var(--bg)}
   <div id="prog"></div></header>
   <div id="body">
     <section id="home" aria-label="Home"><div class="hwrap">
-      <div class="htop"><div class="hid"><span class="hlogo" aria-hidden="true">B</span><div class="hidt"><span class="hbrand">Bibbia</span><span class="hdate" id="hdate"></span></div></div><div class="hbtns"><button class="ibtn vbtn" id="home-ver" type="button" data-pop="vpop" aria-label="Versione della Bibbia"><span class="vabbr">R2020</span></button><button class="ibtn" id="home-off" type="button" data-pop="opop" aria-label="Scarica per uso offline"><svg viewBox="0 0 24 24"><path d="M12 4v11M7.5 10.5L12 15l4.5-4.5M5 19h14"/></svg></button><button class="ibtn" id="home-set" type="button" data-pop="pop" aria-label="Aspetto del testo"><svg viewBox="0 0 24 24"><path d="M3 19l5-13 5 13M5 14h6M15 19l3.5-8 3.5 8M16.3 16.5h4.4"/></svg></button></div></div>
+      <div class="htop"><div class="hid"><svg class="hlogo" viewBox="0 0 30 30" aria-hidden="true"><rect width="30" height="30" rx="9" fill="#1f1e1d"/><text x="15" y="21.7" text-anchor="middle" font-size="19" font-weight="700" fill="#e08b6b">B</text></svg><div class="hidt"><span class="hbrand">Bibbia</span><span class="hdate" id="hdate"></span></div></div><div class="hbtns"><button class="ibtn vbtn" id="home-ver" type="button" data-pop="vpop" aria-label="Versione della Bibbia"><span class="vabbr">R2020</span></button><button class="ibtn" id="home-off" type="button" data-pop="opop" aria-label="Scarica per uso offline"><svg viewBox="0 0 24 24"><path d="M12 4v11M7.5 10.5L12 15l4.5-4.5M5 19h14"/></svg></button><button class="ibtn" id="home-set" type="button" data-pop="pop" aria-label="Aspetto del testo"><svg viewBox="0 0 24 24"><path d="M3 19l5-13 5 13M5 14h6M15 19l3.5-8 3.5 8M16.3 16.5h4.4"/></svg></button></div></div>
       <h1 class="hhead">Cosa cerchi oggi?</h1>
       <button type="button" class="hsearch" id="hsearch"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg><span>Parola, versetto o numero Strong</span></button>
       <div class="hgrid"><div class="hcol"><div id="hcont"></div><div id="hword"></div></div><div class="hcol"><div class="hlabel">Sfoglia per sezione</div><div class="hsecs" id="hsecs"></div>
@@ -949,6 +953,7 @@ const cuGet=()=>store.set.cu||(store.set.cu={...CU_DEF});
   $('#cusave').onclick=()=>{const n=$('#cuname').value.trim()||'Il mio tema';const l=store.set.cus=store.set.cus||[];const t={n,c:{...CU_DEF,...cuGet()}},ix=l.findIndex(x=>x.n===n);if(ix>=0)l[ix]=t;else l.push(t);save();$('#cuname').value='';renderCuList();const b=$('#cusave');b.textContent='Salvato';setTimeout(()=>b.textContent='Salva',1400);};})();
 function renderCuList(){const l=$('#culist');l.replaceChildren();(store.set.cus||[]).forEach((t,i)=>{l.append(h('div',{class:'cuitem'},h('button',{type:'button',class:'btn',text:t.n,on:{click:()=>{store.set.cu={...CU_DEF,...t.c};store.set.th='custom';save();applySettings();}}}),h('button',{type:'button',class:'btn','aria-label':'Elimina '+t.n,text:'×',on:{click:()=>{store.set.cus.splice(i,1);save();renderCuList();}}})));});}
 function applySettings(){
+  localizeBooks();
   const r=document.documentElement;r.style.setProperty('--fs',store.set.fs+'px');
   const ff=FONTS.find(x=>x[0]===store.set.ff)||FONTS[0];loadFont(ff);r.style.setProperty('--read',ff[2]);
   CU_KEYS.forEach(k=>r.style.removeProperty(k));
@@ -1039,7 +1044,7 @@ function closeNav(){document.body.classList.remove('nav-open');$('#nav').classLi
 async function go(bi,c,v,opt={}){
   hideHome();const tok=++S.tok;
   const prevBook=S.bi;S.bi=bi;S.c=c;S.v=v||null;S.multiMode=false;S.multiVerses=[];updateMultiToolbar();
-  $('#title').textContent=B[bi].n+' '+c;$('#titleab').textContent=(B[bi].ab||B[bi].n)+' '+c;document.title=B[bi].n+' '+c+' · Bibbia';
+  $('#title').textContent=B[bi].n+' '+c;$('#titleab').textContent=abbrOf(bi)+' '+c;document.title=B[bi].n+' '+c+' · Bibbia';
   if(prevBook!==bi){S.navOpenBook=null;S.word=null;}
   if(S.tab==='lex'&&!S.word?.standalone)S.word=null;
   buildNav();
@@ -2297,6 +2302,13 @@ function effTheme(){const t=store.set.th;return(t==='light'||t==='dark'||t==='pe
 function updateTabs(){const a=$('#tb-home'),b=$('#tb-books');if(a)a.classList.toggle('on',!!S.home);if(b)b.classList.toggle('on',!S.home);}
 function hideHome(){S.home=false;document.body.classList.remove('home-on');updateTabs();}
 function showHome(){S.home=true;document.body.classList.add('home-on');renderHome();$('#home').scrollTop=0;updateTabs();}
+/* Sigle classiche italiane dei libri (titolo su telefono) */
+const ABBR={GEN:'Gn',EXO:'Es',LEV:'Lv',NUM:'Nm',DEU:'Dt',JOS:'Gs',JDG:'Gdc',RUT:'Rt','1SA':'1Sam','2SA':'2Sam','1KI':'1Re','2KI':'2Re','1CH':'1Cr','2CH':'2Cr',EZR:'Esd',NEH:'Ne',EST:'Est',JOB:'Gb',PSA:'Sal',PRO:'Pr',ECC:'Qo',SNG:'Ct',ISA:'Is',JER:'Ger',LAM:'Lam',EZK:'Ez',DAN:'Dn',HOS:'Os',JOL:'Gl',AMO:'Am',OBA:'Abd',JON:'Gio',MIC:'Mi',NAM:'Na',HAB:'Ab',ZEP:'Sof',HAG:'Ag',ZEC:'Zc',MAL:'Ml',MAT:'Mt',MRK:'Mc',LUK:'Lc',JHN:'Gv',ACT:'At',ROM:'Rm','1CO':'1Cor','2CO':'2Cor',GAL:'Gal',EPH:'Ef',PHP:'Fil',COL:'Col','1TH':'1Ts','2TH':'2Ts','1TI':'1Tm','2TI':'2Tm',TIT:'Tt',PHM:'Fm',HEB:'Eb',JAS:'Gc','1PE':'1Pt','2PE':'2Pt','1JN':'1Gv','2JN':'2Gv','3JN':'3Gv',JUD:'Gd',REV:'Ap'};
+/* Titoli e sigle dei libri nella lingua della versione (inglese, spagnolo); per l'italiano restano i nomi del file e ABBR */
+const BK_NAMES={en:{GEN:'Genesis',EXO:'Exodus',LEV:'Leviticus',NUM:'Numbers',DEU:'Deuteronomy',JOS:'Joshua',JDG:'Judges',RUT:'Ruth','1SA':'1 Samuel','2SA':'2 Samuel','1KI':'1 Kings','2KI':'2 Kings','1CH':'1 Chronicles','2CH':'2 Chronicles',EZR:'Ezra',NEH:'Nehemiah',EST:'Esther',JOB:'Job',PSA:'Psalms',PRO:'Proverbs',ECC:'Ecclesiastes',SNG:'Song of Solomon',ISA:'Isaiah',JER:'Jeremiah',LAM:'Lamentations',EZK:'Ezekiel',DAN:'Daniel',HOS:'Hosea',JOL:'Joel',AMO:'Amos',OBA:'Obadiah',JON:'Jonah',MIC:'Micah',NAM:'Nahum',HAB:'Habakkuk',ZEP:'Zephaniah',HAG:'Haggai',ZEC:'Zechariah',MAL:'Malachi',MAT:'Matthew',MRK:'Mark',LUK:'Luke',JHN:'John',ACT:'Acts',ROM:'Romans','1CO':'1 Corinthians','2CO':'2 Corinthians',GAL:'Galatians',EPH:'Ephesians',PHP:'Philippians',COL:'Colossians','1TH':'1 Thessalonians','2TH':'2 Thessalonians','1TI':'1 Timothy','2TI':'2 Timothy',TIT:'Titus',PHM:'Philemon',HEB:'Hebrews',JAS:'James','1PE':'1 Peter','2PE':'2 Peter','1JN':'1 John','2JN':'2 John','3JN':'3 John',JUD:'Jude',REV:'Revelation'},es:{GEN:'Génesis',EXO:'Éxodo',LEV:'Levítico',NUM:'Números',DEU:'Deuteronomio',JOS:'Josué',JDG:'Jueces',RUT:'Rut','1SA':'1 Samuel','2SA':'2 Samuel','1KI':'1 Reyes','2KI':'2 Reyes','1CH':'1 Crónicas','2CH':'2 Crónicas',EZR:'Esdras',NEH:'Nehemías',EST:'Ester',JOB:'Job',PSA:'Salmos',PRO:'Proverbios',ECC:'Eclesiastés',SNG:'Cantares',ISA:'Isaías',JER:'Jeremías',LAM:'Lamentaciones',EZK:'Ezequiel',DAN:'Daniel',HOS:'Oseas',JOL:'Joel',AMO:'Amós',OBA:'Abdías',JON:'Jonás',MIC:'Miqueas',NAM:'Nahúm',HAB:'Habacuc',ZEP:'Sofonías',HAG:'Hageo',ZEC:'Zacarías',MAL:'Malaquías',MAT:'Mateo',MRK:'Marcos',LUK:'Lucas',JHN:'Juan',ACT:'Hechos',ROM:'Romanos','1CO':'1 Corintios','2CO':'2 Corintios',GAL:'Gálatas',EPH:'Efesios',PHP:'Filipenses',COL:'Colosenses','1TH':'1 Tesalonicenses','2TH':'2 Tesalonicenses','1TI':'1 Timoteo','2TI':'2 Timoteo',TIT:'Tito',PHM:'Filemón',HEB:'Hebreos',JAS:'Santiago','1PE':'1 Pedro','2PE':'2 Pedro','1JN':'1 Juan','2JN':'2 Juan','3JN':'3 Juan',JUD:'Judas',REV:'Apocalipsis'}};
+const BK_ABBR={en:{GEN:'Gen',EXO:'Exod',LEV:'Lev',NUM:'Num',DEU:'Deut',JOS:'Josh',JDG:'Judg',RUT:'Ruth','1SA':'1 Sam','2SA':'2 Sam','1KI':'1 Kgs','2KI':'2 Kgs','1CH':'1 Chr','2CH':'2 Chr',EZR:'Ezra',NEH:'Neh',EST:'Esth',JOB:'Job',PSA:'Ps',PRO:'Prov',ECC:'Eccl',SNG:'Song',ISA:'Isa',JER:'Jer',LAM:'Lam',EZK:'Ezek',DAN:'Dan',HOS:'Hos',JOL:'Joel',AMO:'Amos',OBA:'Obad',JON:'Jonah',MIC:'Mic',NAM:'Nah',HAB:'Hab',ZEP:'Zeph',HAG:'Hag',ZEC:'Zech',MAL:'Mal',MAT:'Matt',MRK:'Mark',LUK:'Luke',JHN:'John',ACT:'Acts',ROM:'Rom','1CO':'1 Cor','2CO':'2 Cor',GAL:'Gal',EPH:'Eph',PHP:'Phil',COL:'Col','1TH':'1 Thess','2TH':'2 Thess','1TI':'1 Tim','2TI':'2 Tim',TIT:'Titus',PHM:'Phlm',HEB:'Heb',JAS:'Jas','1PE':'1 Pet','2PE':'2 Pet','1JN':'1 John','2JN':'2 John','3JN':'3 John',JUD:'Jude',REV:'Rev'},es:{GEN:'Gn',EXO:'Éx',LEV:'Lv',NUM:'Nm',DEU:'Dt',JOS:'Jos',JDG:'Jue',RUT:'Rt','1SA':'1 S','2SA':'2 S','1KI':'1 R','2KI':'2 R','1CH':'1 Cr','2CH':'2 Cr',EZR:'Esd',NEH:'Neh',EST:'Est',JOB:'Job',PSA:'Sal',PRO:'Pr',ECC:'Ec',SNG:'Cnt',ISA:'Is',JER:'Jer',LAM:'Lm',EZK:'Ez',DAN:'Dn',HOS:'Os',JOL:'Jl',AMO:'Am',OBA:'Abd',JON:'Jon',MIC:'Miq',NAM:'Nah',HAB:'Hab',ZEP:'Sof',HAG:'Hag',ZEC:'Zac',MAL:'Mal',MAT:'Mt',MRK:'Mr',LUK:'Lc',JHN:'Jn',ACT:'Hch',ROM:'Ro','1CO':'1 Co','2CO':'2 Co',GAL:'Gá',EPH:'Ef',PHP:'Fil',COL:'Col','1TH':'1 Ts','2TH':'2 Ts','1TI':'1 Ti','2TI':'2 Ti',TIT:'Tit',PHM:'Flm',HEB:'He',JAS:'Stg','1PE':'1 P','2PE':'2 P','1JN':'1 Jn','2JN':'2 Jn','3JN':'3 Jn',JUD:'Jud',REV:'Ap'}};
+function localizeBooks(){if(!B.length)return;const nm=BK_NAMES[VERSIONS[curVi()].lang];B.forEach(b=>{if(b.n0===undefined)b.n0=b.n;b.n=(nm&&nm[b.id])||b.n0;});}
+function abbrOf(bi){const b=B[bi],ab=BK_ABBR[VERSIONS[curVi()].lang];return (ab&&ab[b.id])||ABBR[b.id]||b.ab||b.n;}
 /* ---------- Home ---------- */
 const HSECT=[['Pentateuco','GEN','DEU'],['Storici','JOS','EST'],['Poetici','JOB','SNG'],['Profeti','ISA','MAL'],['Vangeli','MAT','JHN'],['Lettere','ROM','JUD']];
 /* Parola del giorno: [Strong, originale, traslitterazione, significato]. Una al giorno, alternando greco ed ebraico. */
