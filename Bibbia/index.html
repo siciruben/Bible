@@ -549,8 +549,12 @@ html{background:var(--bg)}
 #ffseg button{text-align:left;font-size:15px;padding:7px 10px}
 #thseg{grid-auto-flow:row;grid-template-columns:1fr 1fr}
 #cuwrap[hidden]{display:none}
+#cuwrap>label:first-child{margin-top:12px}
 .curow{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:5px 0;font-size:13px}
-.curow input[type=color]{width:42px;height:28px;padding:0;border:1px solid var(--line);border-radius:7px;background:none;cursor:pointer}
+.curow input[type=color]{-webkit-appearance:none;appearance:none;width:42px;height:28px;padding:0;border:1px solid var(--line);border-radius:7px;background:none;overflow:hidden;cursor:pointer}
+.curow input[type=color]::-webkit-color-swatch-wrapper{padding:0}
+.curow input[type=color]::-webkit-color-swatch{border:0;border-radius:6px}
+.curow input[type=color]::-moz-color-swatch{border:0;border-radius:6px}
 .cusave{display:flex;gap:6px}
 .cusave input{flex:1;min-width:0;border:1px solid var(--line);background:var(--bg);border-radius:9px;padding:6px 10px;font-size:14px}
 .cuitem{display:flex;gap:4px;margin-top:6px}
