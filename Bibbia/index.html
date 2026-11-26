@@ -510,7 +510,6 @@ html{background:var(--bg)}
     <button class="ibtn vbtn" id="verbtn" data-pop="vpop" aria-label="Versione della Bibbia"><span class="vabbr">R2020</span></button>
     <button class="ibtn" id="offtop" data-pop="opop" aria-label="Scarica per uso offline"><svg viewBox="0 0 24 24"><path d="M12 4v11M7.5 10.5L12 15l4.5-4.5M5 19h14"/></svg></button>
     <button class="ibtn" id="setbtn" data-pop="pop" aria-label="Aspetto del testo"><svg viewBox="0 0 24 24"><path d="M3 19l5-13 5 13M5 14h6M15 19l3.5-8 3.5 8M16.3 16.5h4.4"/></svg></button>
-    <button class="ibtn" id="infobtn" aria-label="Informazioni"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8v.01"/></svg></button>
   <div id="prog"></div></header>
   <div id="body">
     <section id="home" aria-label="Home"><div class="hwrap">
@@ -567,8 +566,6 @@ html{background:var(--bg)}
   <label for="fs">Dimensione del testo</label><input type="range" id="fs" min="16" max="30" step="1">
   <label>Carattere</label><div class="seg" id="ffseg"><button data-f="serif">Con grazie</button><button data-f="sans">Lineare</button></div>
   <label>Tema</label><div class="seg" id="thseg"><button data-th="light">Chiaro</button><button data-th="dark">Scuro</button><button data-th="pergamena">Pergamena</button></div>
-  <label>App</label><button type="button" class="btn rowbtn" id="pinfo">Informazioni</button>
-  <button type="button" class="btn rowbtn" id="pdiag">Diagnostica schermo</button>
 </div>
 <div class="pop" id="vpop" role="dialog" aria-label="Versione della Bibbia">
   <label>Versione</label>
@@ -941,7 +938,6 @@ function prevCh(){if(S.c>1)return{bi:S.bi,c:S.c-1};if(S.bi>0)return{bi:S.bi-1,c:
 function nextCh(){if(S.c<B[S.bi].v.length)return{bi:S.bi,c:S.c+1};if(S.bi<B.length-1)return{bi:S.bi+1,c:1};return null;}
 function selectVerse(v){
   if(S.v===v){
-    if(!isPhone())return;
     S.v=null;S.word=null;
     $$('#chapter .v.sel').forEach(e=>e.classList.remove('sel'));
     setHash();renderInspector();closeSheet();return;
@@ -1159,6 +1155,87 @@ function alignKjvToOriginal(originalWords,verseItems){
   }
   return result;
 }
+function alignGreekToKjv(ws,verseItems,kjvText){
+  /* Greco: l'ordine delle parole greche non e' quello inglese, quindi non si distribuiscono
+     le locuzioni sulle parole precedenti (come per l'ebraico). Ogni parola greca riceve solo
+     la propria voce di concordanza; le voci ripetute (articoli, kai, de...) si associano in modo
+     monotono scegliendo quelle piu' vicine alla posizione attesa nel testo KJV. Le parole senza
+     voce vengono recuperate confrontando la glossa con le parole KJV rimaste libere. */
+  const n=ws.length,res=Array(n).fill('');if(!n)return res;
+  const clean=s=>String(s||'').replace(/[\u0001\u0002]/g,'');
+  const nz=s=>clean(s).toLowerCase().replace(/[\u2019\u2018]/g,"'").replace(/[^a-z0-9' ]+/g,' ').replace(/\s+/g,' ').trim();
+  const disp=clean(kjvText).split(/\s+/).filter(Boolean).map(t=>t.replace(/^[^A-Za-z0-9]+|[^A-Za-z0-9]+$/g,''));
+  const toks=disp.map(t=>nz(t));
+  const T=toks.length;
+  const claimed=new Array(T).fill(false);
+  /* 1) posizione di ogni voce di concordanza nel testo KJV */
+  const items=[];
+  let last=0;
+  for(const it of verseItems||[]){
+    const key=kjvStrongKey(it.number),text=String(it.text||'').trim();
+    if(!key||!text)continue;
+    const words=nz(text).split(' ').filter(Boolean);let pos=-1;
+    if(words.length&&T){
+      const find=(from,to)=>{for(let p=from;p<=to;p++){if(claimed[p])continue;let ok=true;for(let j=0;j<words.length;j++){if(p+j>=T||claimed[p+j]||toks[p+j]!==words[j]){ok=false;break;}}if(ok)return p;}return -1;};
+      pos=find(Math.max(0,last-2),T-1);if(pos<0)pos=find(0,T-1);
+      if(pos>=0){for(let j=0;j<words.length;j++)claimed[pos+j]=true;last=pos;}
+    }
+    items.push({key,text,pos,len:words.length});
+  }
+  /* 2) ancore: Strong presenti una sola volta nel greco e nelle voci; si tengono solo quelle in ordine crescente */
+  const gBy={},iBy={};
+  ws.forEach((w,i)=>{const k=kjvStrongKey(w[3]);if(k)(gBy[k]||(gBy[k]=[])).push(i);});
+  items.forEach((it,j)=>(iBy[it.key]||(iBy[it.key]=[])).push(j));
+  let anc=[];
+  for(const k in gBy){if(gBy[k].length===1&&iBy[k]&&iBy[k].length===1&&items[iBy[k][0]].pos>=0)anc.push({i:gBy[k][0],p:items[iBy[k][0]].pos});}
+  anc.sort((a,b)=>a.i-b.i);
+  if(anc.length){ /* sottosequenza crescente piu' lunga */
+    const L=anc.map(()=>1),P=anc.map(()=>-1);
+    for(let a=0;a<anc.length;a++)for(let b=0;b<a;b++)if(anc[b].p<anc[a].p&&L[b]+1>L[a]){L[a]=L[b]+1;P[a]=b;}
+    let best=0;for(let a=1;a<anc.length;a++)if(L[a]>L[best])best=a;
+    const keep=[];for(let a=best;a>=0;a=P[a])keep.unshift(anc[a]);anc=keep;
+  }
+  const expected=i=>{
+    let l={i:-1,p:-1},r={i:n,p:T};
+    for(const a of anc){if(a.i<=i)l=a;if(a.i>=i){r=a;break;}}
+    if(l.i===i)return l.p;if(r.i===i)return r.p;
+    return l.p+(i-l.i)*(r.p-l.p)/((r.i-l.i)||1);
+  };
+  /* 3) per ogni Strong: allineamento monotono parole greche <-> voci */
+  const SKIP_G=5,SKIP_I=0.5,CAP=4.5;
+  const used=new Set();
+  for(const k in gBy){
+    const G=gBy[k],I=iBy[k]||[];if(!I.length)continue;
+    const m=G.length,q=I.length;
+    const eff=i=>{if(k!=='g3588')return expected(i);let j=i+1;while(j<n-1&&kjvStrongKey(ws[j][3])==='g3588')j++;return j<n?expected(j)-1:expected(i);};
+    const cost=(a,b)=>{const p=items[I[b]].pos;if(p<0)return 1.5;return Math.min(Math.abs(eff(G[a])-p),CAP);};
+    const dp=Array.from({length:m+1},()=>new Array(q+1).fill(0)),bk=Array.from({length:m+1},()=>new Array(q+1).fill(0));
+    for(let a=0;a<=m;a++)for(let b=0;b<=q;b++){
+      if(!a&&!b)continue;let best=Infinity,mv=0;
+      if(a&&dp[a-1][b]+SKIP_G<best){best=dp[a-1][b]+SKIP_G;mv=1;}
+      if(b&&dp[a][b-1]+SKIP_I<best){best=dp[a][b-1]+SKIP_I;mv=2;}
+      if(a&&b&&dp[a-1][b-1]+cost(a-1,b-1)<best){best=dp[a-1][b-1]+cost(a-1,b-1);mv=3;}
+      dp[a][b]=best;bk[a][b]=mv;
+    }
+    let a=m,b=q;
+    while(a||b){const mv=bk[a][b];if(mv===3){const it=items[I[b-1]];res[G[a-1]]=it.text;used.add(I[b-1]);a--;b--;}else if(mv===1)a--;else b--;}
+  }
+  /* 4) recupero con la glossa inglese dell'interlineare (utile anche senza concordanza) */
+  const STOP=new Set(['the','and','of','to','in','a','an','that','is','it','his','her','he','she','by','for','with','on','as','at','be','not']);
+  for(let i=0;i<n;i++){
+    if(res[i])continue;
+    const gl=String(ws[i][2]||'');if(/^</.test(gl))continue;
+    const gw=nz(gl).split(' ').filter(w=>w.length>=3&&!STOP.has(w));if(!gw.length)continue;
+    const e=expected(i);let bp=-1,bd=Infinity;
+    for(let p=0;p<T;p++){
+      if(claimed[p]||!toks[p])continue;
+      const hit=gw.some(w=>toks[p]===w||(Math.min(w.length,toks[p].length)>=4&&(toks[p].startsWith(w.slice(0,4))&&w.startsWith(toks[p].slice(0,4)))));
+      if(!hit)continue;const d=Math.abs(p-e);if(d<bd){bd=d;bp=p;}
+    }
+    if(bp>=0&&bd<=6){res[i]=disp[bp];claimed[bp]=true;}
+  }
+  return res;
+}
 async function paneInt(){
   const pane=$('#pane'),tok=S.tok,v=S.v,c=S.c,bi=S.bi,id=B[bi].id;
   pane.replaceChildren(verseCard(),makeSkeletonCard('text'),makeSkeletonCard('words'));
@@ -1208,12 +1285,22 @@ async function paneInt(){
       translationStatus.textContent='';
     }).catch(()=>{translationStatus.textContent='Traduzione non disponibile.';});
   }
-  getKjvConcordance(id,c).then(data=>{
+  /* Ebraico: invariato. Greco: nuovo allineamento (concordanza + testo KJV locale + glosse). */
+  Promise.allSettled([getKjvConcordance(id,c),ot?Promise.resolve(null):getKjv(id,c)]).then(([cr,tr])=>{
     if(tok!==S.tok||S.v!==v||S.tab!=='int')return;
-    const aligned=alignKjvToOriginal(ws,kjvVerseItems(data,v));
+    const data=cr.status==='fulfilled'?cr.value:null;
+    const items=data?kjvVerseItems(data,v):[];
+    let aligned;
+    if(ot){
+      if(!data){kjvLabels.forEach(x=>{if(x)x.textContent='—';});return;}
+      aligned=alignKjvToOriginal(ws,items);
+    }else{
+      const kt=tr&&tr.status==='fulfilled'?(tr.value[v]||''):'';
+      aligned=alignGreekToKjv(ws,items,kt);
+    }
     aligned.forEach((word,i)=>{if(kjvLabels[i])kjvLabels[i].textContent=word||'—';});
     if(flipCard&&flipCard._activeHighlightIndex>=0)flipCard._highlightWord(flipCard._activeHighlightIndex,aligned[flipCard._activeHighlightIndex]||'');
-  }).catch(()=>{kjvLabels.forEach(x=>{if(x)x.textContent='—';});});
+  });
 }
 const morphLine=(m,ot)=>(ot?morphH(m):morphG(m)).join(' · ');
 function paneLexHint(){
@@ -1573,7 +1660,6 @@ function bindUI(){
   $('#q').addEventListener('input',runSearch);
   $$('#sscope button').forEach(b=>b.onclick=()=>{sScope=b.dataset.s;$$('#sscope button').forEach(x=>x.setAttribute('aria-selected',x===b));doSearch();});
   $('#scrim').onclick=()=>{closeNav();closeSearch();$('#amodal').classList.remove('on');closePops();$('#scrim').classList.remove('on');};
-  $('#infobtn').onclick=()=>{$('#amodal').classList.add('on');$('#scrim').classList.add('on');S.scrimFor='about';};
   $('#aclose').onclick=()=>{$('#amodal').classList.remove('on');$('#scrim').classList.remove('on');};
   $$('[data-pop]').forEach(b=>b.onclick=e=>togglePop(b.dataset.pop,e));
   document.addEventListener('click',e=>{if(!e.target.closest('.pop')&&!e.target.closest('[data-pop]'))POPS.forEach(id=>$('#'+id).classList.remove('on'));});
@@ -1619,7 +1705,6 @@ function bindExtra(){setTimeout(bindMobile,0);setTimeout(bindDiag,0);setTimeout(
   $('#tb-home').onclick=showHome;$('.brand').onclick=showHome;$('.hbrand').onclick=showHome;
   $('#hsearch').onclick=openSearch;
   matchMedia('(prefers-color-scheme: dark)').addEventListener('change',()=>{if(!['light','dark','pergamena'].includes(store.set.th))applySettings();});
-  $('#pinfo').onclick=()=>{$('#pop').classList.remove('on');$('#amodal').classList.add('on');$('#scrim').classList.add('on');S.scrimFor='about';};
   const rd=$('#reader'),pg=$('#prog');
   rd.addEventListener('scroll',()=>{const m=rd.scrollHeight-rd.clientHeight;pg.style.transform='scaleX('+(m>0?rd.scrollTop/m:0)+')';},{passive:true});
   let sx=null,sy=0,st=0;
@@ -1690,7 +1775,7 @@ function bindDiag(){
     'fixed top/bottom 0: '+P.fix.offsetHeight,'100vh: '+P.vh.offsetHeight,'100dvh: '+P.dvh.offsetHeight,'100svh: '+P.svh.offsetHeight,
     'safe top: '+P.sat.offsetHeight+'  bottom: '+P.sab.offsetHeight,'html h: '+document.documentElement.clientHeight,'body h: '+document.body.clientHeight,
     '#app bottom: '+r('#app')+'  #tabbar bottom: '+r('#tabbar'),'scrollY: '+Math.round(scrollY),'html.ios-sa: '+document.documentElement.classList.contains('ios-sa')+'  --sh: '+getComputedStyle(document.documentElement).getPropertyValue('--sh')].join('\n');};
-  $('#pdiag').onclick=()=>{$('#pop').classList.remove('on');$('#scrim').classList.remove('on');
+  const _pd=$('#pdiag');if(_pd)_pd.onclick=()=>{$('#pop').classList.remove('on');$('#scrim').classList.remove('on');
     if(box){box.remove();box=null;clearInterval(tm);return;}
     box=document.createElement('pre');box.style.cssText='position:fixed;z-index:999;left:8px;right:8px;top:calc(env(safe-area-inset-top) + 8px);margin:0;padding:10px;border-radius:12px;background:rgba(0,0,0,.82);color:#fff;font:12px/1.5 ui-monospace,Menlo,monospace;white-space:pre-wrap';
     box.onclick=()=>{box.remove();box=null;clearInterval(tm);};document.body.append(box);upd();tm=setInterval(upd,600);};
