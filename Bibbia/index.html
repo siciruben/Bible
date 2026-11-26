@@ -798,8 +798,11 @@ const KJV_BOOK_SLUG={
   '3Jn':'iii_john',Jud:'jude',Rev:'revelation'
 };
 function kjvStrongKey(value){
-  const m=String(value||'').toLowerCase().match(/([hg])\\s*0*(\\d+)/);
-  return m?m[1]+String(parseInt(m[2],10)):'';
+  // La concordanza usa chiavi brevi (es. h430); l'interlineare può usare
+  // Strong estesi (H0430G) o prefissi + lemma (H9003/{H7225G}).
+  const raw=String(value||'').toLowerCase();
+  const m=raw.match(/\{([hg])\s*0*(\d+)[a-z]?\}/i)||raw.match(/([hg])\s*0*(\d+)/i);
+  return m?m[1].toLowerCase()+String(parseInt(m[2],10)):'';
 }
 async function getKjvConcordance(id,chapter){
   const slug=KJV_BOOK_SLUG[id];
