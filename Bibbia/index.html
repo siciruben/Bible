@@ -13,6 +13,7 @@ if(t!=='light'&&t!=='dark'&&t!=='pergamena'&&t!=='custom')t=matchMedia('(prefers
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' fill='%231f1e1d'/><text x='50' y='50' text-anchor='middle' dominant-baseline='central' font-family='Georgia,Times New Roman,serif' font-weight='700' font-size='66' fill='%23e08b6b'>B</text></svg>" type="image/svg+xml">
 <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
+<link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -2173,6 +2174,37 @@ function bindDiag(){
   hd.addEventListener('touchcancel',end);
 })();
 if('serviceWorker' in navigator&&/^https?:$/.test(location.protocol))addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));
+</script>
+<!-- Invito ad aggiungere l'app alla schermata Home (solo telefoni e tablet) -->
+<style>
+#a2hs{position:fixed;left:14px;right:14px;bottom:calc(env(safe-area-inset-bottom) + 82px);max-width:420px;margin:0 auto;z-index:55;padding:16px;border-radius:20px;background:var(--card);color:var(--ink);border:1px solid var(--line);box-shadow:var(--shadow)}
+#a2hs b{display:block;font-size:16px;margin-bottom:4px}
+#a2hs p{margin:0 0 12px;font-size:14px;color:var(--ink2)}
+#a2hs .actions{justify-content:flex-end}
+body.nav-open #a2hs,body.sheet-open #a2hs,body.search-open #a2hs,body.kb #a2hs{display:none}
+</style>
+<script>
+(function(){
+  const KEY='godeep:a2hs',ua=navigator.userAgent;
+  const installed=navigator.standalone===true||matchMedia('(display-mode: standalone)').matches;
+  const ios=/iPhone|iPad|iPod/.test(ua)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
+  const inApp=/Instagram|FBAN|FBAV|FB_IAB|Line\//.test(ua);
+  let box=null;
+  function dismissed(){try{return !!localStorage.getItem(KEY);}catch(e){return false;}}
+  function close(){if(box){box.remove();box=null;}try{localStorage.setItem(KEY,'1');}catch(e){}}
+  function show(text,install){
+    if(box||installed||dismissed())return;
+    const acts=h('div',{class:'actions'},h('button',{type:'button',class:'btn',text:install?'Non ora':'Ho capito',on:{click:close}}));
+    if(install)acts.append(h('button',{type:'button',class:'btn',text:'Aggiungi',on:{click:()=>{close();install.prompt();}}}));
+    box=h('div',{id:'a2hs',role:'dialog','aria-label':'Aggiungi alla schermata Home'},h('b',{text:'Aggiungi Bibbia alla Home'}),h('p',{text}),acts);
+    document.body.append(box);
+  }
+  /* Android (Chrome, Edge, Samsung Internet): il browser permette il pulsante di installazione */
+  addEventListener('beforeinstallprompt',e=>{e.preventDefault();show('Si apre a schermo intero, come un\u2019app.',e);});
+  addEventListener('appinstalled',close);
+  /* iPhone e iPad: non esiste un pulsante, si possono solo mostrare le istruzioni */
+  if(ios)setTimeout(()=>show(inApp?'Apri questa pagina in Safari, poi tocca Condividi e \u00abAggiungi alla schermata Home\u00bb.':'Tocca Condividi (se non lo vedi, prima \u00ab\u2022\u2022\u2022\u00bb), poi \u00abAggiungi alla schermata Home\u00bb.'),1500);
+})();
 </script>
 </body>
 </html>
