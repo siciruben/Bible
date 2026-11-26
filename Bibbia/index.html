@@ -673,6 +673,11 @@ html{background:var(--bg)}
 </div>
 <div class="pop" id="opop" role="dialog" aria-label="Uso offline">
   <label>Uso offline</label><button type="button" class="btn rowbtn" id="offbtn">Scarica tutto (circa 60 MB)</button><div class="hint" id="offhint">Dopo il download la Bibbia funziona anche senza connessione.</div>
+  <label>Preferenze e dati</label>
+  <button type="button" class="btn rowbtn" id="bkexp">Scarica preferenze</button>
+  <button type="button" class="btn rowbtn" id="bkimp">Ricarica da file</button>
+  <input type="file" id="bkfile" accept=".json,application/json" hidden>
+  <div class="hint" id="bkhint">Temi, evidenziazioni, note, segnalibri, versione, recenti e impostazioni in un unico file.</div>
   <div id="instwrap" hidden><label>App</label><button type="button" class="btn rowbtn" id="instbtn">Installa come app</button><div class="hint" id="insthint" hidden></div></div>
 </div>
 
@@ -1614,6 +1619,10 @@ async function paneInt(){
       if(tok!==S.tok||S.v!==v||S.tab!=='int')return;
       values.forEach((value,i)=>{if(glossLabels[i])glossLabels[i].textContent=value||'—';});
       translationStatus.textContent='';
+      Promise.all(ws.map(w=>w.length>5&&w[5]?translateLexText(String(w[5])).catch(()=>null):null)).then(vs=>{
+        if(tok!==S.tok||S.v!==v||S.tab!=='int')return;
+        vs.forEach((t,i)=>{const b=wrap.children[i];if(t&&b)b.title='Variante testuale: '+t;});
+      });
     }).catch(()=>{translationStatus.textContent='Traduzione non disponibile.';});
   }
   /* Ebraico: invariato. Greco: nuovo allineamento (concordanza + testo KJV locale + glosse). */
@@ -1642,29 +1651,24 @@ const lexTranslationCache=new Map();
 async function translateLexText(input){
   // Mantiene intatti i marcatori di formattazione e i riferimenti interni del lessico.
   const parts=String(input).split(/(\u0003|\u0004|\u0001|\u0002|\[\[[^\]]*\]\])/);
-  const out=[];
-  for(const part of parts){
-    if(!part||/^\u000[1-4]$/.test(part)||part.startsWith('[[')){out.push(part);continue;}
-    if(!part.trim()){out.push(part);continue;}
-    if(!lexTranslationCache.has(part)){
-      const chunks=[];let rest=part;
-      while(rest.length>450){
-        let cut=rest.lastIndexOf(' ',450);if(cut<180)cut=450;
-        chunks.push(rest.slice(0,cut));rest=rest.slice(cut);
-      }
-      if(rest)chunks.push(rest);
-      const translated=await Promise.all(chunks.map(async chunk=>{
-        const url='https://api.mymemory.translated.net/get?q='+encodeURIComponent(chunk)+'&langpair=en|it';
-        const response=await fetch(url);if(!response.ok)throw new Error('Traduzione non disponibile');
-        const data=await response.json();
-        if(!data.responseData||data.responseStatus!==200)throw new Error('Traduzione non disponibile');
-        return data.responseData.translatedText;
-      }));
-      lexTranslationCache.set(part,translated.join(''));
+  const isText=p=>p&&!/^[\u0001-\u0004]$/.test(p)&&!p.startsWith('[[')&&p.trim();
+  const need=[...new Set(parts.filter(p=>isText(p)&&!lexTranslationCache.has(p)))];
+  let failed=0;
+  await trPool(need,async part=>{
+    const lead=part.match(/^\s*/)[0],trail=part.match(/\s*$/)[0];
+    let rest=part.trim();const chunks=[];
+    while(rest.length>450){
+      let cut=rest.lastIndexOf(' ',450);if(cut<180)cut=450;
+      chunks.push(rest.slice(0,cut).trim());rest=rest.slice(cut).trim();
     }
-    out.push(lexTranslationCache.get(part));
-  }
-  return out.join('');
+    if(rest)chunks.push(rest);
+    try{
+      const out=await Promise.all(chunks.map(c=>trOne(c,'en')));
+      lexTranslationCache.set(part,lead+out.join(' ')+trail);
+    }catch(e){failed++;}
+  },4);
+  if(need.length&&failed===need.length)throw new Error('Traduzione non disponibile');
+  return parts.map(p=>isText(p)&&lexTranslationCache.has(p)?lexTranslationCache.get(p):p).join('');
 }
 async function paneLex(){
   const pane=$('#pane'),word=S.word,tok=S.tok;const s=word.s;
@@ -1691,21 +1695,25 @@ async function paneLex(){
   const originalDef=e[3];
   const defCard=h('div',{class:'card'},h('h4',{text:kind==='g'?'Definizione · Abbott-Smith':'Definizione · BDB'}));
   const def=h('div',{class:'def'});richDef(def,originalDef);defCard.append(def);pane.append(defCard);
-  let italianGloss=null,italianDef=null;
+  let italianGloss=null,italianDef=null,italianPills=null,italianSig=null;
+  const pillEls=[];let sigEl=null,sigOrig='';
+  const showPill=(p,t)=>{p.el.textContent=String(t||p.orig).slice(0,40)||p.key;};
   async function renderLexLanguage(){
-    if(!lexItalianMode){gloss.textContent=e[2];def.replaceChildren();richDef(def,originalDef);return;}
+    if(!lexItalianMode){gloss.textContent=e[2];def.replaceChildren();richDef(def,originalDef);pillEls.forEach(p=>{p.el.textContent=p.orig.slice(0,30)||p.key;});if(sigEl)sigEl.textContent=sigOrig;return;}
     translating=true;translateBtn.disabled=true;translateStatus.textContent='Traduzione…';
     try{
       if(italianGloss===null)italianGloss=await translateLexText(e[2]);
       if(italianDef===null)italianDef=await translateLexText(originalDef);
+      if(italianPills===null)italianPills=await Promise.all(pillEls.map(p=>translateLexText(p.orig).catch(()=>p.orig)));
+      if(italianSig===null&&sigEl)italianSig=await translateLexText(sigOrig).catch(()=>sigOrig);
       if(S.word!==word||S.tab!=='lex')return;
       gloss.textContent=italianGloss;def.replaceChildren();richDef(def,italianDef);
+      pillEls.forEach((p,k)=>showPill(p,italianPills[k]));if(sigEl&&italianSig)sigEl.textContent=italianSig;
       translateStatus.textContent='';
     }catch(err){translateStatus.textContent='Traduzione non disponibile. Riprova.';}
     finally{translating=false;translateBtn.disabled=false;}
   }
   translateBtn.textContent=lexItalianMode?'Italiano attivo':'Traduci';
-  if(lexItalianMode)renderLexLanguage();
   const variants=(lex.c[cl]||[]);
   if(variants.length>1){
     const labels=variants.slice(0,10).map(k=>({key:k,text:String(lex.e[k]?.[2]||k)}));
@@ -1716,15 +1724,16 @@ async function paneLex(){
     labels.forEach(item=>{
       const split=item.text.indexOf(':');
       const label=split>=0?item.text.slice(split+1).trim():item.text;
-      row.append(h('span',{class:'pill',text:label.slice(0,30)||item.key,title:item.key}));
+      const pe=h('span',{class:'pill',text:label.slice(0,30)||item.key,title:item.key});pillEls.push({el:pe,orig:label,key:item.key});row.append(pe);
     });
     head.append(row);
   }
   if(word.w){const m=morphLine(word.w[4],word.ot);pane.append(h('div',{class:'card'},h('h4',{text:'In questo versetto'}),h('dl',{class:'kv'},
     h('dt',{text:'Forma'}),h('dd',{lang,style:'font-size:18px;font-family:'+(kind==='g'?'var(--greek)':'var(--hebrew)'),text:word.w[0]}),
-    h('dt',{text:'Lettura'}),h('dd',{text:word.w[1]}),h('dt',{text:'Significato'}),h('dd',{text:word.w[2]}),
+    h('dt',{text:'Lettura'}),h('dd',{text:word.w[1]}),h('dt',{text:'Significato'}),(sigEl=h('dd',{text:word.w[2]}),sigOrig=String(word.w[2]||''),sigEl),
     h('dt',{text:'Analisi'}),h('dd',{text:m||'—'}),h('dt',{text:'Codice'}),h('dd',{style:'font-variant-numeric:tabular-nums',text:word.w[4]})
   )));}
+  if(lexItalianMode)renderLexLanguage();
   const occ=h('div',{class:'card'},h('h4',{text:'Occorrenze'}),h('div',{class:'hint',text:'Calcolo…'}));pane.append(occ);
   try{
     const conc=await getConc();if(S.word!==word)return;
@@ -2192,6 +2201,45 @@ function bindDiag(){
     if(was&&(dy>90||(Date.now()-t0<280&&dy>35)))closeNav();drag=false;};
   hd.addEventListener('touchend',e=>{if(drag)e.preventDefault();end();});
   hd.addEventListener('touchcancel',end);
+})();
+/* Preferenze: scarica tutto cio' che l'app salva (temi, evidenziazioni, note, segnalibri, impostazioni, recenti) e ricaricalo da file. */
+(function(){
+  const ex=document.getElementById('bkexp'),im=document.getElementById('bkimp'),fi=document.getElementById('bkfile'),hint=document.getElementById('bkhint');if(!ex)return;
+  const KEYS=['hl','nt','bm','set','recent','last'];
+  const say=t=>{hint.textContent=t;};
+  const isObj=o=>o&&typeof o==='object'&&!Array.isArray(o);
+  ex.onclick=async()=>{
+    try{
+      const data={};KEYS.forEach(k=>{if(store[k]!==undefined)data[k]=store[k];});
+      const payload={app:'godeep-bibbia',format:1,exported:new Date().toISOString(),store:data};
+      const name='bibbia-preferenze-'+new Date().toISOString().slice(0,10)+'.json';
+      const blob=new Blob([JSON.stringify(payload,null,1)],{type:'application/json'});
+      const ios=/iPhone|iPad|iPod/.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
+      if(ios&&navigator.canShare&&window.File){
+        const f=new File([blob],name,{type:'application/json'});
+        if(navigator.canShare({files:[f]})){try{await navigator.share({files:[f],title:'Preferenze Bibbia'});say('Preferenze pronte. Salvale in File o dove preferisci.');return;}catch(e){if(e&&e.name==='AbortError')return;}}
+      }
+      const url=URL.createObjectURL(blob),a=document.createElement('a');
+      a.href=url;a.download=name;document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),4000);
+      say('File scaricato: '+name);
+    }catch(e){say('Non sono riuscito a creare il file.');}
+  };
+  im.onclick=()=>{fi.value='';fi.click();};
+  fi.onchange=async()=>{
+    const f=fi.files&&fi.files[0];if(!f)return;
+    try{
+      const o=JSON.parse(await f.text());
+      const src=isObj(o)&&isObj(o.store)?o.store:o;
+      if(!isObj(src)||!(isObj(src.hl)||isObj(src.nt)||isObj(src.bm)||isObj(src.set)))throw new Error('formato');
+      if(!confirm('Sostituire preferenze, evidenziazioni, note e segnalibri attuali con quelli del file?'))return;
+      const next={hl:{},nt:{},bm:{},set:{}};
+      KEYS.forEach(k=>{if(src[k]!==undefined&&(k==='recent'||k==='last'||isObj(src[k])))next[k]=src[k];});
+      store={...store,...next,set:{fs:20,ff:'serif',th:'auto',vi:'r20',top:0,...(next.set||{})}};
+      if(!isObj(store.hl))store.hl={};if(!isObj(store.nt))store.nt={};if(!isObj(store.bm))store.bm={};
+      save();say('Preferenze ricaricate. Riavvio…');
+      setTimeout(()=>location.reload(),500);
+    }catch(e){say('File non valido: scegli un file di preferenze scaricato da qui.');}
+  };
 })();
 /* Installa come app: pulsante nel pannello Download. Sparisce quando l'app e' gia' installata (o aperta come app). */
 (function(){
