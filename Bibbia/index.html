@@ -776,9 +776,10 @@ function getKjv(id,c){
 function flipOriginalVerseCard(originalWords,ot){
   const id=B[S.bi].id,c=S.c,v=S.v;
   const eq=h('div',{class:'verse-quote',lang:'en',text:'Caricamento…'});
-  const orderedOriginal=(ot?(originalWords||[]).slice().reverse():(originalWords||[]));
-  const originalText=orderedOriginal.map(w=>String(w[0]||'')).join(' ');
-  const oq=h('div',{class:'verse-quote original-verse',lang:ot?'he':'el',dir:'ltr',text:originalText||'Testo originale non disponibile'});
+  // Nella card girabile l'ebraico conserva l'ordine naturale di lettura RTL.
+  // Solo le card interlineari vengono invertite per seguire l'ordine inglese LTR.
+  const originalText=(originalWords||[]).map(w=>String(w[0]||'')).join(' ');
+  const oq=h('div',{class:'verse-quote original-verse',lang:ot?'he':'el',dir:ot?'rtl':'ltr',text:originalText||'Testo originale non disponibile'});
   const front=h('div',{class:'card face kjv'},h('h4',null,h('span',{text:'King James Version'}),h('span',{class:'fliphint',text:'Tocca per originale ↻'})),eq);
   const back=h('div',{class:'card face rv'},h('h4',null,h('span',{text:ot?'Testo ebraico':'Testo greco'}),h('span',{class:'fliphint',text:'Tocca per KJV ↻'})),oq);
   let loaded=false;
