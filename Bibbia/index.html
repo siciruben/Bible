@@ -518,7 +518,7 @@ html{background:var(--bg)}
 /* ===== v14: tieni l'header fuori dalla sfocatura "scroll edge" di iOS 26 (solo web app salvata in Home) ===== */
 @supports (-webkit-touch-callout: none) {
   @media (display-mode: standalone) and (max-width:760px) {
-    #bar{padding-top:calc(env(safe-area-inset-top) + 2.5rem)!important}
+    #bar{padding-top:calc(env(safe-area-inset-top) + var(--topx,40px))!important}
   }
 }
 </style>
@@ -593,6 +593,7 @@ html{background:var(--bg)}
 </div>
 <div class="pop" id="pop">
   <label for="fs">Dimensione del testo</label><input type="range" id="fs" min="16" max="30" step="1">
+  <label for="topx">Spazio in alto (app salvata in Home): <span id="topxv"></span></label><input type="range" id="topx" min="0" max="80" step="2">
   <label>Carattere</label><div class="seg" id="ffseg"><button data-f="serif">Con grazie</button><button data-f="sans">Lineare</button></div>
   <label>Tema</label><div class="seg" id="thseg"><button data-th="light">Chiaro</button><button data-th="dark">Scuro</button><button data-th="pergamena">Pergamena</button></div>
 </div>
@@ -622,7 +623,7 @@ const fold=s=>s.toLowerCase().replace(/[àáâä]/g,'a').replace(/[èéêë]/g,'
 const ICON_CHEV='<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg>';
 
 /* ---------- storage ---------- */
-let store={hl:{},nt:{},bm:{},set:{fs:20,ff:'serif',th:'auto',vi:'r20'}};
+let store={hl:{},nt:{},bm:{},set:{fs:20,ff:'serif',th:'auto',vi:'r20',top:40}};
 try{const raw=localStorage.getItem('godeep:v1');if(raw){const o=JSON.parse(raw);store={...store,...o,set:{...store.set,...(o.set||{})}};}}catch(e){}
 function save(){try{localStorage.setItem('godeep:v1',JSON.stringify(store));}catch(e){}}
 
@@ -751,6 +752,7 @@ function applySettings(){
   r.style.setProperty('--read',store.set.ff==='sans'?'var(--ui)':'var(--serif)');
   const th=effTheme();r.setAttribute('data-theme',th);const tc=$('#tc');if(tc)tc.content=getComputedStyle(r).getPropertyValue('--bg').trim();
   $('#fs').value=store.set.fs;
+  r.style.setProperty('--topx',store.set.top+'px');$('#topx').value=store.set.top;$('#topxv').textContent=store.set.top+'px';
   $$('#ffseg button').forEach(b=>b.setAttribute('aria-selected',b.dataset.f===store.set.ff));
   $$('#thseg button').forEach(b=>b.setAttribute('aria-selected',b.dataset.th===th));
   $$('#vpop [data-vi]').forEach(b=>b.setAttribute('aria-selected',b.dataset.vi===curVi()));
@@ -1800,6 +1802,7 @@ function bindUI(){
   $$('[data-pop]').forEach(b=>b.onclick=e=>togglePop(b.dataset.pop,e));
   document.addEventListener('click',e=>{if(!e.target.closest('.pop')&&!e.target.closest('[data-pop]'))POPS.forEach(id=>$('#'+id).classList.remove('on'));});
   $('#fs').oninput=e=>{store.set.fs=+e.target.value;applySettings();save();};
+  $('#topx').oninput=e=>{store.set.top=+e.target.value;applySettings();save();};
   $$('#ffseg button').forEach(b=>b.onclick=()=>{store.set.ff=b.dataset.f;applySettings();save();});
   $$('#thseg button').forEach(b=>b.onclick=()=>{store.set.th=b.dataset.th;applySettings();save();});
   $$('#vpop [data-vi]').forEach(b=>b.onclick=()=>setVersion(b.dataset.vi));
