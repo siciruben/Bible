@@ -288,6 +288,7 @@ body{font-feature-settings:"kern","liga";overscroll-behavior:none}
 .modal{border-radius:22px;background:var(--bg)}
 .pop{border-radius:22px;background:var(--glass);-webkit-backdrop-filter:saturate(180%) blur(28px);backdrop-filter:saturate(180%) blur(28px)}
 .pop .rowbtn{width:100%;margin-top:4px}
+.seg.vstack{grid-auto-flow:row}
 .btn{border-radius:12px}
 #home{position:absolute;inset:0;z-index:25;overflow:auto;background:var(--bg);display:none}
 body.home-on #home{display:block}
@@ -517,7 +518,7 @@ html{background:var(--bg)}
 </nav>
 <div class="modal" id="smodal" role="dialog" aria-label="Cerca">
   <div class="sbar"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg><input id="q" type="search" placeholder="Parola, versetto (Gv 3:16) o Strong (G25, H1254)" autocomplete="off" spellcheck="false"><button class="btn" id="sclose">Chiudi</button></div>
-  <div class="sopts"><div class="seg" id="sscope"><button data-s="text" aria-selected="true">Testo Riveduta</button><button data-s="lex" aria-selected="false">Lessico (inglese)</button></div></div>
+  <div class="sopts"><div class="seg" id="sscope"><button data-s="text" aria-selected="true" id="sscope-text">Testo Riveduta 2020</button><button data-s="lex" aria-selected="false">Lessico (inglese)</button></div></div>
   <div class="sres" id="sres"></div>
 </div>
 <div class="modal" id="amodal" role="dialog" aria-label="Informazioni">
@@ -525,6 +526,7 @@ html{background:var(--bg)}
     <h3>Bibbia</h3>
     <p>Studio biblico con la Riveduta 2020, interlineare ebraico e greco, lessico, concordanza per numero Strong e passi paralleli.</p>
     <p><b>Testo italiano.</b> Riveduta 2020, dal file fornito. Titoli di sezione e passi paralleli sono quelli del file.</p>
+    <p><b>Altre versioni.</b> Nuova Riveduta, Nuova Diodati (1991), King James Version e New King James Version, dai file JSON forniti. Si scelgono in Aspetto del testo; la numerazione dei versetti segue quella di ciascuna versione.</p>
     <p><b>Originali e lessici.</b> Dati di <a href="https://github.com/STEPBible/STEPBible-Data" target="_blank" rel="noopener">STEPBible.org</a> e Tyndale House, Cambridge, licenza CC BY 4.0: TAHOT (ebraico), TAGNT (greco NA28 con varianti), TBESH e TBESG (lessici, con Abbott-Smith per il greco e BDB per l'ebraico). Le glosse inglesi dell'interlineare non sono allineate parola per parola alla traduzione italiana.</p>
     <p><b>Concordanza.</b> Costruita dai numeri Strong estesi di STEPBible.</p>
     <p style="margin-top:14px"><button class="btn" id="aclose">Chiudi</button></p>
@@ -534,7 +536,9 @@ html{background:var(--bg)}
   <label for="fs">Dimensione del testo</label><input type="range" id="fs" min="16" max="30" step="1">
   <label>Carattere</label><div class="seg" id="ffseg"><button data-f="serif">Con grazie</button><button data-f="sans">Lineare</button></div>
   <label>Tema</label><div class="seg" id="thseg"><button data-th="light">Chiaro</button><button data-th="dark">Scuro</button><button data-th="pergamena">Pergamena</button></div>
-  <label>Uso offline</label><button type="button" class="btn rowbtn" id="offbtn">Scarica tutto (circa 38 MB)</button><div class="hint" id="offhint">Dopo il download la Bibbia funziona anche senza connessione.</div>
+  <label>Versione italiana</label><div class="seg vstack" id="viseg"><button data-vi="r20">Riveduta 2020</button><button data-vi="nr">Nuova Riveduta</button><button data-vi="lnd">Nuova Diodati</button></div>
+  <label>Versione inglese</label><div class="seg" id="veseg"><button data-ve="kjv">KJV</button><button data-ve="nkjv">NKJV</button></div>
+  <label>Uso offline</label><button type="button" class="btn rowbtn" id="offbtn">Scarica tutto (circa 55 MB)</button><div class="hint" id="offhint">Dopo il download la Bibbia funziona anche senza connessione.</div>
   <label>App</label><button type="button" class="btn rowbtn" id="pinfo">Informazioni</button>
   <button type="button" class="btn rowbtn" id="pdiag">Diagnostica schermo</button>
 </div>
@@ -555,7 +559,7 @@ const fold=s=>s.toLowerCase().replace(/[àáâä]/g,'a').replace(/[èéêë]/g,'
 const ICON_CHEV='<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg>';
 
 /* ---------- storage ---------- */
-let store={hl:{},nt:{},bm:{},set:{fs:20,ff:'serif',th:'auto'}};
+let store={hl:{},nt:{},bm:{},set:{fs:20,ff:'serif',th:'auto',vi:'r20',ve:'kjv'}};
 try{const raw=localStorage.getItem('godeep:v1');if(raw){const o=JSON.parse(raw);store={...store,...o,set:{...store.set,...(o.set||{})}};}}catch(e){}
 function save(){try{localStorage.setItem('godeep:v1',JSON.stringify(store));}catch(e){}}
 
@@ -563,7 +567,18 @@ function save(){try{localStorage.setItem('godeep:v1',JSON.stringify(store));}cat
 const B=[];const ORD={bs:[],cs:[],total:0,nt:0};
 const cache={it:{},or:{},lex:{},conc:null};
 async function jget(p){const r=await fetch(p);if(!r.ok)throw new Error('Impossibile caricare '+p);return r.json();}
-const getIt=id=>cache.it[id]??=jget(`data/it/${id}.json`).then(d=>{d.hb={};for(const k in d.h){const [c,v]=k.split(':').map(Number);(d.hb[c]??={})[v]=d.h[k];}return d;});
+/* Versioni del testo: stesso formato di data/it (c = capitoli/versetti, h = titoli di sezione) */
+const VERSIONS={
+  r20:{name:'Riveduta 2020',short:'Riveduta 2020',lang:'it',path:'data/it/'},
+  nr:{name:'Nuova Riveduta',short:'Nuova Riveduta',lang:'it',path:'data/nr/'},
+  lnd:{name:'Nuova Diodati',short:'Nuova Diodati',lang:'it',path:'data/lnd/'},
+  kjv:{name:'King James Version',short:'KJV',lang:'en',path:'data/kjv/'},
+  nkjv:{name:'New King James Version',short:'NKJV',lang:'en',path:'data/nkjv/'}
+};
+const curVi=()=>VERSIONS[store.set.vi]&&VERSIONS[store.set.vi].lang==='it'?store.set.vi:'r20';
+const curVe=()=>VERSIONS[store.set.ve]&&VERSIONS[store.set.ve].lang==='en'?store.set.ve:'kjv';
+const getVer=(code,id)=>((cache.it[code]??={})[id]??=jget(VERSIONS[code].path+id+'.json').then(d=>{d.hb={};for(const k in d.h||{}){const [c,v]=k.split(':').map(Number);(d.hb[c]??={})[v]=d.h[k];}return d;}).catch(e=>{delete cache.it[code][id];throw e;}));
+const getIt=id=>getVer(curVi(),id);
 const getOr=id=>cache.or[id]??=jget(`data/or/${id}.json`);
 const getLex=k=>cache.lex[k]??=jget(`data/lex_${k}.json`);
 const getConc=()=>cache.conc??=jget('data/conc.json');
@@ -674,6 +689,18 @@ function applySettings(){
   $('#fs').value=store.set.fs;
   $$('#ffseg button').forEach(b=>b.setAttribute('aria-selected',b.dataset.f===store.set.ff));
   $$('#thseg button').forEach(b=>b.setAttribute('aria-selected',b.dataset.th===th));
+  $$('#viseg button').forEach(b=>b.setAttribute('aria-selected',b.dataset.vi===curVi()));
+  $$('#veseg button').forEach(b=>b.setAttribute('aria-selected',b.dataset.ve===curVe()));
+  const st=$('#sscope-text');if(st)st.textContent='Testo '+VERSIONS[curVi()].short;
+}
+/* Cambio versione: ricarica il capitolo corrente (o la home) con la nuova versione */
+function setVersion(kind,code){
+  if(kind==='vi'){if(store.set.vi===code)return;store.set.vi=code;TEXT=null;textLoading=null;}
+  else{if(store.set.ve===code)return;store.set.ve=code;}
+  save();applySettings();
+  if(kind==='ve'){renderInspector();return;}
+  if(S.navView==='saved')buildNav();
+  if(S.home)renderHome();else go(S.bi,S.c,S.v,{noHash:true});
 }
 
 /* ---------- navigation panel ---------- */
@@ -707,7 +734,7 @@ function buildSaved(list){
   const wrap=h('div',{style:'padding:4px 12px 24px'});list.append(wrap);
   ks.forEach(k=>{const [id,c,v]=k.split('.');const bi=idIdx(id);
     const t=h('div',{class:'t',text:'…'});
-    getIt(id).then(d=>{t.textContent=plain(d.c[c-1][v-1]);});
+    getIt(id).then(d=>{t.textContent=plain((d.c[c-1]||[])[v-1]||'');}).catch(()=>{});
     wrap.append(h('button',{type:'button',class:'saved-item',on:{click:()=>{go(bi,+c,+v,{open:true});closeNav();}}},
       h('div',{class:'r'},store.hl[k]?h('span',{class:'dot',style:'background:'+HLC[store.hl[k]]+';box-shadow:0 0 0 1px var(--line) inset'}):null,B[bi].n+' '+c+':'+v,store.bm[k]?h('span',{class:'pill',text:'Segnalibro'}):null),t,store.nt[k]?h('div',{class:'n',text:store.nt[k]}):null));
   });
@@ -728,6 +755,7 @@ async function go(bi,c,v,opt={}){
   let d;
   try{d=await getIt(B[bi].id);}catch(e){$('#chapter').replaceChildren(h('div',{class:'loading',text:e.message}));return;}
   if(tok!==S.tok)return;
+  const vmax=(d.c[c-1]||[]).length;if(S.v&&vmax&&S.v>vmax)S.v=vmax;
   S.loaded=d;store.last={id:B[bi].id,c};store.recent=[{id:B[bi].id,c},...(store.recent||[]).filter(x=>!(x.id===B[bi].id&&x.c===c))].slice(0,6);save();
   renderChapter(d,bi,c);
   renderPager();
@@ -740,8 +768,8 @@ async function go(bi,c,v,opt={}){
 function renderChapter(d,bi,c){
   const art=$('#chapter');art.replaceChildren();art.classList.remove('enter');void art.offsetWidth;art.classList.add('enter');
   const b=B[bi];
-  art.append(h('div',{class:'eyebrow',text:b.t===1?'Antico Testamento':'Nuovo Testamento'}),h('h1',{text:b.n}),h('div',{class:'chnum',text:b.id==='PSA'?'Salmo '+c:'Capitolo '+c}));
-  const verses=d.c[c-1],heads=d.hb[c]||{};let para=null;
+  art.append(h('div',{class:'eyebrow',text:(b.t===1?'Antico Testamento':'Nuovo Testamento')+' · '+VERSIONS[curVi()].name}),h('h1',{text:b.n}),h('div',{class:'chnum',text:b.id==='PSA'?'Salmo '+c:'Capitolo '+c}));
+  const verses=d.c[c-1]||[],heads=d.hb[c]||{};let para=null;
   verses.forEach((t,i)=>{
     const v=i+1,hd=heads[v];
     if(hd){
@@ -783,7 +811,7 @@ function selectVerse(v){
   $$('#chapter .v.sel').forEach(e=>e.classList.remove('sel'));const el=$('#v'+v);if(el)el.classList.add('sel');
   setHash();renderInspector();if(isPhone())openSheet();
 }
-function refreshVerse(v){const old=$('#v'+v);if(!old)return;const d=S.loaded;const n=verseNode(d.c[S.c-1][v-1],v,B[S.bi].id,S.c);old.replaceWith(n);}
+function refreshVerse(v){const old=$('#v'+v);if(!old)return;const d=S.loaded;const t=(d.c[S.c-1]||[])[v-1];if(t==null)return;const n=verseNode(t,v,B[S.bi].id,S.c);old.replaceWith(n);}
 
 /* ---------- inspector ---------- */
 function openSheet(){$('#insp').classList.add('open');document.body.classList.add('sheet-open');revealVerse();}
@@ -815,18 +843,12 @@ async function renderInspector(){
   if(S.tab==='par')return paneMaps();
   return paneNotes();
 }
-function verseCard(){const t=S.loaded.c[S.c-1][S.v-1];const c=h('div',{class:'card verse-card'},h('h4',{text:'Riveduta 2020'}));const q=h('div',{class:'verse-quote'});richInto(q,t);c.append(q);return c;}
+function verseCard(){const t=(S.loaded.c[S.c-1]||[])[S.v-1]||'';const c=h('div',{class:'card verse-card'},h('h4',{text:VERSIONS[curVi()].name}));const q=h('div',{class:'verse-quote'});richInto(q,t);c.append(q);return c;}
 /* Interlineare: card girevole Riveduta / KJV. La lingua scelta resta memorizzata (store.set.vl). */
+/* Testo inglese della card girevole: file locali della versione scelta (KJV o NKJV), stessa forma {versetto:testo}. */
 function getKjv(id,c){
-  const k=id+'.'+c;cache.kjv=cache.kjv||{};
-  if(!cache.kjv[k])cache.kjv[k]=fetch('https://bible-api.com/data/kjv/'+id+'/'+c).then(r=>{if(!r.ok)throw new Error('KJV non disponibile');return r.json();})
-    .then(j=>{const m={};(j.verses||[]).forEach(x=>{m[x.verse]=String(x.text||'').replace(/\s+/g,' ').trim();});return m;})
-    .catch(e=>{delete cache.kjv[k];throw e;});
-  return cache.kjv[k];
+  return getVer(curVe(),id).then(d=>{const m={};(d.c[c-1]||[]).forEach((t,i)=>{m[i+1]=t;});return m;});
 }
-/* Altezza della card girevole: misura l'altezza effettiva renderizzata della faccia visibile
-   (font, line-height, padding e larghezza inclusi) e la applica al contenitore con transizione.
-   Un ResizeObserver ricalcola quando cambia il testo (caricamento KJV), la larghezza o il font. */
 function fitFlipHeight(wrap,activeFace){
   const inner=wrap.querySelector('.flip-in');
   if(!inner||!activeFace)return;
@@ -869,10 +891,10 @@ function flipOriginalVerseCard(originalWords,ot){
     oq.append(h('span',{class:'original-word-ref','data-word-index':String(i),text:String(word[0]||'')}));
   });
   if(!originalWords||!originalWords.length)oq.textContent='Testo originale non disponibile';
-  const front=h('div',{class:'card face kjv'},h('h4',null,h('span',{text:'King James Version'}),h('span',{class:'fliphint',text:'Tocca per originale ↻'})),eq);
-  const back=h('div',{class:'card face rv'},h('h4',null,h('span',{text:ot?'Testo ebraico':'Testo greco'}),h('span',{class:'fliphint',text:'Tocca per KJV ↻'})),oq);
+  const front=h('div',{class:'card face kjv'},h('h4',null,h('span',{text:VERSIONS[curVe()].name}),h('span',{class:'fliphint',text:'Tocca per originale ↻'})),eq);
+  const back=h('div',{class:'card face rv'},h('h4',null,h('span',{text:ot?'Testo ebraico':'Testo greco'}),h('span',{class:'fliphint',text:'Tocca per '+VERSIONS[curVe()].short+' ↻'})),oq);
   let loaded=false;
-  const load=()=>{if(loaded)return;loaded=true;getKjv(id,c).then(m=>{eq.textContent=m[v]||'Versetto non presente nella KJV con questa numerazione.';if(wrap._activeHighlightIndex>=0)renderPhraseHighlight(eq,eq.textContent,wrap._activePhrase);if(wrap.classList.contains('en'))fitFlipHeight(wrap,front);}).catch(()=>{loaded=false;eq.textContent='Impossibile caricare la KJV. Controlla la connessione e tocca di nuovo.';if(wrap.classList.contains('en'))fitFlipHeight(wrap,front);});};
+  const load=()=>{if(loaded)return;loaded=true;getKjv(id,c).then(m=>{eq.textContent=m[v]||'Versetto non presente nella '+VERSIONS[curVe()].short+' con questa numerazione.';if(wrap._activeHighlightIndex>=0)renderPhraseHighlight(eq,eq.textContent,wrap._activePhrase);if(wrap.classList.contains('en'))fitFlipHeight(wrap,front);}).catch(()=>{loaded=false;eq.textContent='Impossibile caricare la '+VERSIONS[curVe()].short+'. Controlla la connessione e tocca di nuovo.';if(wrap.classList.contains('en'))fitFlipHeight(wrap,front);});};
   const wrap=h('div',{class:'flip en',role:'button',tabindex:'0','aria-label':'Gira per passare dal testo inglese al testo originale'},h('div',{class:'flip-in'},front,back));
   const sync=()=>{const en=wrap.classList.contains('en');front.setAttribute('aria-hidden',!en);back.setAttribute('aria-hidden',en);if(en)load();fitFlipHeight(wrap,en?front:back);};
   const toggle=()=>{wrap.classList.toggle('en');sync();};
@@ -903,15 +925,15 @@ function renderPhraseHighlight(element,fullText,phrase){
   element.append(document.createTextNode(text.slice(last)));
 }
 function flipVerseCard(){
-  const t=S.loaded.c[S.c-1][S.v-1],id=B[S.bi].id,c=S.c,v=S.v;
+  const t=(S.loaded.c[S.c-1]||[])[S.v-1]||'',id=B[S.bi].id,c=S.c,v=S.v;
   const q=h('div',{class:'verse-quote'});richInto(q,t);
   const eq=h('div',{class:'verse-quote',lang:'en',text:'Caricamento…'});
-  const front=h('div',{class:'card face rv'},h('h4',null,h('span',{text:'Riveduta 2020'}),h('span',{class:'fliphint',text:'Tocca per KJV ↻'})),q);
-  const back=h('div',{class:'card face kjv'},h('h4',null,h('span',{text:'King James Version'}),h('span',{class:'fliphint',text:'Tocca per italiano ↻'})),eq);
+  const front=h('div',{class:'card face rv'},h('h4',null,h('span',{text:VERSIONS[curVi()].name}),h('span',{class:'fliphint',text:'Tocca per '+VERSIONS[curVe()].short+' ↻'})),q);
+  const back=h('div',{class:'card face kjv'},h('h4',null,h('span',{text:VERSIONS[curVe()].name}),h('span',{class:'fliphint',text:'Tocca per italiano ↻'})),eq);
   let loaded=false;
   const load=()=>{if(loaded)return;loaded=true;
-    getKjv(id,c).then(m=>{eq.textContent=m[v]||'Versetto non presente nella KJV con questa numerazione.';if(wrap.classList.contains('en'))fitFlipHeight(wrap,back);})
-      .catch(()=>{loaded=false;eq.textContent='Impossibile caricare la KJV. Controlla la connessione e tocca di nuovo.';if(wrap.classList.contains('en'))fitFlipHeight(wrap,back);});};
+    getKjv(id,c).then(m=>{eq.textContent=m[v]||'Versetto non presente nella '+VERSIONS[curVe()].short+' con questa numerazione.';if(wrap.classList.contains('en'))fitFlipHeight(wrap,back);})
+      .catch(()=>{loaded=false;eq.textContent='Impossibile caricare la '+VERSIONS[curVe()].short+'. Controlla la connessione e tocca di nuovo.';if(wrap.classList.contains('en'))fitFlipHeight(wrap,back);});};
   const wrap=h('div',{class:'flip'+(store.set.vl==='en'?' en':''),role:'button',tabindex:'0','aria-label':'Gira per cambiare lingua tra italiano e inglese'},h('div',{class:'flip-in'},front,back));
   const sync=()=>{const en=store.set.vl==='en';wrap.classList.toggle('en',en);front.setAttribute('aria-hidden',en);back.setAttribute('aria-hidden',!en);if(en)load();fitFlipHeight(wrap,en?back:front);};
   const toggle=()=>{store.set.vl=store.set.vl==='en'?'it':'en';save();sync();};
@@ -1155,7 +1177,7 @@ async function paneLex(){
       const slice=ords.slice(shown,shown+20);shown+=slice.length;
       const rows=slice.map(o=>{const r=ordRef(o);const t=h('div',{class:'t',text:'…'});const row=h('button',{type:'button',class:'occ',on:{click:()=>{go(r.bi,r.c,r.v,{open:true});}}},h('div',{class:'r',text:B[r.bi].n+' '+r.c+':'+r.v}),t);list.append(row);return{r,t};});
       more.remove();
-      await Promise.all(rows.map(async({r,t})=>{try{const d=await getIt(B[r.bi].id);t.textContent=plain(d.c[r.c-1][r.v-1]);}catch(e){}}));
+      await Promise.all(rows.map(async({r,t})=>{try{const d=await getIt(B[r.bi].id);t.textContent=plain((d.c[r.c-1]||[])[r.v-1]||'');}catch(e){}}));
       if(shown<ords.length){more.textContent='Mostra altri ('+(ords.length-shown).toLocaleString('it-IT')+')';occ.append(more);}
     }
     step();
@@ -1327,7 +1349,7 @@ function paneNotes(){
   const acts=h('div',{class:'actions'});
   acts.append(h('button',{type:'button',class:'btn',text:store.bm[k]?'Rimuovi segnalibro':'Aggiungi segnalibro',on:{click:()=>{if(store.bm[k])delete store.bm[k];else store.bm[k]=1;save();refreshVerse(S.v);paneNotes();if(S.navView==='saved')buildNav();}}}));
   const cp=h('button',{type:'button',class:'btn',text:'Copia versetto'});
-  cp.addEventListener('click',async()=>{const t=plain(S.loaded.c[S.c-1][S.v-1]);const s='«'+t+'» — '+B[S.bi].n+' '+S.c+':'+S.v+' (Riveduta 2020)';try{await navigator.clipboard.writeText(s);cp.textContent='Copiato';}catch(e){cp.textContent='Copia non consentita';}setTimeout(()=>cp.textContent='Copia versetto',1600);});
+  cp.addEventListener('click',async()=>{const t=plain((S.loaded.c[S.c-1]||[])[S.v-1]||'');const s='«'+t+'» — '+B[S.bi].n+' '+S.c+':'+S.v+' ('+VERSIONS[curVi()].name+')';try{await navigator.clipboard.writeText(s);cp.textContent='Copiato';}catch(e){cp.textContent='Copia non consentita';}setTimeout(()=>cp.textContent='Copia versetto',1600);});
   acts.append(cp);pane.append(h('div',{class:'card'},acts));
 }
 function setHl(k,c){if(c)store.hl[k]=c;else delete store.hl[k];save();refreshVerse(S.v);paneNotes();if(S.navView==='saved')buildNav();}
@@ -1335,12 +1357,14 @@ function setHl(k,c){if(c)store.hl[k]=c;else delete store.hl[k];save();refreshVer
 /* ---------- search ---------- */
 let TEXT=null,textLoading=null;
 async function loadText(onprog){
-  if(TEXT)return TEXT;
-  if(textLoading)return textLoading;
+  const ver=curVi();
+  if(TEXT&&TEXT.ver===ver)return TEXT;
+  if(textLoading&&textLoading.ver===ver)return textLoading;
   textLoading=(async()=>{const all=[];let done=0;const queue=B.map((b,i)=>i);
-    async function worker(){while(queue.length){const i=queue.shift();const d=await getIt(B[i].id);d.c.forEach((vs,ci)=>vs.forEach((t,vi)=>{const p=plain(t);all.push({bi:i,c:ci+1,v:vi+1,t:p,f:fold(p)});}));done++;onprog&&onprog(done);}}
+    async function worker(){while(queue.length){const i=queue.shift();const d=await getVer(ver,B[i].id);d.c.forEach((vs,ci)=>vs.forEach((t,vi)=>{const p=plain(t);all.push({bi:i,c:ci+1,v:vi+1,t:p,f:fold(p)});}));done++;onprog&&onprog(done);}}
     await Promise.all([worker(),worker(),worker(),worker(),worker(),worker()]);
-    all.sort((a,b)=>refOrd(a.bi,a.c,a.v)-refOrd(b.bi,b.c,b.v));TEXT=all;return all;})();
+    all.sort((a,b)=>refOrd(a.bi,a.c,a.v)-refOrd(b.bi,b.c,b.v));all.ver=ver;if(curVi()===ver)TEXT=all;return all;})();
+  textLoading.ver=ver;
   return textLoading;
 }
 function openSearch(){document.body.classList.add('search-open');$('#smodal').classList.add('on');$('#scrim').classList.add('on');S.scrimFor='search';const q=$('#q');q.focus();q.select();runSearch();}
@@ -1414,6 +1438,8 @@ function bindUI(){
   $('#fs').oninput=e=>{store.set.fs=+e.target.value;applySettings();save();};
   $$('#ffseg button').forEach(b=>b.onclick=()=>{store.set.ff=b.dataset.f;applySettings();save();});
   $$('#thseg button').forEach(b=>b.onclick=()=>{store.set.th=b.dataset.th;applySettings();save();});
+  $$('#viseg button').forEach(b=>b.onclick=()=>setVersion('vi',b.dataset.vi));
+  $$('#veseg button').forEach(b=>b.onclick=()=>setVersion('ve',b.dataset.ve));
   $$('#navseg button').forEach(b=>b.onclick=()=>{S.navView=b.dataset.v;$$('#navseg button').forEach(x=>x.setAttribute('aria-selected',x===b));buildNav();});
   $$('#tabs button').forEach(b=>b.onclick=()=>{S.tab=b.dataset.t;if(S.tab!=='lex'&&S.word&&!S.word.standalone)S.word=null;if(S.tab!=='lex'&&S.word&&S.word.standalone){S.word=null;}renderInspector();});
   $('#iclose').onclick=closeSheet;bindExtra();
@@ -1463,7 +1489,7 @@ function bindExtra(){setTimeout(bindMobile,0);setTimeout(bindDiag,0);setTimeout(
   const ob=$('#offbtn');
   ob.onclick=async()=>{
     if(!('caches' in window)){$('#offhint').textContent='Questo browser non supporta l\'uso offline.';return;}
-    ob.disabled=true;const files=['data/meta.json','data/conc.json','data/lex_g.json','data/lex_h.json',...B.flatMap(b=>['data/it/'+b.id+'.json','data/or/'+b.id+'.json'])];
+    ob.disabled=true;const files=['data/meta.json','data/conc.json','data/lex_g.json','data/lex_h.json',...B.flatMap(b=>['data/it/'+b.id+'.json','data/or/'+b.id+'.json',...['nr','lnd','kjv','nkjv'].map(k=>VERSIONS[k].path+b.id+'.json')])];
     const c=await caches.open('godeep-data-v1');let n=0;const q=[...files];
     async function w(){while(q.length){const f=q.shift();try{if(!(await c.match(f)))await c.add(f);}catch(e){}n++;ob.textContent='Scarico… '+Math.round(n/files.length*100)+'%';}}
     await Promise.all([w(),w(),w(),w()]);
