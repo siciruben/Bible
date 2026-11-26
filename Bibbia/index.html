@@ -570,6 +570,7 @@ html{background:var(--bg)}
 #thseg{grid-auto-flow:row;grid-template-columns:1fr 1fr}
 #cuwrap[hidden]{display:none}
 #cuwrap>label:first-child{margin-top:12px}
+#instwrap>label:first-child{margin-top:18px}
 .curow{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:5px 0;font-size:13px}
 .curow input[type=color]{-webkit-appearance:none;appearance:none;width:42px;height:28px;padding:0;border:1px solid var(--line);border-radius:7px;background:none;overflow:hidden;cursor:pointer}
 .curow input[type=color]::-webkit-color-swatch-wrapper{padding:0}
@@ -677,7 +678,7 @@ html{background:var(--bg)}
   <button type="button" class="btn rowbtn" id="bkexp">Scarica preferenze</button>
   <button type="button" class="btn rowbtn" id="bkimp">Ricarica da file</button>
   <input type="file" id="bkfile" accept=".json,application/json" hidden>
-  <div class="hint" id="bkhint">Temi, evidenziazioni, note, segnalibri, versione, recenti e impostazioni in un unico file.</div>
+  <div class="hint" id="bkhint">Temi, evidenziazioni, note, segnalibri, versione, recenti e impostazioni in un unico file. Il file si chiamerà bibbia-preferenze-AAAA-MM-GG.json (formato JSON, con la data del giorno).</div>
   <div id="instwrap" hidden><label>App</label><button type="button" class="btn rowbtn" id="instbtn">Installa come app</button><div class="hint" id="insthint" hidden></div></div>
 </div>
 
@@ -2217,7 +2218,7 @@ function bindDiag(){
       const ios=/iPhone|iPad|iPod/.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
       if(ios&&navigator.canShare&&window.File){
         const f=new File([blob],name,{type:'application/json'});
-        if(navigator.canShare({files:[f]})){try{await navigator.share({files:[f],title:'Preferenze Bibbia'});say('Preferenze pronte. Salvale in File o dove preferisci.');return;}catch(e){if(e&&e.name==='AbortError')return;}}
+        if(navigator.canShare({files:[f]})){try{await navigator.share({files:[f]});say('File pronto: '+name+'. Salvalo in File o dove preferisci.');return;}catch(e){if(e&&e.name==='AbortError')return;}}
       }
       const url=URL.createObjectURL(blob),a=document.createElement('a');
       a.href=url;a.download=name;document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),4000);
