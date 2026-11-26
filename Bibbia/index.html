@@ -1220,19 +1220,42 @@ function alignGreekToKjv(ws,verseItems,kjvText){
     let a=m,b=q;
     while(a||b){const mv=bk[a][b];if(mv===3){const it=items[I[b-1]];res[G[a-1]]=it.text;used.add(I[b-1]);a--;b--;}else if(mv===1)a--;else b--;}
   }
-  /* 4) recupero con la glossa inglese dell'interlineare (utile anche senza concordanza) */
-  const STOP=new Set(['the','and','of','to','in','a','an','that','is','it','his','her','he','she','by','for','with','on','as','at','be','not']);
+  /* 4) recupero con la glossa inglese dell'interlineare (utile anche senza concordanza o con voci mancanti) */
+  const STOP=new Set(['the','and','of','to','in','a','an','that','is','it','his','her','he','she','by','for','with','on','as','at','be','not','if','so','or','but','who','which','this','these','those','are','was','were','from','into','upon','shall','will']);
+  const COMP={anyone:['any','one|man|men'],anything:['any','thing'],someone:['some','one|man|men'],something:['some','thing'],everyone:['every','one|man|men'],everything:['every','thing'],nothing:['no','thing'],noone:['no','one|man|men']};
+  const stemHit=(t,w)=>t===w||(Math.min(t.length,w.length)>=4&&t.slice(0,4)===w.slice(0,4)&&Math.abs(t.length-w.length)<=4)||(t.length>=3&&w.length>t.length&&w.startsWith(t)&&w.length-t.length<=3);
+  /* equivalenze tipiche delle parole funzionali greche nella KJV */
+  const EQ={g1161:['and','but','now','then','yet'],g2532:['and','also','even','both','then','but'],g1063:['for','because','seeing'],g235:['but','yea','nay'],g3767:['therefore','then','so','wherefore'],g3754:['that','for','because','how'],g2443:['that','lest'],g1487:['if','whether','that'],g1722:['in','among','by','with','at','on'],g1519:['into','to','unto','for','in','toward'],g1537:['of','out','from'],g575:['from','of'],g1223:['by','through','for'],g1909:['on','upon','in','at','over'],g4314:['to','unto','with','toward'],g3326:['with','after'],g1161:['and','but','now','then','yet'],g3588:[],g846:['he','him','his','her','she','it','they','them','their','himself'],g3739:['which','who','whom','whose','that','what'],g3778:['this','these','he','that'],g1565:['that','those','he'],g3361:['not','lest','neither','no'],g3756:['not','no','nor','neither'],g1473:['i','me','my','mine'],g4771:['thou','thee','thy','you','your','ye'],g5210:['ye','you','your'],g2249:['we','us','our'],g1700:['me','my','mine','i'],g3004:['say','saith','said','spake','speak'],g1510:['is','be','am','are','was','were','been','art','being']};
+  const lev=(x,y)=>{const m=x.length,k=y.length;let p=Array.from({length:k+1},(_,j)=>j);for(let i=1;i<=m;i++){const c=[i];for(let j=1;j<=k;j++)c[j]=Math.min(p[j]+1,c[j-1]+1,p[j-1]+(x[i-1]===y[j-1]?0:1));p=c;}return p[k];};
   for(let i=0;i<n;i++){
     if(res[i])continue;
     const gl=String(ws[i][2]||'');if(/^</.test(gl))continue;
-    const gw=nz(gl).split(' ').filter(w=>w.length>=3&&!STOP.has(w));if(!gw.length)continue;
-    const e=expected(i);let bp=-1,bd=Infinity;
+    let words=nz(gl).split(' ').filter(Boolean);if(!words.length)continue;
+    const ext=[];
+    words=words.flatMap(w=>{if(COMP[w]){COMP[w].slice(1).forEach(x=>ext.push(...x.split('|')));return [COMP[w][0]];}return [w];});
+    {const L=words.length;for(let k=0;k<L-1;k++)words.push(words[k]+words[k+1]);}
+    let content=words.filter(w=>w.length>=3&&!STOP.has(w));
+    const strict=!content.length;           /* glossa fatta solo di parole funzionali: corrispondenza esatta e vicina */
+    const cand=strict?words.filter(w=>w!=='to'||words.length===1):content;
+
+    const e=(kjvStrongKey(ws[i][3])==='g3588')?expected(Math.min(i+1,n-1))-1:expected(i);
+    const names=(gl.match(/\b[A-Z][a-z]{3,}/g)||[]).map(x=>x.toLowerCase());
+    const maxd=strict?3:6;
+    let bp=-1,bd=Infinity;
     for(let p=0;p<T;p++){
       if(claimed[p]||!toks[p])continue;
-      const hit=gw.some(w=>toks[p]===w||(Math.min(w.length,toks[p].length)>=4&&(toks[p].startsWith(w.slice(0,4))&&w.startsWith(toks[p].slice(0,4)))));
+      const hit=strict?cand.includes(toks[p]):(cand.some(w=>stemHit(toks[p],w))||names.some(w=>toks[p].length>=4&&lev(toks[p],w)<=(w.length>=6?2:1)));
       if(!hit)continue;const d=Math.abs(p-e);if(d<bd){bd=d;bp=p;}
     }
-    if(bp>=0&&bd<=6){res[i]=disp[bp];claimed[bp]=true;}
+    if(bp<0||bd>maxd){
+      const eq=EQ[kjvStrongKey(ws[i][3])]||[];
+      if(eq.length){let ep=-1,ed=Infinity;for(let p=0;p<T;p++){if(claimed[p]||!toks[p]||!eq.includes(toks[p]))continue;const d=Math.abs(p-e);if(d<ed){ed=d;ep=p;}}if(ep>=0&&ed<=3){bp=ep;bd=ed;}}
+    }
+    if(bp>=0&&bd<=maxd){
+      let out=[disp[bp]];claimed[bp]=true;
+      for(let q=bp+1;ext.length&&q<T&&!claimed[q]&&ext.includes(toks[q]);q++){out.push(disp[q]);claimed[q]=true;break;}
+      res[i]=out.join(' ');
+    }
   }
   return res;
 }
