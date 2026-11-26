@@ -105,7 +105,7 @@ input,textarea{font:inherit;color:inherit}
 .v:hover{background:rgba(120,120,128,.10)}
 .v.sel{background:var(--sel)}
 .v[data-hl="yellow"]{background:var(--hl-yellow)}.v[data-hl="green"]{background:var(--hl-green)}.v[data-hl="blue"]{background:var(--hl-blue)}.v[data-hl="pink"]{background:var(--hl-pink)}
-.v.sel[data-hl]{box-shadow:0 0 0 2px var(--accent)}
+.v.sel[data-hl]{box-shadow:none}
 .vn{font-family:var(--ui);font-size:.55em;font-weight:700;color:var(--accent);vertical-align:.55em;margin-right:.28em;font-variant-numeric:tabular-nums;user-select:none}
 .v.poem{display:block;margin:.05em 0}
 .v.poem .ln{display:block}
@@ -484,6 +484,16 @@ html{background:var(--bg)}
 .map-status>span{position:relative;z-index:1;padding:7px 11px;border-radius:99px;background:rgba(242,240,235,.86)}
 @keyframes mapPulse{from{opacity:.55}to{opacity:1}}
 
+/* ===== v11: abbreviazione tra le frecce (mobile), colore evidenziazione immediato e senza bordo ===== */
+.v.sel[data-hl="yellow"]{background:var(--hl-yellow)}.v.sel[data-hl="green"]{background:var(--hl-green)}.v.sel[data-hl="blue"]{background:var(--hl-blue)}.v.sel[data-hl="pink"]{background:var(--hl-pink)}
+.v,.v.sel{transition:none}
+#titleab{display:none}
+@media (max-width:760px){
+  #titlebtn{display:flex;flex:1;justify-content:center;padding:6px 4px}
+  #titlebtn svg,#title{display:none}
+  #titleab{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-family:var(--ui);font-size:17px;font-weight:600;color:var(--ink)}
+  #prev{margin-right:0}
+}
 </style>
 </head>
 <body>
@@ -492,7 +502,7 @@ html{background:var(--bg)}
     <button class="ibtn" id="navtoggle" aria-label="Libri e capitoli"><svg viewBox="0 0 24 24"><path d="M4 5h16M4 12h16M4 19h16"/></svg></button>
     <span class="brand">Bibbia</span>
     <button class="ibtn" id="prev" aria-label="Capitolo precedente"><svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg></button>
-    <button class="titlebtn" id="titlebtn" aria-label="Scegli libro e capitolo"><span id="title">Giovanni 3</span><svg viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg></button>
+    <button class="titlebtn" id="titlebtn" aria-label="Scegli libro e capitolo"><span id="title" data-full="Giovanni 3">Giovanni 3</span><span id="titleab" aria-hidden="true"></span><svg viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg></button>
     <button class="ibtn" id="next" aria-label="Capitolo successivo"><svg viewBox="0 0 24 24"><path d="M9 5l7 7-7 7"/></svg></button>
     <span class="spacer"></span>
     <button class="ibtn" id="searchbtn" aria-label="Cerca"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg></button>
@@ -796,7 +806,7 @@ function closeNav(){document.body.classList.remove('nav-open');$('#nav').classLi
 async function go(bi,c,v,opt={}){
   hideHome();const tok=++S.tok;
   const prevBook=S.bi;S.bi=bi;S.c=c;S.v=v||null;
-  $('#title').textContent=B[bi].n+' '+c;document.title=B[bi].n+' '+c+' · Bibbia';
+  $('#title').textContent=B[bi].n+' '+c;$('#titleab').textContent=(B[bi].ab||B[bi].n)+' '+c;document.title=B[bi].n+' '+c+' · Bibbia';
   if(prevBook!==bi){S.navOpenBook=null;S.word=null;}
   if(S.tab==='lex'&&!S.word?.standalone)S.word=null;
   buildNav();
@@ -930,7 +940,12 @@ function renderPager(){
 function prevCh(){if(S.c>1)return{bi:S.bi,c:S.c-1};if(S.bi>0)return{bi:S.bi-1,c:B[S.bi-1].v.length};return null;}
 function nextCh(){if(S.c<B[S.bi].v.length)return{bi:S.bi,c:S.c+1};if(S.bi<B.length-1)return{bi:S.bi+1,c:1};return null;}
 function selectVerse(v){
-  if(S.v===v&&!isPhone()){return;}
+  if(S.v===v){
+    if(!isPhone())return;
+    S.v=null;S.word=null;
+    $$('#chapter .v.sel').forEach(e=>e.classList.remove('sel'));
+    setHash();renderInspector();closeSheet();return;
+  }
   S.v=v;S.word=null;if(S.tab==='lex')S.tab='int';
   $$('#chapter .v.sel').forEach(e=>e.classList.remove('sel'));const el=$('#v'+v);if(el)el.classList.add('sel');
   setHash();renderInspector();if(isPhone())openSheet();
