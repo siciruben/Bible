@@ -50,6 +50,8 @@ body{background:var(--bg);color:var(--ink);font-family:var(--ui);font-size:15px;
 button{font:inherit;color:inherit;background:none;border:0;padding:0;cursor:pointer}
 input,textarea{font:inherit;color:inherit}
 :focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:6px}
+ body{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+input,textarea,select,[contenteditable=""],[contenteditable="true"]{-webkit-user-select:text;user-select:text;-webkit-touch-callout:default}
 .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
 
 #app{height:100%;display:grid;grid-template-rows:auto minmax(0,1fr)}
@@ -145,7 +147,7 @@ input,textarea{font:inherit;color:inherit}
 .card.verse-card{padding-bottom:20px}
 .flip .face.kjv{transform:rotateY(180deg)}
 .flip h4{display:flex;align-items:center;justify-content:space-between;gap:8px}
-.original-verse{font-family:var(--greek);unicode-bidi:isolate;font-size:16px;line-height:1.55;letter-spacing:.01em}
+.original-verse{font-family:var(--greek);unicode-bidi:isolate;font-size:17.5px;line-height:1.55;letter-spacing:.01em}
 .flip h4 .fliphint{white-space:nowrap;font-size:11px;letter-spacing:.02em;text-transform:none;font-weight:500;opacity:.75}
 .flip:focus-visible .face{box-shadow:0 0 0 2px var(--ink2) inset}
 .words{display:flex;flex-wrap:wrap;gap:8px}
@@ -169,16 +171,16 @@ input,textarea{font:inherit;color:inherit}
   .flip .word-ref-hover{padding:0}
 }
 .w:active{transform:scale(.97)}
-.w .o{font-size:24px;line-height:1.25}
+.w .o{font-size:26px;line-height:1.25}
 .w .o[lang="el"]{font-family:var(--greek)}
-.w .o[lang="he"]{font-family:var(--hebrew);font-size:26px}
+.w .o[lang="he"]{font-family:var(--hebrew);font-size:28px}
 .w .t{font-size:12px;color:var(--ink2);font-style:italic}
 .w .t,.w .g{direction:ltr;unicode-bidi:isolate}
 .w .g{font-size:13px;font-weight:600;line-height:1.25;color:var(--accent);min-height:1.25em}
 .w .s{margin-top:4px;font-size:11px;font-weight:600;color:var(--accent);background:var(--accent-soft);padding:2px 7px;border-radius:99px;font-variant-numeric:tabular-nums}
 .w.var{opacity:.62;border-style:dashed}
 .w .vb{font-size:10px;color:var(--ink2);text-transform:uppercase;letter-spacing:.05em}
-.lemma{font-size:40px;line-height:1.2;margin:2px 0}
+.lemma{font-size:43px;line-height:1.2;margin:2px 0}
 .lemma[lang="el"]{font-family:var(--greek)}
 .lemma[lang="he"]{font-family:var(--hebrew)}
 .lemma-row{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap}
@@ -545,7 +547,7 @@ html{background:var(--bg)}
    Il bordo alto della tendina scende della stessa quantita' della barra, cosi' non copre titolo, versione e icone. */
 @media (max-width:760px){
   #nav{height:calc(88vh - var(--topx,0px));height:calc(88dvh - var(--topx,0px));height:calc(100dvh - var(--barb,12dvh) - 6px)}
-  #insp.tall{height:calc(92% - var(--topx,0px))}
+  #insp.tall{height:calc(92% - var(--topx,0px));height:calc(100dvh - var(--barb,12dvh) - 6px)}
   body.kb #insp{height:calc(var(--vvh) - env(safe-area-inset-top) - 10px - var(--topx,0px))}
 }
 /* ===== v16: pannelli in alto (Aa, versione, download) scorribili senza doverli chiudere ===== */
@@ -719,7 +721,7 @@ html{background:var(--bg)}
   <input type="file" id="bkfile" accept=".json,application/json" hidden>
   <div class="hint" id="bkhint">Temi, evidenziazioni, note, segnalibri, versione, recenti e impostazioni in un unico file. Il file si chiamerà bibbia-preferenze-AAAA-MM-GG.json (formato JSON, con la data del giorno).</div>
   <div id="instwrap" hidden><label>App</label><button type="button" class="btn rowbtn" id="instbtn">Installa come app</button><div class="hint" id="insthint" hidden></div></div>
-  <label>Aggiornamenti</label><button type="button" class="btn rowbtn" id="appupdatebtn">Aggiorna app</button><div class="hint" id="appupdatedate">Ultimo aggiornamento: <span id="appupdatedatetime">26 novembre 2026, 20:13</span></div><div class="hint" id="appupdatehint" aria-live="polite"></div>
+  <label>Aggiornamenti</label><button type="button" class="btn rowbtn" id="appupdatebtn">Aggiorna app</button><div class="hint" id="appupdatedate">Ultimo aggiornamento: <span id="appupdatedatetime"></span></div><div class="hint" id="appupdatehint" aria-live="polite"></div>
 </div>
 
 <script>
@@ -1198,7 +1200,7 @@ async function copyMultiVerses(btn){
 function refreshVerse(v){const old=$('#v'+v);if(!old)return;const d=S.loaded;const t=(d.c[S.c-1]||[])[v-1];if(t==null)return;const n=verseNode(t,v,B[S.bi].id,S.c);old.replaceWith(n);}
 
 /* ---------- inspector ---------- */
-function openSheet(){$('#insp').classList.add('open');document.body.classList.add('sheet-open');revealVerse();}
+function openSheet(){setBarB();$('#insp').classList.add('open');document.body.classList.add('sheet-open');revealVerse();}
 function closeSheet(){const i=$('#insp');i.style.transform='';i.classList.remove('open','tall');document.body.classList.remove('sheet-open');}
 function revealVerse(){
   if(!isPhone()||!S.v)return;
@@ -1857,7 +1859,7 @@ async function paneLex(){
     head.append(row);
   }
   if(word.w){const m=morphLine(word.w[4],word.ot);pane.append(h('div',{class:'card'},h('h4',{text:'In questo versetto'}),h('dl',{class:'kv'},
-    h('dt',{text:'Forma'}),h('dd',{lang,style:'font-size:18px;font-family:'+(kind==='g'?'var(--greek)':'var(--hebrew)'),text:word.w[0]}),
+    h('dt',{text:'Forma'}),h('dd',{lang,style:'font-size:20px;font-family:'+(kind==='g'?'var(--greek)':'var(--hebrew)'),text:word.w[0]}),
     h('dt',{text:'Lettura'}),h('dd',{text:word.w[1]}),h('dt',{text:'Significato'}),(sigEl=h('dd',{text:word.w[2]}),sigOrig=String(word.w[2]||''),sigEl),
     h('dt',{text:'Analisi'}),h('dd',{text:m||'—'}),h('dt',{text:'Codice'}),h('dd',{style:'font-variant-numeric:tabular-nums',text:word.w[4]})
   )));}
@@ -2190,7 +2192,7 @@ async function searchLex(q,frag,seq){
   const seen=new Set();const rows=[];
   for(const o of out){const cl=o.key.slice(0,5);if(seen.has(cl))continue;seen.add(cl);rows.push(o);if(rows.length>=60)break;}
   const list=[h('div',{class:'cnt',text:seen.size.toLocaleString('it-IT')+' voci'+(out.length>60?' · prime 60':'')})];
-  rows.forEach(o=>list.push(h('button',{type:'button',class:'srow',on:{click:()=>openStrong(o.key)}},h('div',{class:'r',text:sdisp(o.key)+' · '+(o.k==='g'?'greco':'ebraico')}),h('div',{class:'t'},h('span',{lang:o.k==='g'?'el':'he',style:'font-size:19px;margin-right:8px;font-family:'+(o.k==='g'?'var(--greek)':'var(--hebrew)'),text:o.e[0]}),h('span',{style:'font-style:italic;color:var(--ink2);margin-right:8px',text:o.e[1]||''}),h('span',{text:o.e[2]})))));
+  rows.forEach(o=>list.push(h('button',{type:'button',class:'srow',on:{click:()=>openStrong(o.key)}},h('div',{class:'r',text:sdisp(o.key)+' · '+(o.k==='g'?'greco':'ebraico')}),h('div',{class:'t'},h('span',{lang:o.k==='g'?'el':'he',style:'font-size:21px;margin-right:8px;font-family:'+(o.k==='g'?'var(--greek)':'var(--hebrew)'),text:o.e[0]}),h('span',{style:'font-style:italic;color:var(--ink2);margin-right:8px',text:o.e[1]||''}),h('span',{text:o.e[2]})))));
   if(!rows.length)list.push(h('div',{class:'empty',text:'Nessuna voce per «'+q+'». Il lessico è in inglese.'}));
   res.replaceChildren(...frag,...list);
 }
@@ -2233,7 +2235,7 @@ function bindUI(){
   $$('#navseg button').forEach(b=>b.onclick=()=>{S.navView=b.dataset.v;$$('#navseg button').forEach(x=>x.setAttribute('aria-selected',x===b));buildNav();});
   $$('#tabs button').forEach(b=>b.onclick=()=>{S.tab=b.dataset.t;if(S.tab!=='lex'&&S.word&&!S.word.standalone)S.word=null;if(S.tab!=='lex'&&S.word&&S.word.standalone){S.word=null;}renderInspector();});
   $('#iclose').onclick=closeSheet;bindExtra();
-  $('#grab').onclick=()=>$('#insp').classList.toggle('tall');
+  $('#grab').onclick=()=>{setBarB();$('#insp').classList.toggle('tall');};
   document.addEventListener('keydown',e=>{
     const typing=/INPUT|TEXTAREA/.test(document.activeElement.tagName);
     if(e.key==='Escape'){closeSearch();closeNav();$('#amodal').classList.remove('on');closePops();$('#scrim').classList.remove('on');if(isPhone())closeSheet();}
@@ -2301,7 +2303,7 @@ function bindMobile(){
   const st=e=>{if(!isPhone()||e.button!==0||(e.target.closest&&e.target.closest('button,input,textarea,select')))return;y0=e.clientY;dy=0;t0=Date.now();dragTarget=e.currentTarget;try{dragTarget.setPointerCapture(e.pointerId);}catch(_){};};
   const mv=e=>{if(y0==null)return;dy=e.clientY-y0;insp.style.transition='none';insp.style.transform='translateY('+Math.max(dy,-40)+'px)';if(e.cancelable)e.preventDefault();};
   const en=()=>{if(y0==null)return;const delta=dy,elapsed=Date.now()-t0;y0=null;dragTarget=null;insp.style.transition='';insp.style.transform='';
-    if(delta>90||(elapsed<280&&delta>35)){if(insp.classList.contains('tall'))insp.classList.remove('tall');else closeSheet();}else if(delta<-60)insp.classList.add('tall');};
+    if(delta>90||(elapsed<280&&delta>35)){if(insp.classList.contains('tall'))insp.classList.remove('tall');else closeSheet();}else if(delta<-60){setBarB();insp.classList.add('tall');}};
   [$('#grab'),$('.ihead')].forEach(el=>{el.addEventListener('pointerdown',st);el.addEventListener('pointermove',mv);el.addEventListener('pointerup',en);el.addEventListener('pointercancel',en);});
 }
 /* iOS (app salvata sulla Home): dopo la tastiera il viewport resta ~59px piu' corto.
@@ -2498,18 +2500,22 @@ function bindDiag(){
 /* Aggiornamenti PWA: mostra l'indicatore SOLO se esiste davvero un aggiornamento.
    Nessuna barra durante un controllo senza aggiornamenti. */
 (function(){
+  const APP_BUILD='2026-11-27T00:14:00+01:00';
   const btn=document.getElementById('appupdatebtn');
   const hint=document.getElementById('appupdatehint');
   const dateEl=document.getElementById('appupdatedatetime');
   if(dateEl){
-    const buildDate=new Date('2026-11-26T20:13:00+01:00');
+    const buildDate=new Date(APP_BUILD);
     if(!Number.isNaN(buildDate.getTime())){
       dateEl.textContent=new Intl.DateTimeFormat('it-IT',{
         day:'numeric',month:'long',year:'numeric',hour:'2-digit',minute:'2-digit'
       }).format(buildDate);
     }
   }
-  if(!('serviceWorker' in navigator) || !/^https?:$/.test(location.protocol)) return;
+  if(!('serviceWorker' in navigator) || !/^https?:$/.test(location.protocol)){
+    if(btn)btn.addEventListener('click',()=>{if(hint)hint.textContent='L’aggiornamento funziona solo quando l’app è aperta da un indirizzo web (https), non da un file locale.';});
+    return;
+  }
 
   let panel=null, bar=null, message=null, detail=null;
   let updateDetected=false;
@@ -2573,6 +2579,34 @@ function bindDiag(){
     });
   }
 
+  /* Applica davvero la nuova versione: toglie il service worker e la copia dell'app in cache
+     (i dati scaricati per l'uso offline restano) e ricarica la pagina. */
+  async function applyUpdate(){
+    showStatus('Aggiornamento in corso','Sto applicando la nuova versione: l’app si riavvia da sola.');
+    if(hint)hint.textContent='Applico la nuova versione…';
+    try{const regs=await navigator.serviceWorker.getRegistrations();await Promise.all(regs.map(r=>r.unregister()));}catch(e){}
+    try{const keys=await caches.keys();await Promise.all(keys.filter(k=>!/data/i.test(k)).map(k=>caches.delete(k)));}catch(e){}
+    setTimeout(()=>location.reload(),300);
+  }
+  /* Legge la copia online della pagina (con un indirizzo sempre diverso, per non pescare dalla cache)
+     e confronta la data di versione con quella in esecuzione. */
+  async function remoteIsNewer(){
+    try{
+      const u=new URL(location.href);u.hash='';u.searchParams.set('chk',String(Date.now()));
+      const r=await fetch(u.toString(),{cache:'no-store'});if(!r.ok)return false;
+      const m=(await r.text()).match(/APP_BUILD\s*=\s*'([^']+)'/);if(!m)return false;
+      const remote=new Date(m[1]).getTime(),local=new Date(APP_BUILD).getTime();
+      return !Number.isNaN(remote)&&remote>local;
+    }catch(e){return false;}
+  }
+  function waitInstalled(w){
+    return new Promise(res=>{
+      if(!w||w.state==='installed'||w.state==='activated'||w.state==='redundant')return res();
+      const t=setTimeout(res,20000);
+      w.addEventListener('statechange',()=>{if(w.state!=='installing'){clearTimeout(t);res();}});
+    });
+  }
+
   async function checkForUpdate(manual=false){
     if(btn)btn.disabled=true;
     updateDetected=false;
@@ -2583,14 +2617,18 @@ function bindDiag(){
       const reg=await navigator.serviceWorker.register('./sw.js',{updateViaCache:'none'});
       watchRegistration(reg);
       await reg.update();
+      if(manual){
+        await waitInstalled(reg.installing);
+        const pending=!!(reg.waiting&&navigator.serviceWorker.controller);
+        if(pending||await remoteIsNewer()){await applyUpdate();return;}
+        hideStatus();
+        if(hint)hint.textContent='L’app è già aggiornata.';
+        return;
+      }
       if(reg.waiting && navigator.serviceWorker.controller){
         updateDetected=true;
         showStatus('Aggiornamento completato','La nuova versione è pronta. Chiudi e riapri l’app per applicarla.',true);
         if(hint)hint.textContent='Nuova versione pronta: verrà applicata al successivo avvio.';
-      }else if(!reg.installing && !reg.waiting){
-        // Nessun aggiornamento: nessun pannello, solo una nota discreta sotto il pulsante.
-        hideStatus();
-        if(manual && hint)hint.textContent='L’app è già aggiornata.';
       }
     }catch(e){
       hideStatus();
