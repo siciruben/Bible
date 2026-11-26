@@ -534,6 +534,16 @@ html{background:var(--bg)}
 .sk-row{padding:12px 4px;border-top:1px solid var(--line)}
 .sk-row .sk-ref{height:11px;width:26%;margin-bottom:10px}
 .sk-row .skel-line{margin:8px 0}
+/* ===== v13: tab scorrevoli, commenti ===== */
+#tabs{display:flex;overflow-x:auto;scrollbar-width:none;overscroll-behavior-x:contain}
+#tabs::-webkit-scrollbar{display:none}
+#tabs button{flex:1 0 auto;padding:6px 14px}
+.chips{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;margin:0 0 12px}
+.chips::-webkit-scrollbar{display:none}
+.chips .btn{flex:none;padding:6px 12px;font-size:13px}
+.chips .btn[aria-pressed="true"]{font-weight:600;box-shadow:0 0 0 1.5px var(--ink2) inset}
+.ctext{white-space:pre-line}
+.cmore{margin-top:10px}
 </style>
 </head>
 <body>
@@ -575,6 +585,7 @@ html{background:var(--bg)}
         <button role="tab" data-t="par" aria-selected="false">Mappe</button>
         <button role="tab" data-t="note" aria-selected="false">Note</button>
         <button role="tab" data-t="ver" aria-selected="false">Versioni</button>
+        <button role="tab" data-t="com" aria-selected="false">Commenti</button>
       </div></div>
       <div class="pane" id="pane"></div>
     </aside>
@@ -1006,10 +1017,14 @@ function curKey(){return B[S.bi].id+'.'+S.c+'.'+S.v;}
 async function renderInspector(){
   const pane=$('#pane');
   const translateHeader=$('#lexTranslateHeader');
-  translateHeader.hidden=!(S.v&&(S.tab==='int'||(S.tab==='lex'&&S.word)));
-  translateHeader.textContent=lexItalianMode?'Italiano attivo':'Traduci';
-  translateHeader.onclick=()=>{lexItalianMode=!lexItalianMode;translateHeader.textContent=lexItalianMode?'Italiano attivo':'Traduci';renderInspector();};
+  const onCom=S.tab==='com';
+  translateHeader.hidden=!(S.v&&(S.tab==='int'||onCom||(S.tab==='lex'&&S.word)));
+  const trOn=()=>onCom?!!S.comFull:lexItalianMode;
+  translateHeader.textContent=trOn()?'Italiano attivo':'Traduci';
+  translateHeader.title=onCom?'Traduci il testo completo dei commenti':'';
+  translateHeader.onclick=()=>{if(onCom)S.comFull=!S.comFull;else lexItalianMode=!lexItalianMode;translateHeader.textContent=trOn()?'Italiano attivo':'Traduci';renderInspector();};
   $$('#tabs button').forEach(b=>b.setAttribute('aria-selected',b.dataset.t===S.tab));
+  const at=$('#tabs [aria-selected="true"]');if(at&&at.scrollIntoView)at.scrollIntoView({inline:'center',block:'nearest'});
   if(S.tab==='lex'&&S.word){$('#irf').textContent=S.word.standalone?'Lessico':B[S.bi].n+' '+S.c+':'+S.v;$('#isb').textContent=S.word.standalone?'Numero Strong '+sdisp(S.word.s):'Parola selezionata';return paneLex();}
   if(!S.v){
     $('#irf').textContent='Studio';$('#isb').textContent='';
@@ -1022,6 +1037,7 @@ async function renderInspector(){
   if(S.tab==='lex')return paneLexHint();
   if(S.tab==='par')return paneMaps();
   if(S.tab==='ver')return paneVersions();
+  if(S.tab==='com')return paneComments();
   return paneNotes();
 }
 
@@ -1053,7 +1069,7 @@ function paneVersions(){
   codes.forEach(code=>{
     const ver=VERSIONS[code],isF=ver.lang!=='it';
     let text=undefined;
-    const body=h('div',{class:'verse-quote'},h('span',{class:'vwait',text:'Caricamento…'}));
+    const body=h('div',{class:'verse-quote'},skelLines());
     const btn=isF?h('button',{type:'button',class:'btn',text:'Traduci'}):null;
     const show=async()=>{
       if(text===undefined)return;
@@ -1085,6 +1101,75 @@ function paneVersions(){
       body.replaceChildren(h('span',{class:'vwait',text:'Impossibile caricare questa versione. Controlla la connessione.'}));
     });
   });
+}
+/* ---------- scheda Commenti: commentari classici (pubblico dominio) da bible.helloao.org, traduzione automatica ---------- */
+const COM_BASE='https://bible.helloao.org/api/',COM_WANT=[/henry/i,/gill/i,/calvin/i,/jamieson/i];
+let comList=null;const comMem=new Map(),comTrMem=new Map();
+function skelLines(){const d=h('div');['long','mid','long','short'].forEach(w=>d.append(h('div',{class:'skeleton skel-line '+w})));return d;}
+async function comAuthors(){
+  if(comList)return comList;
+  const r=await fetch(COM_BASE+'available_commentaries.json');if(!r.ok)throw new Error('lista');
+  const j=await r.json(),all=Array.isArray(j)?j:(j.commentaries||[]);
+  const nm=x=>x.englishName||x.english_name||x.name||x.id;
+  comList=COM_WANT.map(re=>all.find(x=>re.test(nm(x)+' '+x.id))).filter(Boolean).map(x=>({id:x.id,n:String(nm(x)).replace(/\s*(Bible )?Commentary.*$/i,'')}));
+  if(!comList.length)throw new Error('vuota');return comList;
+}
+function comText(x){if(x==null)return '';if(typeof x==='string')return x;if(Array.isArray(x))return x.map(comText).filter(Boolean).join('\n\n');return comText(x.text!=null?x.text:x.content);}
+function comChapter(cid,bid,c){
+  const k=cid+'.'+bid+'.'+c;if(comMem.has(k))return comMem.get(k);
+  const p=(async()=>{
+    const r=await fetch(COM_BASE+'c/'+cid+'/'+bid+'/'+c+'.json');
+    if(r.status===404)return [];if(!r.ok)throw new Error('capitolo');
+    const j=await r.json(),ch=j.chapter||j,arr=ch.content||j.content||[];
+    return arr.map(e=>{const a=e.verse_start!=null?e.verse_start:(e.number!=null?e.number:e.verse),b=e.verse_end!=null?e.verse_end:a;return {a:+a,b:+b,t:comText(e.content!=null?e.content:e.text).trim()};}).filter(e=>e.a>0&&e.t);
+  })();
+  comMem.set(k,p);p.catch(()=>comMem.delete(k));return p;
+}
+function comExcerpt(t){if(t.length<=650)return {x:t,more:false};let i=t.lastIndexOf('. ',650);if(i<300)i=650;return {x:t.slice(0,i+1).trim(),more:true};}
+async function comTr(t){
+  if(comTrMem.has(t))return comTrMem.get(t);
+  const pieces=[];t.split(/\n+/).filter(Boolean).forEach(p=>{let cur='';(p.match(/[^.!?]+[.!?]+["')\]]*\s*|[^.!?]+$/g)||[p]).forEach(sn=>{if(cur&&cur.length+sn.length>1100){pieces.push(cur.trim());cur='';}cur+=sn;});if(cur)pieces.push(cur.trim());});
+  const out=(await trPool(pieces,x=>trOne(x,'en'),3)).join('\n\n');comTrMem.set(t,out);return out;
+}
+async function paneComments(){
+  const pane=$('#pane'),tok=S.tok,v=S.v,c=S.c,id=B[S.bi].id;
+  const alive=()=>tok===S.tok&&S.v===v&&S.tab==='com';
+  S.comOpen=S.comOpen||{};
+  const fail=(msg,fn)=>h('div',{class:'card'},h('div',{class:'hint',text:msg}),h('button',{type:'button',class:'btn',style:'margin-top:10px',text:'Riprova',on:{click:fn}}));
+  pane.replaceChildren(verseCard(),makeSkeletonCard('text'));
+  let authors;
+  try{authors=await comAuthors();}catch(e){if(alive())pane.replaceChildren(verseCard(),fail('Commenti non disponibili. Controlla la connessione.',paneComments));return;}
+  if(!alive())return;
+  if(!authors.some(a=>a.id===S.comAuthor))S.comAuthor=authors[0].id;
+  const chips=h('div',{class:'chips'}),list=h('div');
+  authors.forEach(a=>chips.append(h('button',{type:'button',class:'btn','data-a':a.id,text:a.n,on:{click:()=>{S.comAuthor=a.id;load();}}})));
+  const load=async()=>{
+    const au=S.comAuthor,an=(authors.find(a=>a.id===au)||{}).n||'';
+    [...chips.children].forEach(b=>b.setAttribute('aria-pressed',b.dataset.a===au));
+    list.replaceChildren(makeSkeletonCard('text'));
+    let items;try{items=await comChapter(au,id,c);}catch(e){if(alive()&&au===S.comAuthor)list.replaceChildren(fail('Impossibile caricare il commento.',load));return;}
+    if(!alive()||au!==S.comAuthor)return;
+    const hit=items.filter(e=>e.a<=v&&v<=e.b).sort((x,y)=>(x.b-x.a)-(y.b-y.a));
+    if(!hit.length){list.replaceChildren(h('div',{class:'card'},h('div',{class:'hint',text:'Nessun commento di questo autore per questo versetto.'})));return;}
+    list.replaceChildren(...hit.map(e=>card(e,an,au)));
+  };
+  const card=(e,an,au)=>{
+    const key=au+'.'+id+'.'+c+'.'+e.a+'-'+e.b,ex=comExcerpt(e.t);
+    const body=h('div',{class:'verse-quote'},skelLines()),more=ex.more?h('button',{type:'button',class:'btn cmore'}):null;
+    const rng=e.a===e.b?'':' · vv. '+e.a+'–'+e.b;
+    const paint=async()=>{
+      const full=ex.more&&!!S.comOpen[key],src=full?e.t:ex.x,tr=full?!!S.comFull:true;
+      if(more){more.textContent=full?'Riduci':'Leggi tutto';more.onclick=()=>{S.comOpen[key]=!S.comOpen[key];paint();};}
+      const orig=(note)=>{body.replaceChildren(h('div',{class:'ctext vorig',style:'border:0;margin:0;padding:0',text:src}));if(note)body.append(h('div',{class:'hint',text:note}));};
+      if(!tr){orig('Testo completo in inglese: tocca «Traduci» in alto per tradurlo.');return;}
+      body.replaceChildren(skelLines());
+      try{const t=await comTr(src);if(!alive()||(ex.more&&!!S.comOpen[key])!==full||tr!==(full?!!S.comFull:true))return;body.replaceChildren(h('div',{class:'vtr ctext',text:t}),h('div',{class:'hint',text:'Traduzione automatica dall’inglese: può contenere errori.'}));}
+      catch(err){if(alive())orig('Traduzione non disponibile. Controlla la connessione.');}
+    };
+    paint();
+    return h('div',{class:'card'},h('div',{class:'vhead'},h('h4',{},an+rng)),body,more);
+  };
+  pane.replaceChildren(verseCard(),chips,list);load();
 }
 function verseCard(){const t=(S.loaded.c[S.c-1]||[])[S.v-1]||'';const c=h('div',{class:'card verse-card'},h('h4',{text:VERSIONS[curVi()].name}));const q=h('div',{class:'verse-quote'});
   const tr=trActive()&&trCached(curVi(),B[S.bi].id,S.c),it=tr&&tr[S.v-1];
@@ -1719,7 +1804,12 @@ function paneMaps(){
   choose(activeMapIndex);
 }
 function paneNotes(){
-  const pane=$('#pane'),k=curKey();pane.replaceChildren(verseCard());
+  const pane=$('#pane'),k=curKey();pane.replaceChildren();
+  const acts=h('div',{class:'actions',style:'margin-bottom:12px'});
+  acts.append(h('button',{type:'button',class:'btn',text:store.bm[k]?'Rimuovi segnalibro':'Aggiungi segnalibro',on:{click:()=>{if(store.bm[k])delete store.bm[k];else store.bm[k]=1;save();refreshVerse(S.v);paneNotes();if(S.navView==='saved')buildNav();}}}));
+  const cp=h('button',{type:'button',class:'btn',text:'Copia versetto'});
+  cp.addEventListener('click',async()=>{const t=plain((S.loaded.c[S.c-1]||[])[S.v-1]||'');const s='«'+t+'» — '+B[S.bi].n+' '+S.c+':'+S.v+' ('+VERSIONS[curVi()].name+')';try{await navigator.clipboard.writeText(s);cp.textContent='Copiato';}catch(e){cp.textContent='Copia non consentita';}setTimeout(()=>cp.textContent='Copia versetto',1600);});
+  acts.append(cp);pane.append(acts);
   const hl=h('div',{class:'hlrow'});
   const none=h('button',{type:'button',class:'sw none','aria-label':'Nessuna evidenziazione','aria-pressed':!store.hl[k],text:'×',on:{click:()=>setHl(k,null)}});hl.append(none);
   Object.keys(HLC).forEach(c=>hl.append(h('button',{type:'button',class:'sw','aria-label':'Evidenzia '+c,'aria-pressed':store.hl[k]===c,style:'background:'+HLC[c],on:{click:()=>setHl(k,c)}})));
@@ -1727,11 +1817,6 @@ function paneNotes(){
   const ta=h('textarea',{class:'note',id:'notebox',placeholder:'Scrivi un appunto su questo versetto…','aria-label':'Appunto'});ta.value=store.nt[k]||'';
   let tm;ta.addEventListener('input',()=>{clearTimeout(tm);tm=setTimeout(()=>{const t=ta.value.trim();if(t)store.nt[k]=t;else delete store.nt[k];save();refreshVerse(S.v);if(S.navView==='saved')buildNav();},350);});
   pane.append(h('div',{class:'card'},h('h4',{text:'Appunto'}),ta,h('div',{class:'hint',text:'Gli appunti restano su questo dispositivo, in questo browser.'})));
-  const acts=h('div',{class:'actions'});
-  acts.append(h('button',{type:'button',class:'btn',text:store.bm[k]?'Rimuovi segnalibro':'Aggiungi segnalibro',on:{click:()=>{if(store.bm[k])delete store.bm[k];else store.bm[k]=1;save();refreshVerse(S.v);paneNotes();if(S.navView==='saved')buildNav();}}}));
-  const cp=h('button',{type:'button',class:'btn',text:'Copia versetto'});
-  cp.addEventListener('click',async()=>{const t=plain((S.loaded.c[S.c-1]||[])[S.v-1]||'');const s='«'+t+'» — '+B[S.bi].n+' '+S.c+':'+S.v+' ('+VERSIONS[curVi()].name+')';try{await navigator.clipboard.writeText(s);cp.textContent='Copiato';}catch(e){cp.textContent='Copia non consentita';}setTimeout(()=>cp.textContent='Copia versetto',1600);});
-  acts.append(cp);pane.append(h('div',{class:'card'},acts));
 }
 function setHl(k,c){if(c)store.hl[k]=c;else delete store.hl[k];save();refreshVerse(S.v);paneNotes();if(S.navView==='saved')buildNav();}
 
