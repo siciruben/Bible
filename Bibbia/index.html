@@ -515,6 +515,12 @@ html{background:var(--bg)}
 @media (max-width:760px){
   #app{background-color:var(--bg)}
 }
+/* ===== v14: tieni l'header fuori dalla sfocatura "scroll edge" di iOS 26 (solo web app salvata in Home) ===== */
+@supports (-webkit-touch-callout: none) {
+  @media (display-mode: standalone) and (max-width:760px) {
+    #bar{padding-top:calc(env(safe-area-inset-top) + 2.5rem)!important}
+  }
+}
 </style>
 </head>
 <body>
