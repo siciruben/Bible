@@ -135,12 +135,12 @@ input,textarea{font:inherit;color:inherit}
 .card h4{margin:0 0 8px;font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink2);font-weight:600}
 .verse-quote{font-family:var(--serif);font-size:16px;line-height:1.55;color:var(--ink)}
 .flip{perspective:1200px;margin-bottom:12px;cursor:pointer;-webkit-tap-highlight-color:transparent;outline:none}
-.flip-in{display:grid;transition:transform .5s cubic-bezier(.2,.8,.2,1);transform-style:preserve-3d}
+.flip-in{display:block;position:relative;height:auto;transition:height .28s cubic-bezier(.2,.8,.2,1),transform .5s cubic-bezier(.2,.8,.2,1);transform-style:preserve-3d}
 .flip.en .flip-in{transform:rotateY(180deg)}
-.flip .face{grid-area:1/1;margin:0;-webkit-backface-visibility:hidden;backface-visibility:hidden}
+.flip .face{position:absolute;inset:0;width:100%;margin:0;-webkit-backface-visibility:hidden;backface-visibility:hidden}
 .flip .face.kjv{transform:rotateY(180deg)}
 .flip h4{display:flex;align-items:center;justify-content:space-between;gap:8px}
-.original-verse{unicode-bidi:isolate;font-size:21px;line-height:1.8;letter-spacing:.01em}
+.original-verse{font-family:var(--greek);unicode-bidi:isolate;font-size:16px;line-height:1.55;letter-spacing:.01em}
 .flip h4 .fliphint{white-space:nowrap;font-size:11px;letter-spacing:.02em;text-transform:none;font-weight:500;opacity:.75}
 .flip:focus-visible .face{box-shadow:0 0 0 2px var(--ink2) inset}
 .words{display:flex;flex-wrap:wrap;gap:8px}
@@ -427,7 +427,7 @@ html{background:var(--bg)}
 .map-selector{display:flex;gap:7px;overflow-x:auto;padding:2px 1px 10px;scrollbar-width:thin}
 .map-choice{flex:0 0 auto;border:1px solid var(--line);background:var(--surface2,var(--card));color:var(--ink);border-radius:999px;padding:7px 12px;font:inherit;font-size:12px;cursor:pointer}
 .map-choice.on{background:var(--accent);border-color:var(--accent);color:white}
-.map-stage{position:relative;width:100%;max-width:100%;height:min(58vh,540px);min-height:280px;overflow:hidden;contain:paint;border:1px solid var(--line);border-radius:13px;background:#f2f0eb;touch-action:none;cursor:grab;user-select:none;box-sizing:border-box}
+.map-stage{position:relative;width:min(100%,min(72svh,540px));max-width:100%;aspect-ratio:1/1;height:auto;min-height:0;max-height:none;margin-inline:auto;overflow:hidden;contain:paint;border:1px solid var(--line);border-radius:13px;background:#f2f0eb;touch-action:pan-y pinch-zoom;cursor:grab;user-select:none;box-sizing:border-box}
 .map-stage:active{cursor:grabbing}
 .map-image{position:absolute;inset:0;display:block;width:100%;height:100%;max-width:none;object-fit:contain;transform-origin:0 0;pointer-events:none;user-select:none}
 .map-status{position:absolute;inset:0;display:grid;place-items:center;padding:20px;text-align:center;color:#555;background:#f2f0eb;font-size:13px}
@@ -435,7 +435,23 @@ html{background:var(--bg)}
 .map-controls{display:flex;gap:8px;justify-content:center;margin-top:10px}
 .map-control{min-width:42px}
 .map-unavailable .hint{margin:0}
-@media(max-width:760px){.map-stage{height:52vh;min-height:240px}.map-choice{font-size:11px;padding:7px 10px}}
+@media(max-width:760px){.map-stage{width:min(100%,72svh);aspect-ratio:1/1;height:auto;min-height:0}.map-choice{font-size:11px;padding:7px 10px}}
+
+/* Skeleton loading per contenuti e mappa */
+.skeleton{position:relative;overflow:hidden;border-radius:8px;background:var(--gfill)}
+.skeleton::after{content:"";position:absolute;inset:0;transform:translateX(-100%);background:linear-gradient(90deg,transparent,var(--glass),transparent);animation:shimmer 1.25s infinite}
+@keyframes shimmer{to{transform:translateX(100%)}}
+.skel-card{padding:14px;border-radius:14px;background:var(--card);box-shadow:0 0 0 1px var(--line) inset;margin-bottom:12px}
+.skel-title{height:11px;width:34%;margin-bottom:14px}
+.skel-line{height:12px;margin:9px 0}
+.skel-line.short{width:42%}.skel-line.mid{width:68%}.skel-line.long{width:92%}
+.skel-word-row{display:flex;gap:8px;overflow:hidden;padding:4px 0}
+.skel-word{flex:0 0 72px;height:104px;border-radius:12px}
+.map-status{background-color:#f2f0eb;background-image:linear-gradient(90deg,rgba(170,190,175,.22) 1px,transparent 1px),linear-gradient(rgba(170,190,175,.22) 1px,transparent 1px),linear-gradient(135deg,rgba(180,205,190,.25),rgba(240,237,220,.55));background-size:28px 28px,28px 28px,100% 100%}
+.map-status::before{content:"";position:absolute;inset:12% 9%;border:1px solid rgba(115,150,130,.18);border-radius:48% 35% 52% 30%;background:linear-gradient(135deg,transparent 40%,rgba(100,160,190,.16) 41%,rgba(100,160,190,.16) 44%,transparent 45%),linear-gradient(25deg,transparent 48%,rgba(100,160,190,.12) 49%,rgba(100,160,190,.12) 51%,transparent 52%);animation:mapPulse 1.8s ease-in-out infinite alternate}
+.map-status>span{position:relative;z-index:1;padding:7px 11px;border-radius:99px;background:rgba(242,240,235,.86)}
+@keyframes mapPulse{from{opacity:.55}to{opacity:1}}
+
 </style>
 </head>
 <body>
@@ -795,6 +811,26 @@ function getKjv(id,c){
     .catch(e=>{delete cache.kjv[k];throw e;});
   return cache.kjv[k];
 }
+function fitFlipHeight(wrap,activeFace){
+  const inner=wrap.querySelector('.flip-in');
+  if(!inner||!activeFace)return;
+  requestAnimationFrame(()=>{
+    const height=Math.ceil(activeFace.scrollHeight);
+    if(height)inner.style.height=height+'px';
+  });
+}
+function makeSkeletonCard(kind='text'){
+  const card=h('div',{class:'skel-card'});
+  card.append(h('div',{class:'skeleton skel-title'}));
+  if(kind==='words'){
+    const row=h('div',{class:'skel-word-row'});
+    for(let i=0;i<6;i++)row.append(h('div',{class:'skeleton skel-word'}));
+    card.append(row);
+  }else{
+    ['long','mid','long','short'].forEach(w=>card.append(h('div',{class:'skeleton skel-line '+w})));
+  }
+  return card;
+}
 function flipOriginalVerseCard(originalWords,ot){
   const id=B[S.bi].id,c=S.c,v=S.v;
   const eq=h('div',{class:'verse-quote',lang:'en',text:'Caricamento…'});
@@ -809,9 +845,9 @@ function flipOriginalVerseCard(originalWords,ot){
   const front=h('div',{class:'card face kjv'},h('h4',null,h('span',{text:'King James Version'}),h('span',{class:'fliphint',text:'Tocca per originale ↻'})),eq);
   const back=h('div',{class:'card face rv'},h('h4',null,h('span',{text:ot?'Testo ebraico':'Testo greco'}),h('span',{class:'fliphint',text:'Tocca per KJV ↻'})),oq);
   let loaded=false;
-  const load=()=>{if(loaded)return;loaded=true;getKjv(id,c).then(m=>{eq.textContent=m[v]||'Versetto non presente nella KJV con questa numerazione.';if(wrap._activeHighlightIndex>=0)renderPhraseHighlight(eq,eq.textContent,wrap._activePhrase);}).catch(()=>{loaded=false;eq.textContent='Impossibile caricare la KJV. Controlla la connessione e tocca di nuovo.';});};
+  const load=()=>{if(loaded)return;loaded=true;getKjv(id,c).then(m=>{eq.textContent=m[v]||'Versetto non presente nella KJV con questa numerazione.';if(wrap._activeHighlightIndex>=0)renderPhraseHighlight(eq,eq.textContent,wrap._activePhrase);if(wrap.classList.contains('en'))fitFlipHeight(wrap,front);}).catch(()=>{loaded=false;eq.textContent='Impossibile caricare la KJV. Controlla la connessione e tocca di nuovo.';if(wrap.classList.contains('en'))fitFlipHeight(wrap,front);});};
   const wrap=h('div',{class:'flip en',role:'button',tabindex:'0','aria-label':'Gira per passare dal testo inglese al testo originale'},h('div',{class:'flip-in'},front,back));
-  const sync=()=>{const en=wrap.classList.contains('en');front.setAttribute('aria-hidden',!en);back.setAttribute('aria-hidden',en);if(en)load();};
+  const sync=()=>{const en=wrap.classList.contains('en');front.setAttribute('aria-hidden',!en);back.setAttribute('aria-hidden',en);if(en)load();fitFlipHeight(wrap,en?front:back);};
   const toggle=()=>{wrap.classList.toggle('en');sync();};
   wrap.addEventListener('click',e=>{if(e.target.closest('a,button'))return;toggle();});
   wrap.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();toggle();}});
@@ -847,10 +883,10 @@ function flipVerseCard(){
   const back=h('div',{class:'card face kjv'},h('h4',null,h('span',{text:'King James Version'}),h('span',{class:'fliphint',text:'Tocca per italiano ↻'})),eq);
   let loaded=false;
   const load=()=>{if(loaded)return;loaded=true;
-    getKjv(id,c).then(m=>{eq.textContent=m[v]||'Versetto non presente nella KJV con questa numerazione.';})
-      .catch(()=>{loaded=false;eq.textContent='Impossibile caricare la KJV. Controlla la connessione e tocca di nuovo.';});};
+    getKjv(id,c).then(m=>{eq.textContent=m[v]||'Versetto non presente nella KJV con questa numerazione.';if(wrap.classList.contains('en'))fitFlipHeight(wrap,back);})
+      .catch(()=>{loaded=false;eq.textContent='Impossibile caricare la KJV. Controlla la connessione e tocca di nuovo.';if(wrap.classList.contains('en'))fitFlipHeight(wrap,back);});};
   const wrap=h('div',{class:'flip'+(store.set.vl==='en'?' en':''),role:'button',tabindex:'0','aria-label':'Gira per cambiare lingua tra italiano e inglese'},h('div',{class:'flip-in'},front,back));
-  const sync=()=>{const en=store.set.vl==='en';wrap.classList.toggle('en',en);front.setAttribute('aria-hidden',en);back.setAttribute('aria-hidden',!en);if(en)load();};
+  const sync=()=>{const en=store.set.vl==='en';wrap.classList.toggle('en',en);front.setAttribute('aria-hidden',en);back.setAttribute('aria-hidden',!en);if(en)load();fitFlipHeight(wrap,en?back:front);};
   const toggle=()=>{store.set.vl=store.set.vl==='en'?'it':'en';save();sync();};
   wrap.addEventListener('click',e=>{if(e.target.closest('a,button'))return;toggle();});
   wrap.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();toggle();}});
@@ -934,7 +970,7 @@ function alignKjvToOriginal(originalWords,verseItems){
 }
 async function paneInt(){
   const pane=$('#pane'),tok=S.tok,v=S.v,c=S.c,bi=S.bi,id=B[bi].id;
-  pane.replaceChildren(verseCard(),h('div',{class:'loading',style:'padding:30px 0'},h('div',null,h('div',{class:'spin'}),'Carico il testo originale…')));
+  pane.replaceChildren(verseCard(),makeSkeletonCard('text'),makeSkeletonCard('words'));
   let od;try{od=await getOr(id);}catch(e){pane.append(h('div',{class:'empty',text:e.message}));return;}
   if(tok!==S.tok||S.v!==v||S.tab!=='int')return;
   const ws=od.c[c-1][v-1]||[];const ot=B[bi].t===1;
@@ -1024,7 +1060,7 @@ async function translateLexText(input){
 async function paneLex(){
   const pane=$('#pane'),word=S.word,tok=S.tok;const s=word.s;
   const kind=s[0]==='G'?'g':'h';
-  pane.replaceChildren(h('div',{class:'loading',style:'padding:50px 0'},h('div',null,h('div',{class:'spin'}),'Carico il lessico…')));
+  pane.replaceChildren(makeSkeletonCard('text'),makeSkeletonCard('text'));
   let lex;try{lex=await getLex(kind);}catch(e){pane.replaceChildren(h('div',{class:'empty',text:e.message}));return;}
   if(S.word!==word||S.tab!=='lex')return;
   const cl=sclass(s);let key=lex.e[s]?s:(lex.c[cl]||[])[0];const e=lex.e[key];
@@ -1155,7 +1191,7 @@ function paneMaps(){
   const selector=h('div',{class:'map-selector','aria-label':'Seleziona una mappa'});
   const stage=h('div',{class:'map-stage',tabindex:'0','aria-label':'Mappa interattiva: trascina per spostarti, usa i controlli per ingrandire'});
   const img=h('img',{class:'map-image',alt:'Mappa storica della Palestina al tempo di Gesù',draggable:'false'});
-  const status=h('div',{class:'map-status',text:'Caricamento mappa…'});
+  const status=h('div',{class:'map-status'},h('span',{text:'Caricamento mappa…'}));
   stage.append(img,status);
   const controls=h('div',{class:'map-controls'});
   const zoomOut=h('button',{type:'button',class:'btn map-control',text:'−','aria-label':'Riduci zoom'});
@@ -1187,9 +1223,9 @@ function paneMaps(){
   function choose(i){
     activeMapIndex=i;
     [...selector.children].forEach((b,j)=>{b.classList.toggle('on',j===i);b.setAttribute('aria-pressed',j===i?'true':'false');});
-    status.hidden=false;status.textContent='Caricamento mappa…';
+    status.hidden=false;status.replaceChildren(h('span',{text:'Caricamento mappa…'}));
     img.onload=()=>{status.hidden=true;resetView();};
-    img.onerror=()=>{status.hidden=false;status.textContent='Impossibile caricare questa mappa. Controlla la connessione.';};
+    img.onerror=()=>{status.hidden=false;status.replaceChildren(h('span',{text:'Impossibile caricare questa mappa. Controlla la connessione.'}));};
     img.src=GOSPEL_MAPS[i].url;
     img.alt='Mappa: '+GOSPEL_MAPS[i].label;
     resetView();
@@ -1206,8 +1242,8 @@ function paneMaps(){
   stage.addEventListener('pointerdown',e=>{
     if(e.button!==0&&e.pointerType==='mouse')return;
     pointers.set(e.pointerId,{x:e.clientX,y:e.clientY});
-    stage.setPointerCapture(e.pointerId);
-    if(pointers.size===1)drag={x:e.clientX,y:e.clientY,tx,ty};
+    if(e.pointerType==='mouse'||pointers.size>1||scale>1)stage.setPointerCapture(e.pointerId);
+    if(pointers.size===1)drag=(e.pointerType==='touch'&&scale<=1)?null:{x:e.clientX,y:e.clientY,tx,ty};
     else if(pointers.size===2){
       const pts=[...pointers.values()],r=stage.getBoundingClientRect();
       pinch={distance:Math.max(1,distance(pts[0],pts[1])),scale,cx:(pts[0].x+pts[1].x)/2-r.left,cy:(pts[0].y+pts[1].y)/2-r.top,tx,ty};
@@ -1222,7 +1258,9 @@ function paneMaps(){
       const next=Math.min(7,Math.max(1,pinch.scale*distance(pts[0],pts[1])/pinch.distance));
       const ratio=next/pinch.scale;
       tx=midX-(pinch.cx-pinch.tx)*ratio;ty=midY-(pinch.cy-pinch.ty)*ratio;scale=next;paint();
-    }else if(drag){tx=drag.tx+(e.clientX-drag.x);ty=drag.ty+(e.clientY-drag.y);paint();}
+    }else if(drag){
+      if(e.pointerType==='touch'&&scale<=1){drag=null;return;}
+      tx=drag.tx+(e.clientX-drag.x);ty=drag.ty+(e.clientY-drag.y);paint();}
   });
   const stop=e=>{
     pointers.delete(e.pointerId);pinch=null;drag=null;
