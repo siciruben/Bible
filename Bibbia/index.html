@@ -494,6 +494,18 @@ html{background:var(--bg)}
   #titleab{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-family:var(--ui);font-size:17px;font-weight:600;color:var(--ink)}
   #prev{margin-right:0}
 }
+/* ===== v12: scheda Versioni ===== */
+.vhead{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:0 0 8px}
+.vhead h4{margin:0;min-width:0}
+.vhead .vlang{font-family:var(--ui);font-size:11px;font-weight:600;color:var(--ink3);margin-left:6px;letter-spacing:.04em}
+.vhead .btn{padding:6px 12px;font-size:13px;flex:none}
+.vtr{font-family:var(--serif);font-size:16px;line-height:1.55;color:var(--ink)}
+.vorig{font-family:var(--serif);font-size:14px;line-height:1.5;color:var(--ink2);margin-top:8px;padding-top:8px;border-top:1px solid var(--line)}
+.vwait{font-family:var(--ui);font-size:13px;color:var(--ink3)}
+.vtop{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:0 0 12px}
+.vtop .hint{margin:0;flex:1}
+.vtop .btn{flex:none}
+@media (max-width:760px){.tabs .seg button{font-size:11.5px;padding:9px 0}}
 </style>
 </head>
 <body>
@@ -533,6 +545,7 @@ html{background:var(--bg)}
         <button role="tab" data-t="lex" aria-selected="false">Lessico</button>
         <button role="tab" data-t="par" aria-selected="false">Mappe</button>
         <button role="tab" data-t="note" aria-selected="false">Note</button>
+        <button role="tab" data-t="ver" aria-selected="false">Versioni</button>
       </div></div>
       <div class="pane" id="pane"></div>
     </aside>
@@ -976,7 +989,70 @@ async function renderInspector(){
   if(S.tab==='int')return paneInt();
   if(S.tab==='lex')return paneLexHint();
   if(S.tab==='par')return paneMaps();
+  if(S.tab==='ver')return paneVersions();
   return paneNotes();
+}
+
+/* ---------- scheda Versioni: le altre versioni dello stesso versetto, con traduzione in italiano per le straniere ---------- */
+const trVerseMem=new Map();
+async function trVerse(ver,id,c,v,text){
+  const k=trKey(ver,id,c)+'.'+v;
+  if(trVerseMem.has(k))return trVerseMem.get(k);
+  const ch=trCached(ver,id,c);if(ch&&ch[v-1]){trVerseMem.set(k,ch[v-1]);return ch[v-1];}
+  const t=await trOne(plain(text).replace(/\s+/g,' ').trim(),VERSIONS[ver].lang);
+  trVerseMem.set(k,t);return t;
+}
+function paneVersions(){
+  const pane=$('#pane'),tok=S.tok,v=S.v,c=S.c,bi=S.bi,id=B[bi].id,cur=curVi();
+  S.verTr=S.verTr||{};
+  const LANG={it:'IT',en:'EN',es:'ES'};
+  const alive=()=>tok===S.tok&&S.v===v&&S.tab==='ver';
+  const codes=Object.keys(VERSIONS).filter(k=>k!==cur);
+  const foreign=codes.filter(k=>VERSIONS[k].lang!=='it');
+  const cards=[];
+  pane.replaceChildren(verseCard());
+  let allBtn=null;
+  const allOn=()=>foreign.length>0&&foreign.every(k=>S.verTr[k]);
+  const syncAll=()=>{if(allBtn)allBtn.textContent=allOn()?'Mostra gli originali':'Traduci tutte in italiano';};
+  if(foreign.length){
+    allBtn=h('button',{type:'button',class:'btn',text:'Traduci tutte in italiano',on:{click:()=>{const on=!allOn();foreign.forEach(k=>S.verTr[k]=on);cards.forEach(x=>x.show());syncAll();}}});
+    pane.append(h('div',{class:'vtop'},h('div',{class:'hint',text:'Le traduzioni sono automatiche e possono contenere errori.'}),allBtn));
+  }
+  codes.forEach(code=>{
+    const ver=VERSIONS[code],isF=ver.lang!=='it';
+    let text=undefined;
+    const body=h('div',{class:'verse-quote'},h('span',{class:'vwait',text:'Caricamento…'}));
+    const btn=isF?h('button',{type:'button',class:'btn',text:'Traduci in italiano'}):null;
+    const show=async()=>{
+      if(text===undefined)return;
+      if(text==null){body.replaceChildren(h('span',{class:'vwait',text:'Versetto non presente con questa numerazione.'}));if(btn)btn.hidden=true;return;}
+      const orig=()=>{const o=h('div');richInto(o,text);return o;};
+      if(!isF||!S.verTr[code]){body.replaceChildren(orig());if(btn)btn.textContent='Traduci in italiano';return;}
+      btn.textContent='Mostra originale';
+      body.replaceChildren(h('span',{class:'vwait',text:'Traduzione in corso…'}));
+      try{
+        const t=await trVerse(code,id,c,v,text);
+        if(!alive()||!S.verTr[code])return;
+        const o=orig();o.className='vorig';
+        body.replaceChildren(h('div',{class:'vtr',text:t}),o);
+      }catch(e){
+        if(!alive())return;
+        S.verTr[code]=false;btn.textContent='Traduci in italiano';syncAll();
+        body.replaceChildren(orig(),h('div',{class:'vwait',style:'margin-top:8px',text:'Traduzione non disponibile. Controlla la connessione e riprova.'}));
+      }
+    };
+    if(btn)btn.onclick=()=>{S.verTr[code]=!S.verTr[code];show();syncAll();};
+    cards.push({show});
+    pane.append(h('div',{class:'card'},h('div',{class:'vhead'},h('h4',{},ver.name,h('span',{class:'vlang',text:LANG[ver.lang]||''})),btn),body));
+    getVer(code,id).then(d=>{
+      if(!alive())return;
+      const t=(d.c[c-1]||[])[v-1];
+      text=(t==null||t==='')?null:t;show();
+    }).catch(()=>{
+      if(!alive())return;
+      body.replaceChildren(h('span',{class:'vwait',text:'Impossibile caricare questa versione. Controlla la connessione.'}));
+    });
+  });
 }
 function verseCard(){const t=(S.loaded.c[S.c-1]||[])[S.v-1]||'';const c=h('div',{class:'card verse-card'},h('h4',{text:VERSIONS[curVi()].name}));const q=h('div',{class:'verse-quote'});
   const tr=trActive()&&trCached(curVi(),B[S.bi].id,S.c),it=tr&&tr[S.v-1];
