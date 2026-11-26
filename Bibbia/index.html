@@ -272,7 +272,8 @@ textarea.note{width:100%;min-height:120px;resize:vertical;border-radius:12px;bor
 /* ===== v3: tre temi a tinta unica, home "Cerca prima", vetro liquido ===== */
 body{font-feature-settings:"kern","liga";overscroll-behavior:none}
 #body{position:relative}
-#bar{position:relative;background:var(--glass);-webkit-backdrop-filter:saturate(180%) blur(26px);backdrop-filter:saturate(180%) blur(26px)}
+#bar{position:relative;z-index:80;pointer-events:auto;background:var(--glass);-webkit-backdrop-filter:saturate(180%) blur(26px);backdrop-filter:saturate(180%) blur(26px)}
+#bar button{position:relative;z-index:1;pointer-events:auto}
 #prog{position:absolute;left:0;right:0;bottom:-1px;height:2px;background:var(--accent);transform:scaleX(0);transform-origin:left;pointer-events:none}
 .brand{font-family:var(--serif);font-weight:600;letter-spacing:.2em;font-size:13px;color:var(--ink);cursor:pointer}
 .titlebtn{font-family:var(--serif);font-size:18px;font-weight:600}
@@ -385,8 +386,8 @@ body.home-on #prev,body.home-on #next,body.home-on #titlebtn{visibility:hidden}
   .saved-item{padding:14px}
   .occ,.srow{padding:14px 2px}
   .w{min-width:76px;padding:12px 10px 10px}.words{gap:10px}
-  .grab{padding:12px 0 8px;touch-action:none}.grab i{width:44px}
-  .ihead{touch-action:none}
+  .grab{padding:12px 0 8px;touch-action:none;user-select:none;-webkit-user-select:none}.grab i{width:44px}
+  .ihead{touch-action:none;user-select:none;-webkit-user-select:none}
   #insp{height:66%;bottom:var(--kb,0px)}
   #insp.tall{height:92%}
   body.sheet-open .pager{padding-bottom:calc(66svh + 24px)}
@@ -1025,9 +1026,10 @@ function fillTranslations(bi,c,lines){
   const ver=curVi(),id=B[bi].id,tok=S.tok;
   const note=$('#chapter .tv-note');
   if(note)note.replaceChildren(h('span',{text:'Traduzione automatica in italiano…'}));
-  trChapter(ver,id,c,lines.map(t=>plain(t))).then(a=>{
+  const minSkeleton=new Promise(resolve=>setTimeout(resolve,420));
+  Promise.all([trChapter(ver,id,c,lines.map(t=>plain(t))),minSkeleton]).then(([a])=>{
     if(tok!==S.tok||curVi()!==ver||!trActive())return;
-    a.forEach((t,i)=>{const el=$('#v'+(i+1)+' .tv-it'),orig=$('#v'+(i+1)+' .tv-o');if(el){el.classList.remove('tv-wait');el.removeAttribute('aria-hidden');el.textContent=t;}if(orig){orig.classList.remove('tv-original-wait');orig.removeAttribute('aria-hidden');richInto(orig,plain(lines[i]||''));}});
+    a.forEach((t,i)=>{const verse=$('#v'+(i+1)),el=verse&&verse.querySelector('.tv-it'),orig=verse&&verse.querySelector('.tv-o'),num=verse&&verse.querySelector('.vn');if(el){el.classList.remove('tv-wait');el.removeAttribute('aria-hidden');el.textContent=t;}if(orig){orig.classList.remove('tv-original-wait');orig.removeAttribute('aria-hidden');richInto(orig,plain(lines[i]||''));}if(num)num.hidden=false;});
     if(note)note.replaceChildren(h('span',{text:'Traduzione automatica da '+VERSIONS[ver].name+': può contenere errori.'}));
     if(S.v&&$('#pane .verse-card'))renderInspector();
   }).catch(()=>{
@@ -1074,7 +1076,7 @@ function verseNode(t,v,id,c){
   const k=id+'.'+c+'.'+v;const tr=trActive();const poem=!tr&&t.includes('\n');
   const sp=h(poem||tr?'div':'span',{class:'v'+(poem?' poem':'')+(tr?' tv':'')+((S.multiMode&&S.multiVerses.includes(v))||(!S.multiMode&&S.v===v)?' sel':''),id:'v'+v,'data-v':v,tabindex:0,role:'button','aria-label':'Versetto '+v,on:{click:()=>selectVerse(v),keydown:e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();selectVerse(v);}}}});
   if(store.hl[k])sp.dataset.hl=store.hl[k];
-  const vn=h('sup',{class:'vn',text:v});
+  const vn=h('sup',{class:'vn',text:v,hidden:tr});
   if(tr){
     const cached=trCached(curVi(),id,c),it=cached&&cached[v-1];
     const o=h('span',{class:'tv-o'});richInto(o,t);
@@ -2222,13 +2224,13 @@ function bindMobile(){
   q.setAttribute('enterkeyhint','search');q.setAttribute('autocapitalize','off');q.setAttribute('autocorrect','off');
   q.addEventListener('keydown',e=>{if(e.key==='Enter')q.blur();});
   $('#sres').addEventListener('touchmove',()=>{if(document.activeElement===q)q.blur();},{passive:true});
-  /* sheet: trascinamento che segue il dito (maniglia e intestazione) */
-  let y0=null,dy=0,t0=0;
-  const st=e=>{if(!isPhone()||e.target.closest('button'))return;y0=e.touches[0].clientY;dy=0;t0=Date.now();};
-  const mv=e=>{if(y0==null)return;dy=e.touches[0].clientY-y0;insp.style.transition='none';insp.style.transform='translateY('+Math.max(dy,-40)+'px)';};
-  const en=()=>{if(y0==null)return;y0=null;insp.style.transition='';insp.style.transform='';
-    if(dy>90||(Date.now()-t0<250&&dy>40)){insp.classList.contains('tall')?insp.classList.remove('tall'):closeSheet();}else if(dy<-60)insp.classList.add('tall');};
-  [$('#grab'),$('.ihead')].forEach(el=>{el.addEventListener('touchstart',st,{passive:true});el.addEventListener('touchmove',mv,{passive:true});el.addEventListener('touchend',en);el.addEventListener('touchcancel',en);});
+  /* sheet: trascinamento affidabile tramite Pointer Events (maniglia e zona vuota dell'intestazione) */
+  let y0=null,dy=0,t0=0,dragTarget=null;
+  const st=e=>{if(!isPhone()||e.button!==0||(e.target.closest&&e.target.closest('button,input,textarea,select')))return;y0=e.clientY;dy=0;t0=Date.now();dragTarget=e.currentTarget;try{dragTarget.setPointerCapture(e.pointerId);}catch(_){};};
+  const mv=e=>{if(y0==null)return;dy=e.clientY-y0;insp.style.transition='none';insp.style.transform='translateY('+Math.max(dy,-40)+'px)';if(e.cancelable)e.preventDefault();};
+  const en=()=>{if(y0==null)return;const delta=dy,elapsed=Date.now()-t0;y0=null;dragTarget=null;insp.style.transition='';insp.style.transform='';
+    if(delta>90||(elapsed<280&&delta>35)){if(insp.classList.contains('tall'))insp.classList.remove('tall');else closeSheet();}else if(delta<-60)insp.classList.add('tall');};
+  [$('#grab'),$('.ihead')].forEach(el=>{el.addEventListener('pointerdown',st);el.addEventListener('pointermove',mv);el.addEventListener('pointerup',en);el.addEventListener('pointercancel',en);});
 }
 /* iOS (app salvata sulla Home): dopo la tastiera il viewport resta ~59px piu' corto.
    Rimedio noto: far ricalcolare il viewport alternando display su un elemento a tutta altezza. */
@@ -2302,14 +2304,13 @@ function bindDiag(){
   const nav=document.getElementById('nav'),hd=nav&&nav.querySelector('.navhead');if(!hd)return;
   let y0=null,dy=0,t0=0,drag=false;
   const phone=()=>matchMedia('(max-width:760px)').matches;
-  hd.addEventListener('touchstart',e=>{if(!phone()||e.touches.length!==1)return;y0=e.touches[0].clientY;dy=0;t0=Date.now();drag=false;},{passive:true});
-  hd.addEventListener('touchmove',e=>{if(y0==null)return;dy=e.touches[0].clientY-y0;
+  hd.addEventListener('pointerdown',e=>{if(!phone()||e.button!==0||(e.target.closest&&e.target.closest('button')))return;y0=e.clientY;dy=0;t0=Date.now();drag=false;try{hd.setPointerCapture(e.pointerId);}catch(_){};});
+  hd.addEventListener('pointermove',e=>{if(y0==null)return;dy=e.clientY-y0;
     if(!drag&&Math.abs(dy)>6)drag=true;
-    if(drag){nav.style.transition='none';nav.style.transform='translateY('+Math.max(dy,0)+'px)';}},{passive:true});
+    if(drag){nav.style.transition='none';nav.style.transform='translateY('+Math.max(dy,0)+'px)';if(e.cancelable)e.preventDefault();}});
   const end=()=>{if(y0==null)return;const was=drag;y0=null;nav.style.transition='';nav.style.transform='';
     if(was&&(dy>90||(Date.now()-t0<280&&dy>35)))closeNav();drag=false;};
-  hd.addEventListener('touchend',e=>{if(drag)e.preventDefault();end();});
-  hd.addEventListener('touchcancel',end);
+  hd.addEventListener('pointerup',end);hd.addEventListener('pointercancel',end);
 })();
 /* Preferenze: scarica tutto cio' che l'app salva (temi, evidenziazioni, note, segnalibri, impostazioni, recenti) e ricaricalo da file. */
 (function(){
