@@ -528,6 +528,20 @@ html{background:var(--bg)}
   /* niente velo scuro dietro pannelli e schede: evita la banda di colore diversa in alto (il tocco fuori chiude ancora) */
   .scrim{background:transparent!important;-webkit-backdrop-filter:none!important;backdrop-filter:none!important}
 }
+/* ===== v15: le tendine dal basso (Libri/Salvati e Studio alto) seguono l'abbassamento della barra (--topx) =====
+   Il bordo alto della tendina scende della stessa quantita' della barra, cosi' non copre titolo, versione e icone. */
+@media (max-width:760px){
+  #nav{height:calc(88vh - var(--topx,0px));height:calc(88dvh - var(--topx,0px))}
+  #insp.tall{height:calc(92% - var(--topx,0px))}
+  body.kb #insp{height:calc(var(--vvh) - env(safe-area-inset-top) - 10px - var(--topx,0px))}
+}
+/* ===== v16: pannelli in alto (Aa, versione, download) scorribili senza doverli chiudere ===== */
+.pop{max-height:calc(100vh - env(safe-area-inset-top,0px) - 72px);max-height:calc(100dvh - env(safe-area-inset-top,0px) - 72px);overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;touch-action:pan-y}
+.pop input[type=range]{touch-action:pan-y}
+@media (max-width:760px){
+  .pop{max-height:min(80vh,calc(100vh - env(safe-area-inset-top,0px) - 56px - var(--topx,0px)));max-height:min(80dvh,calc(100dvh - env(safe-area-inset-top,0px) - 56px - var(--topx,0px)))}
+}
+#instwrap[hidden]{display:none}
 /* scheletro del capitolo (caricamento iniziale) */
 .sk-chapter .sk-h{height:30px;width:46%;margin:6px 0 26px;border-radius:10px}
 .sk-chapter .skel-line{height:16px;margin:17px 0;border-radius:6px}
@@ -654,6 +668,7 @@ html{background:var(--bg)}
 </div>
 <div class="pop" id="opop" role="dialog" aria-label="Uso offline">
   <label>Uso offline</label><button type="button" class="btn rowbtn" id="offbtn">Scarica tutto (circa 60 MB)</button><div class="hint" id="offhint">Dopo il download la Bibbia funziona anche senza connessione.</div>
+  <div id="instwrap" hidden><label>App</label><button type="button" class="btn rowbtn" id="instbtn">Installa come app</button><div class="hint" id="insthint" hidden></div></div>
 </div>
 
 <script>
@@ -1919,7 +1934,8 @@ async function doSearch(){
   const frag=[];
   if(strong){const s=strong[1].toUpperCase()+String(strong[2]).padStart(4,'0');frag.push(h('button',{type:'button',class:'goto',on:{click:()=>openStrong(s)}},h('span',{text:'Apri lessico '+sdisp(s)}),h('span',{text:'›'})));}
   const ref=sScope==='text'?parseRef(q):null;
-  if(ref&&(ref.hasNum||ref.exact&&ALIAS[norm(q)]!=null)){const lab=B[ref.bi].n+(ref.hasNum?' '+ref.c+(ref.v?':'+ref.v:''):'');frag.push(h('button',{type:'button',class:'goto',on:{click:()=>{closeSearch();go(ref.bi,ref.c,ref.v,{open:true});}}},h('span',{text:'Vai a '+lab}),h('span',{text:'›'})));}
+  const hasRef=!!(ref&&(ref.hasNum||ref.exact&&ALIAS[norm(q)]!=null));
+  if(hasRef){const lab=B[ref.bi].n+(ref.hasNum?' '+ref.c+(ref.v?':'+ref.v:''):'');frag.push(h('button',{type:'button',class:'goto',on:{click:()=>{closeSearch();go(ref.bi,ref.c,ref.v,{open:true});}}},h('span',{text:'Vai a '+lab}),h('span',{text:'›'})));}
   if(sScope==='lex')return searchLex(q,frag,seq);
   if(strong&&!ref){res.replaceChildren(...frag);return;}
   res.replaceChildren(...frag,skelRows(6));
@@ -1932,10 +1948,11 @@ async function doSearch(){
   const hits=[];for(const r of all){let ok=true;for(const rx of res_){if(!rx.test(r.f)){ok=false;break;}}if(ok){hits.push(r);}}
   S.rx=needles.map(n=>new RegExp('(^|[^a-z0-9])('+esc(n)+')','g'));
   const shown=hits.slice(0,80);
-  const out=[h('div',{class:'cnt',text:hits.length.toLocaleString('it-IT')+(hits.length===1?' versetto':' versetti')+(hits.length>80?' · primi 80':'')})];
+  const out=hits.length?[h('div',{class:'cnt',text:hits.length.toLocaleString('it-IT')+(hits.length===1?' versetto':' versetti')+(hits.length>80?' · primi 80':'')})]:[];
   shown.forEach(r=>out.push(h('button',{type:'button',class:'srow',on:{click:()=>{closeSearch();go(r.bi,r.c,r.v,{open:true});}}},h('div',{class:'r',text:B[r.bi].n+' '+r.c+':'+r.v}),h('div',{class:'t'},hlText(r,needles)))));
   let other=null;
-  if(!hits.length){out.push(h('div',{class:'empty',text:'Nessun risultato per «'+q+'» in '+VERSIONS[curVi()].name+'.'}));other=h('div',{class:'sother'});out.push(other);}
+  /* nessun messaggio "nessun risultato": se non ci sono risultati si cercano le altre versioni (tranne quando c'e' il pulsante del riferimento) */
+  if(!hits.length&&!hasRef){other=h('div',{class:'sother'});out.push(other);}
   res.replaceChildren(...frag,...out);
   if(other)searchOthers(needles,other,seq);
 }
@@ -1968,9 +1985,7 @@ async function searchOthers(needles,box,seq){
     box.insertBefore(sec,status);
   }
   if(seq!==sSeq)return;
-  sk.remove();
-  status.textContent=found?'':'Nessuna corrispondenza neanche nelle altre versioni.';
-  if(!found)status.className='empty';else status.remove();
+  sk.remove();status.remove();
 }
 function hlText(r,needles){
   const f=r.f,t=r.t,ranges=[];
@@ -2172,6 +2187,36 @@ function bindDiag(){
     if(was&&(dy>90||(Date.now()-t0<280&&dy>35)))closeNav();drag=false;};
   hd.addEventListener('touchend',e=>{if(drag)e.preventDefault();end();});
   hd.addEventListener('touchcancel',end);
+})();
+/* Installa come app: pulsante nel pannello Download. Sparisce quando l'app e' gia' installata (o aperta come app). */
+(function(){
+  const wrap=document.getElementById('instwrap'),btn=document.getElementById('instbtn'),hint=document.getElementById('insthint');if(!wrap)return;
+  const ua=navigator.userAgent;
+  const installed=()=>navigator.standalone===true||matchMedia('(display-mode: standalone)').matches||matchMedia('(display-mode: fullscreen)').matches||matchMedia('(display-mode: minimal-ui)').matches;
+  const ios=/iPhone|iPad|iPod/.test(ua)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
+  const inApp=/Instagram|FBAN|FBAV|FB_IAB|Line\//.test(ua);
+  let ev=null;
+  function refresh(){
+    const show=!installed()&&(ev||ios);
+    wrap.hidden=!show;
+    if(!show)hint.hidden=true;
+  }
+  addEventListener('beforeinstallprompt',e=>{e.preventDefault();ev=e;refresh();});
+  addEventListener('appinstalled',()=>{ev=null;refresh();});
+  matchMedia('(display-mode: standalone)').addEventListener&&matchMedia('(display-mode: standalone)').addEventListener('change',refresh);
+  btn.onclick=async()=>{
+    if(ev){
+      const e=ev;ev=null;
+      try{e.prompt();await e.userChoice;}catch(err){}
+      refresh();
+      return;
+    }
+    if(ios){
+      hint.textContent=inApp?'Apri questa pagina in Safari, poi tocca Condividi e \u00abAggiungi alla schermata Home\u00bb.':'Tocca Condividi (se non lo vedi, prima \u00ab\u2022\u2022\u2022\u00bb), poi \u00abAggiungi alla schermata Home\u00bb.';
+      hint.hidden=!hint.hidden;
+    }
+  };
+  refresh();
 })();
 if('serviceWorker' in navigator&&/^https?:$/.test(location.protocol))addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));
 </script>
