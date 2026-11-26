@@ -140,9 +140,19 @@ input,textarea{font:inherit;color:inherit}
 .flip .face{grid-area:1/1;margin:0;-webkit-backface-visibility:hidden;backface-visibility:hidden}
 .flip .face.kjv{transform:rotateY(180deg)}
 .flip h4{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.original-verse{unicode-bidi:isolate;font-size:21px;line-height:1.8;letter-spacing:.01em}
 .flip h4 .fliphint{white-space:nowrap;font-size:11px;letter-spacing:.02em;text-transform:none;font-weight:500;opacity:.75}
 .flip:focus-visible .face{box-shadow:0 0 0 2px var(--ink2) inset}
 .words{display:flex;flex-wrap:wrap;gap:8px}
+/* Disposizione interlineare: modalità in linea con scorrimento orizzontale */
+.words.inline{display:flex;flex-wrap:nowrap;direction:ltr;overflow-x:auto;overflow-y:hidden;gap:8px;padding:2px 2px 12px;scroll-snap-type:x proximity;-webkit-overflow-scrolling:touch;}
+.words.inline .w{flex:0 0 auto;scroll-snap-align:start}
+.word-layout{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:0 0 10px;font-family:var(--ui)}
+.word-layout .layout-label{font-size:12px;color:var(--ink2);font-weight:600}
+.word-layout .seg{width:auto;display:flex}
+.word-layout .seg button{font-size:12px;padding:5px 9px}
+@media(max-width:760px){.words{flex-wrap:nowrap!important;direction:ltr!important;overflow-x:auto;overflow-y:hidden;padding:2px 2px 12px;scroll-snap-type:x proximity;-webkit-overflow-scrolling:touch}.words .w{flex:0 0 auto;scroll-snap-align:start}.word-layout{display:none!important}}
+
 .w{display:flex;flex-direction:column;align-items:center;gap:2px;min-width:68px;max-width:140px;padding:10px 8px 8px;border-radius:12px;background:var(--card);box-shadow:0 0 0 1px var(--line) inset;text-align:center;transition:transform .12s,box-shadow .12s}
 .w:hover{box-shadow:0 0 0 2px var(--accent) inset}
 .w:active{transform:scale(.97)}
@@ -760,6 +770,22 @@ function getKjv(id,c){
     .catch(e=>{delete cache.kjv[k];throw e;});
   return cache.kjv[k];
 }
+function flipOriginalVerseCard(originalWords,ot){
+  const id=B[S.bi].id,c=S.c,v=S.v;
+  const eq=h('div',{class:'verse-quote',lang:'en',text:'Caricamento…'});
+  const originalText=(originalWords||[]).map(w=>String(w[0]||'')).join(' ');
+  const oq=h('div',{class:'verse-quote original-verse',lang:ot?'he':'el',dir:'ltr',text:originalText||'Testo originale non disponibile'});
+  const front=h('div',{class:'card face kjv'},h('h4',null,h('span',{text:'King James Version'}),h('span',{class:'fliphint',text:'Tocca per originale ↻'})),eq);
+  const back=h('div',{class:'card face rv'},h('h4',null,h('span',{text:ot?'Testo ebraico':'Testo greco'}),h('span',{class:'fliphint',text:'Tocca per KJV ↻'})),oq);
+  let loaded=false;
+  const load=()=>{if(loaded)return;loaded=true;getKjv(id,c).then(m=>{eq.textContent=m[v]||'Versetto non presente nella KJV con questa numerazione.';}).catch(()=>{loaded=false;eq.textContent='Impossibile caricare la KJV. Controlla la connessione e tocca di nuovo.';});};
+  const wrap=h('div',{class:'flip en',role:'button',tabindex:'0','aria-label':'Gira per passare dal testo inglese al testo originale'},h('div',{class:'flip-in'},front,back));
+  const sync=()=>{const en=wrap.classList.contains('en');front.setAttribute('aria-hidden',!en);back.setAttribute('aria-hidden',en);if(en)load();};
+  const toggle=()=>{wrap.classList.toggle('en');sync();};
+  wrap.addEventListener('click',e=>{if(e.target.closest('a,button'))return;toggle();});
+  wrap.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();toggle();}});
+  sync();return wrap;
+}
 function flipVerseCard(){
   const t=S.loaded.c[S.c-1][S.v-1],id=B[S.bi].id,c=S.c,v=S.v;
   const q=h('div',{class:'verse-quote'});richInto(q,t);
@@ -855,26 +881,38 @@ function alignKjvToOriginal(originalWords,verseItems){
 }
 async function paneInt(){
   const pane=$('#pane'),tok=S.tok,v=S.v,c=S.c,bi=S.bi,id=B[bi].id;
-  pane.replaceChildren(flipVerseCard(),h('div',{class:'loading',style:'padding:30px 0'},h('div',null,h('div',{class:'spin'}),'Carico il testo originale…')));
+  pane.replaceChildren(verseCard(),h('div',{class:'loading',style:'padding:30px 0'},h('div',null,h('div',{class:'spin'}),'Carico il testo originale…')));
   let od;try{od=await getOr(id);}catch(e){pane.append(h('div',{class:'empty',text:e.message}));return;}
   if(tok!==S.tok||S.v!==v||S.tab!=='int')return;
   const ws=od.c[c-1][v-1]||[];const ot=B[bi].t===1;
-  pane.replaceChildren(flipVerseCard());
-  if(!ws.length){pane.append(h('div',{class:'card'},h('div',{class:'hint',text:'Per questo versetto l\'originale ha una numerazione diversa dalla Riveduta, quindi non c\'è un interlineare allineato.'})));return;}
-  const wrap=h('div',{class:'words'+(ot?' rtl':''),dir:ot?'rtl':'ltr'}),kjvLabels=[];
-  ws.forEach(w=>{
-    const variant=w.length>5,g=h('span',{class:'g',text:'—'});kjvLabels.push(g);
+  pane.replaceChildren(verseCard(),flipOriginalVerseCard(ws,ot));
+  if(!ws.length){pane.append(h('div',{class:'card'},h('div',{class:'hint',text:"Per questo versetto l'originale ha una numerazione diversa dalla Riveduta, quindi non c'è un interlineare allineato."})));return;}
+  const desktop=window.matchMedia('(min-width:761px)').matches;
+  const mode=desktop?(store.set.wordLayout||'extended'):'inline';
+  const layoutBar=h('div',{class:'word-layout'},h('span',{class:'layout-label',text:'Visualizzazione parole'}));
+  if(desktop){
+    const seg=h('div',{class:'seg','aria-label':'Disposizione delle parole'},
+      h('button',{type:'button','aria-selected':mode==='extended'?'true':'false',text:'Estesa',on:{click:()=>{store.set.wordLayout='extended';save();renderInspector();}}}),
+      h('button',{type:'button','aria-selected':mode==='inline'?'true':'false',text:'In linea',on:{click:()=>{store.set.wordLayout='inline';save();renderInspector();}}}));
+    layoutBar.append(seg);
+  }
+  const wrap=h('div',{class:'words'+(mode==='inline'?' inline':'')+(ot&&mode==='extended'?' rtl':''),dir:mode==='inline'?'ltr':(ot?'rtl':'ltr')}),kjvLabels=[];
+  // L'associazione KJV viene calcolata nell'ordine originale dei dati; per la vista in linea
+  // l'ebraico viene poi invertito, così la lettura visiva procede da sinistra a destra.
+  const displayIndexes=ws.map((_,i)=>i);if(ot&&mode==='inline')displayIndexes.reverse();
+  displayIndexes.forEach(i=>{
+    const w=ws[i],variant=w.length>5,g=h('span',{class:'g',text:'—'});kjvLabels[i]=g;
     wrap.append(h('button',{type:'button',class:'w'+(variant?' var':''),title:variant?'Variante testuale: '+w[5]:morphLine(w[4],ot),on:{click:()=>{S.word={w,ot,s:w[3]};S.tab='lex';renderInspector();}}},
-      h('span',{class:'o',lang:ot?'he':'el',text:w[0]}),h('span',{class:'t',text:w[1]}),g,
+      h('span',{class:'o',lang:ot?'he':'el',dir:'ltr',text:w[0]}),h('span',{class:'t',text:w[1]}),g,
       variant?h('span',{class:'vb',text:'variante'}):null,
       w[3]?h('span',{class:'s',text:sdisp(w[3])}):null));
   });
-  pane.append(h('div',{class:'card'},h('h4',{text:(ot?'Ebraico · da destra a sinistra':'Greco')+' · KJV sotto ogni parola'}),wrap),h('div',{class:'hint',text:'La parola KJV è collegata tramite il numero Strong. Alcune parole funzionali o varianti non hanno un’associazione KJV univoca e restano vuote. Tocca una parola per aprire lessico, analisi e occorrenze.'}));
+  pane.append(h('div',{class:'card'},h('div',{class:'word-layout-head'},h('h4',{text:(ot?'Ebraico':'Greco')+' · KJV sotto ogni parola'})),layoutBar,wrap),h('div',{class:'hint',text:'La parola KJV è collegata tramite il numero Strong. Alcune parole funzionali o varianti non hanno un’associazione KJV univoca e restano vuote. Tocca una parola per aprire lessico, analisi e occorrenze.'}));
   getKjvConcordance(id,c).then(data=>{
     if(tok!==S.tok||S.v!==v||S.tab!=='int')return;
     const aligned=alignKjvToOriginal(ws,kjvVerseItems(data,v));
-    aligned.forEach((word,i)=>{kjvLabels[i].textContent=word||'—';});
-  }).catch(()=>{kjvLabels.forEach(x=>x.textContent='—');});
+    aligned.forEach((word,i)=>{if(kjvLabels[i])kjvLabels[i].textContent=word||'—';});
+  }).catch(()=>{kjvLabels.forEach(x=>{if(x)x.textContent='—';});});
 }
 const morphLine=(m,ot)=>(ot?morphH(m):morphG(m)).join(' · ');
 function paneLexHint(){
