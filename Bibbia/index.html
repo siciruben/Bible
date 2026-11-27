@@ -753,6 +753,33 @@ html{background:var(--bg)}
 @keyframes verseflashline{0%,18%{text-decoration-color:var(--accent)}100%{text-decoration-color:transparent}}
 .v.flash{animation:verseflash 1.3s ease-out forwards;-webkit-box-decoration-break:clone;box-decoration-break:clone}
 .v.flash[data-hl]{animation-name:verseflashline;text-decoration:underline;text-decoration-thickness:3px;text-underline-offset:4px}
+/* ===== Blocco note (beta, solo desktop) ===== */
+#notesbtn{position:relative}
+#notesbtn i{position:absolute;top:1px;right:-3px;font:700 8px/1 var(--ui);font-style:normal;background:var(--accent);color:var(--accent-ink);padding:2px 4px;border-radius:99px}
+@media(max-width:760px){#notesbtn,#nbov{display:none!important}}
+#nbov{position:fixed;inset:0;z-index:90;background:var(--bg);color:var(--ink);display:none;grid-template-rows:auto minmax(0,1fr);font-family:var(--ui)}
+#nbov.on{display:grid}
+.nbtop{display:flex;align-items:center;gap:8px;padding:10px 16px;border-bottom:1px solid var(--line);background:var(--glass)}
+.nbtop h2{margin:0;font:600 17px var(--ui)}
+.nbbeta{font-size:11px;font-weight:700;padding:2px 8px;border-radius:99px;background:var(--accent-soft);color:var(--accent)}
+.nbst{font-size:12.5px;color:var(--ink3);margin-left:6px}
+.nbtop .sp{flex:1}
+.nbtop .btn:disabled{opacity:.4;cursor:default}
+.nbbody{display:grid;grid-template-columns:280px minmax(0,1fr);min-height:0}
+.nbside{border-right:1px solid var(--line);overflow:auto;padding:10px;background:var(--bg2)}
+.nbitem{display:block;width:100%;text-align:left;padding:9px 11px;border-radius:10px;margin-bottom:2px}
+.nbitem b{display:block;font-weight:600;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.nbitem small{color:var(--ink3);font-size:12px}
+.nbitem:hover{background:var(--accent-soft)}
+.nbitem.on{background:var(--accent-soft);box-shadow:inset 3px 0 0 var(--accent)}
+.nbed{display:flex;flex-direction:column;min-width:0;min-height:0;padding:22px 32px;max-width:52rem;width:100%;margin:0 auto}
+.nbed input{border:0;background:none;outline:0;font:600 26px var(--serif);color:var(--ink);padding:4px 0 10px;border-bottom:1px solid var(--line);margin-bottom:14px;width:100%}
+.nbed textarea{flex:1;resize:none;border:0;outline:0;background:none;font:17px/1.7 var(--serif);color:var(--ink)}
+.nbmsg{margin:auto;max-width:27rem;text-align:center;color:var(--ink2);line-height:1.55;padding:24px}
+.nbmsg h3{margin:0 0 8px;font:600 20px var(--ui);color:var(--ink)}
+.nbmsg .btn{margin:6px 4px 0;padding:10px 16px}
+.nbmsg .hint{font-size:12.5px;color:var(--ink3);margin-top:14px}
+.nbwide{grid-column:1/-1}
 </style>
 </head>
 <body>
@@ -2826,6 +2853,114 @@ body.nav-open #a2hs,body.sheet-open #a2hs,body.search-open #a2hs,body.kb #a2hs{d
   ['gesturestart','gesturechange','gestureend'].forEach(type=>document.addEventListener(type,e=>{if(standalone()&&!(e.target.closest&&e.target.closest('.map-stage')))e.preventDefault();},{passive:false}));
   let lastTouchEnd=0;
   document.addEventListener('touchend',e=>{if(!standalone()||(e.target.closest&&e.target.closest('input,textarea,select,button,.map-stage')))return;const now=Date.now();if(now-lastTouchEnd<300)e.preventDefault();lastTouchEnd=now;},{passive:false});
+})();
+</script>
+<script>
+/* ===== Blocco note (beta, solo desktop): Google Drive, cartella "Bibbia Note" ===== */
+(function(){
+const CLIENT_ID='INSERISCI_QUI_IL_CLIENT_ID.apps.googleusercontent.com';
+const SCOPE='https://www.googleapis.com/auth/drive.file',FOLDER='Bibbia Note',API='https://www.googleapis.com/';
+const L={g:k=>{try{return localStorage.getItem('nb:'+k)}catch(e){return null}},s:(k,v)=>{try{localStorage.setItem('nb:'+k,v)}catch(e){}},d:k=>{try{localStorage.removeItem('nb:'+k)}catch(e){}}};
+let mode=L.g('mode'),token=null,tc=null,folder=L.g('folder'),notes=[],cur=null,timer=null,dirty=false,tokWait=null;
+const id=x=>document.getElementById(x);
+const st=h('span',{class:'nbst'}),side=h('div',{class:'nbside'}),ed=h('div',{class:'nbed'}),body=h('div',{class:'nbbody'});
+const bNew=h('button',{class:'btn',type:'button',text:'Nuova nota',on:{click:()=>newNote()}});
+const bPdf=h('button',{class:'btn',type:'button',text:'Esporta PDF',on:{click:()=>pdf()}});
+const bDel=h('button',{class:'btn',type:'button',text:'Elimina',on:{click:()=>del()}});
+const bOut=h('button',{class:'btn',type:'button',text:'Scollega',on:{click:()=>out()}});
+const bX=h('button',{class:'btn',type:'button',text:'Chiudi',on:{click:()=>close()}});
+const ov=h('div',{id:'nbov',role:'dialog','aria-label':'Blocco note'},
+  h('div',{class:'nbtop'},h('h2',{text:'Blocco note'}),h('span',{class:'nbbeta',text:'beta'}),st,h('span',{class:'sp'}),bNew,bPdf,bDel,bOut,bX),body);
+ov.addEventListener('keydown',e=>{e.stopPropagation();if(e.key==='Escape')close();});
+document.body.append(ov);
+const btn=h('button',{class:'ibtn',id:'notesbtn',type:'button','aria-label':'Blocco note (beta)',title:'Blocco note (beta)',on:{click:open}});
+btn.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h11a1 1 0 0 1 1 1v16a1 1 0 0 1-1 1H6zM6 3v18M9.5 8h5M9.5 12h5"/></svg><i>beta</i>';
+const sb=id('setbtn');sb.parentNode.insertBefore(btn,sb);
+
+function status(t){st.textContent=t||'';}
+function msg(title,text,btns,hint){body.replaceChildren(h('div',{class:'nbmsg nbwide'},h('h3',{text:title}),h('p',{text}),btns,hint&&h('div',{class:'hint',text:hint})));tools(false);}
+function tools(on){[bNew,bPdf,bDel].forEach(b=>b.disabled=!on);bOut.hidden=!mode;}
+
+/* ---- Google ---- */
+const gready=()=>CLIENT_ID.indexOf('INSERISCI')<0;
+function loadGsi(){return new Promise((ok,ko)=>{if(window.google&&google.accounts)return ok();const s=h('script',{src:'https://accounts.google.com/gsi/client',async:true});s.onload=ok;s.onerror=()=>ko(new Error('Google non raggiungibile. Controlla la connessione.'));document.head.append(s);});}
+function getToken(prompt){return new Promise(async(ok,ko)=>{try{await loadGsi();
+  if(!tc)tc=google.accounts.oauth2.initTokenClient({client_id:CLIENT_ID,scope:SCOPE,callback:r=>{if(r.error)tokWait&&tokWait[1](new Error(r.error));else{token=r.access_token;tokWait&&tokWait[0](token);}},error_callback:e=>tokWait&&tokWait[1](new Error(e.type||'login annullato'))});
+  tokWait=[ok,ko];tc.requestAccessToken({prompt:prompt||''});}catch(e){ko(e);}});}
+async function api(path,opt,retry){
+  if(!token)await getToken(L.g('mode')==='drive'?'':'consent');
+  const o=Object.assign({},opt);o.headers=Object.assign({Authorization:'Bearer '+token},o.headers);
+  const r=await fetch(API+path,o);
+  if(r.status===401&&!retry){token=null;await getToken('');return api(path,opt,true);}
+  if(!r.ok)throw new Error('Drive '+r.status);
+  return r.status===204?null:(o.raw?r.text():r.json());}
+const q=s=>encodeURIComponent(s);
+const drive={
+  async init(){if(folder){try{await api('drive/v3/files/'+folder+'?fields=id,trashed');return;}catch(e){folder=null;}}
+    const r=await api('drive/v3/files?spaces=drive&fields=files(id)&q='+q("name='"+FOLDER+"' and mimeType='application/vnd.google-apps.folder' and trashed=false"));
+    folder=r.files[0]?r.files[0].id:(await api('drive/v3/files?fields=id',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:FOLDER,mimeType:'application/vnd.google-apps.folder'})})).id;
+    L.s('folder',folder);},
+  async list(){const r=await api('drive/v3/files?pageSize=200&orderBy=modifiedTime desc&fields=files(id,name,modifiedTime)&q='+q("'"+folder+"' in parents and trashed=false"));
+    return r.files.map(f=>({id:f.id,title:f.name.replace(/\.(md|txt)$/i,''),t:Date.parse(f.modifiedTime)}));},
+  async get(n){return api('drive/v3/files/'+n.id+'?alt=media',{raw:true});},
+  async create(title,text){const bd='nbx'+Date.now(),meta={name:title+'.md',parents:[folder],mimeType:'text/markdown'};
+    const r=await api('upload/drive/v3/files?uploadType=multipart&fields=id,modifiedTime',{method:'POST',headers:{'Content-Type':'multipart/related; boundary='+bd},body:'--'+bd+'\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n'+JSON.stringify(meta)+'\r\n--'+bd+'\r\nContent-Type: text/markdown; charset=UTF-8\r\n\r\n'+text+'\r\n--'+bd+'--'});
+    return{id:r.id,title,t:Date.parse(r.modifiedTime)};},
+  async save(n,text){await api('upload/drive/v3/files/'+n.id+'?uploadType=media',{method:'PATCH',headers:{'Content-Type':'text/markdown; charset=UTF-8'},body:text});
+    await api('drive/v3/files/'+n.id,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:n.title+'.md'})});},
+  async del(n){await api('drive/v3/files/'+n.id,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({trashed:true})});}
+};
+const local={ /* usata solo se il Client ID non è ancora configurato */
+  _g(){try{return JSON.parse(L.g('local')||'[]')}catch(e){return[]}},_s(a){L.s('local',JSON.stringify(a));},
+  async init(){},async list(){return this._g().map(n=>({id:n.id,title:n.title,t:n.t})).sort((a,b)=>b.t-a.t);},
+  async get(n){return(this._g().find(x=>x.id===n.id)||{}).text||'';},
+  async create(title,text){const a=this._g(),n={id:'l'+Date.now(),title,text,t:Date.now()};a.push(n);this._s(a);return{id:n.id,title,t:n.t};},
+  async save(n,text){const a=this._g(),x=a.find(y=>y.id===n.id);if(x){x.title=n.title;x.text=text;x.t=Date.now();this._s(a);}},
+  async del(n){this._s(this._g().filter(x=>x.id!==n.id));}
+};
+const be=()=>mode==='drive'?drive:local;
+
+/* ---- UI ---- */
+const ago=t=>new Date(t).toLocaleDateString('it-IT',{day:'numeric',month:'short'});
+function renderList(){side.replaceChildren(...notes.map(n=>h('button',{class:'nbitem'+(cur&&cur.id===n.id?' on':''),type:'button',on:{click:()=>pick(n)}},h('b',{text:n.title||'Senza titolo'}),h('small',{text:ago(n.t)}))));}
+function mount(){body.replaceChildren(side,ed);tools(true);renderList();}
+function editor(n,text){
+  const ti=h('input',{type:'text',placeholder:'Titolo','aria-label':'Titolo',value:n.title}),ta=h('textarea',{placeholder:'Scrivi qui…','aria-label':'Testo della nota'});
+  ta.value=text;n.text=text;
+  const ch=()=>{n.title=ti.value.trim()||'Senza titolo';n.text=ta.value;dirty=true;status('Modifiche non salvate');clearTimeout(timer);timer=setTimeout(flush,900);};
+  ti.addEventListener('input',ch);ta.addEventListener('input',ch);ed.replaceChildren(ti,ta);}
+async function pick(n){await flush();cur=n;renderList();status('Apro…');try{editor(n,n.text!=null?n.text:await be().get(n));status('');}catch(e){status('Impossibile aprire la nota');}}
+async function flush(){if(!dirty||!cur)return;clearTimeout(timer);const n=cur;dirty=false;status('Salvo…');
+  try{await be().save(n,n.text);n.t=Date.now();status('Salvato');renderList();}catch(e){dirty=true;status('Non salvato: riprovo appena torna la connessione');}}
+window.addEventListener('online',()=>flush());
+async function newNote(){await flush();try{const n=await be().create('Nuova nota','');notes.unshift(n);cur=n;mount();editor(n,'');ed.firstChild.select();status('');}catch(e){status('Impossibile creare la nota');}}
+async function del(){if(!cur||!confirm('Eliminare «'+cur.title+'»?'))return;const n=cur;dirty=false;clearTimeout(timer);
+  try{await be().del(n);notes=notes.filter(x=>x!==n);cur=null;ed.replaceChildren(h('div',{class:'nbmsg'},'Seleziona una nota o creane una nuova.'));renderList();status('Nota eliminata');}catch(e){status('Impossibile eliminare');}}
+function out(){if(!confirm('Scollegare Google Drive da questo browser? Le note restano nel tuo Drive.'))return;
+  try{if(token&&window.google)google.accounts.oauth2.revoke(token);}catch(e){}token=null;L.d('mode');L.d('folder');mode=null;folder=null;notes=[];cur=null;intro();}
+async function load(){status('Carico le note…');msg('Un momento','Sto leggendo le tue note…',null);
+  try{await be().init();notes=await be().list();status('');mount();cur=null;
+    ed.replaceChildren(notes.length?h('div',{class:'nbmsg'},'Seleziona una nota a sinistra.'):h('div',{class:'nbmsg'},h('h3',{text:'Nessuna nota'}),h('p',{text:'Crea la prima con «Nuova nota».'})));
+  }catch(e){status('');msg('Collegamento non riuscito',String(e.message||e),h('button',{class:'btn',type:'button',text:'Riprova',on:{click:load}}));}}
+function intro(){tools(false);status('');
+  const go=h('button',{class:'btn',type:'button',text:'Collega Google Drive',on:{click:async()=>{
+    if(!gready()){status('Client ID Google non configurato (vedi README)');return;}
+    try{await getToken('consent');mode='drive';L.s('mode','drive');load();}catch(e){status('Accesso non riuscito: '+(e.message||e));}}}});
+  go.style.background='var(--accent)';go.style.color='var(--accent-ink)';
+  const lo=h('button',{class:'btn',type:'button',text:'Usa solo su questo dispositivo',on:{click:()=>{mode='local';L.s('mode','local');load();}}});
+  msg('Collega il tuo Google Drive','Le note vengono salvate come file di testo in una cartella «'+FOLDER+'» nel tuo Drive. L’app vede solo i file che crea lei, non il resto del Drive.',[go,lo],gready()?'Potrai esportare ogni nota in PDF.':'Il Client ID Google non è ancora configurato: per ora puoi provare il blocco note solo su questo dispositivo.');}
+function open(){ov.classList.add('on');if(mode==='drive'||mode==='local')load();else intro();}
+async function close(){await flush();ov.classList.remove('on');}
+
+/* ---- PDF ---- */
+function loadPdfLib(){return new Promise((ok,ko)=>{if(window.jspdf)return ok();const s=h('script',{src:'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js'});s.onload=ok;s.onerror=ko;document.head.append(s);});}
+async function pdf(){if(!cur)return;await flush();status('Preparo il PDF…');
+  try{await loadPdfLib();const d=new jspdf.jsPDF({unit:'mm',format:'a4'}),W=170;let y=25;
+    d.setFont('times','bold');d.setFontSize(18);d.splitTextToSize(cur.title,W).forEach(l=>{d.text(l,20,y);y+=8;});y+=4;
+    d.setFont('times','normal');d.setFontSize(12);
+    d.splitTextToSize(cur.text||'',W).forEach(l=>{if(y>275){d.addPage();y=25;}d.text(l,20,y);y+=6;});
+    d.save((cur.title||'nota').replace(/[\\/:*?"<>|]/g,'-')+'.pdf');status('PDF pronto');
+  }catch(e){status('');const w=window.open('','_blank');if(w){w.document.title=cur.title;w.document.body.style.cssText='font:16px/1.6 Georgia,serif;max-width:40em;margin:2em auto;white-space:pre-wrap';w.document.body.textContent=cur.title+'\n\n'+(cur.text||'');w.print();}else status('Impossibile creare il PDF');}}
 })();
 </script>
 </body>
