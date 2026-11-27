@@ -773,6 +773,7 @@ html{background:var(--bg)}
   <input type="file" id="bkfile" accept=".json,application/json" hidden>
   <div class="hint" id="bkhint">Temi, evidenziazioni, note, segnalibri, versione, recenti e impostazioni in un unico file. Il file si chiamerà bibbia-preferenze-AAAA-MM-GG.json (formato JSON, con la data del giorno).</div>
   <div id="instwrap" hidden><label>App</label><button type="button" class="btn rowbtn" id="instbtn">Installa come app</button><div class="hint" id="insthint" hidden></div></div>
+  <label>Aggiornamenti</label><button type="button" class="btn rowbtn" id="appupdatebtn">Aggiorna</button><div class="hint">Se è disponibile un nuovo aggiornamento, tocca Aggiorna, poi chiudi l'app e riaprila.</div><div class="hint" id="appupdatehint" aria-live="polite"></div>
   
 </div>
 
@@ -2596,9 +2597,31 @@ function bindDiag(){
   });
 })();
 /* Service worker: offline e aggiornamento automatico alla riapertura dell'app. */
-if('serviceWorker' in navigator&&/^https?:$/.test(location.protocol)){
+const SW_OK='serviceWorker' in navigator&&/^https?:$/.test(location.protocol);
+if(SW_OK){
   addEventListener('load',()=>{navigator.serviceWorker.register('./sw.js',{updateViaCache:'none'}).then(r=>r.update()).catch(()=>{});},{once:true});
 }
+/* Pulsante Aggiorna: scarica la nuova versione (se c'e'); poi basta chiudere e riaprire l'app. */
+(function(){
+  const btn=document.getElementById('appupdatebtn'),hint=document.getElementById('appupdatehint');if(!btn)return;
+  const say=t=>{hint.textContent=t;};
+  btn.onclick=async()=>{
+    if(!SW_OK){say('L\u2019aggiornamento funziona solo quando l\u2019app \u00e8 aperta da un indirizzo web (https).');return;}
+    btn.disabled=true;say('Controllo aggiornamenti\u2026');
+    try{
+      const reg=await navigator.serviceWorker.register('./sw.js',{updateViaCache:'none'});
+      await reg.update();
+      const w=reg.installing;
+      if(w&&w.state!=='installed'&&w.state!=='activated'&&w.state!=='redundant'){
+        await new Promise(res=>{const t=setTimeout(res,25000);w.addEventListener('statechange',()=>{if(w.state==='installed'||w.state==='activated'||w.state==='redundant'){clearTimeout(t);res();}});});
+      }
+      if(w&&w.state==='redundant')say('Aggiornamento non riuscito. Controlla la connessione e riprova.');
+      else if((w||reg.waiting)&&navigator.serviceWorker.controller)say('Nuova versione scaricata: chiudi l\u2019app e riaprila per usarla.');
+      else say('L\u2019app \u00e8 gi\u00e0 aggiornata.');
+    }catch(e){say('Controllo non riuscito. Verifica la connessione e riprova.');}
+    finally{btn.disabled=false;}
+  };
+})();
 </script>
 <!-- Invito ad aggiungere l'app alla schermata Home (solo telefoni e tablet) -->
 <style>
