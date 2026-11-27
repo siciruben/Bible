@@ -1018,19 +1018,6 @@ select.nbvsel:focus-visible{border-color:var(--accent);box-shadow:0 0 0 3px var(
 #home.hm-anim .hm-stg:not(.in)>*{opacity:0}
 .hm-stg.in>*{animation:hmUp .6s cubic-bezier(.2,.7,.2,1) backwards;animation-delay:calc(var(--i,0)*60ms)}
 @keyframes hmUp{from{opacity:0;transform:translateY(14px)}}
-/* fascia di libri che scorre (due righe, direzioni opposte) */
-.hm-marq{position:relative;display:grid;gap:12px;width:100vw;margin:26px 0 0 calc(50% - 50vw);overflow:hidden;-webkit-mask-image:linear-gradient(90deg,transparent,#000 10%,#000 90%,transparent);mask-image:linear-gradient(90deg,transparent,#000 10%,#000 90%,transparent)}
-.hm-row{display:flex;width:max-content;animation:hmmq 90s linear infinite}
-.hm-row.rev{animation-direction:reverse;animation-duration:105s}
-.hm-marq:hover .hm-row{animation-play-state:paused}
-@keyframes hmmq{to{transform:translateX(-50%)}}
-.hm-set{display:flex;gap:12px;padding-right:12px}
-.hm-bk{flex:none;width:98px;height:126px;padding:10px;border-radius:14px;text-align:left;display:flex;flex-direction:column;justify-content:space-between;background:linear-gradient(158deg,color-mix(in srgb,var(--accent) calc(var(--k,8)*1%),var(--card)),var(--card) 72%);border:1px solid var(--line);box-shadow:0 1px 2px rgba(0,0,0,.05),0 8px 18px rgba(0,0,0,.06);transition:transform .25s cubic-bezier(.2,.7,.2,1),border-color .2s}
-.hm-bk:hover{transform:translateY(-4px) scale(1.03);border-color:var(--accent)}
-.hm-ba{font:700 24px/1 var(--serif);letter-spacing:-.02em;color:var(--accent)}
-.hm-bn{font:600 11px/1.2 var(--ui);letter-spacing:-.01em;color:var(--ink);margin-top:auto;padding-top:8px;overflow-wrap:break-word;-webkit-hyphens:auto;hyphens:auto}
-.hm-bc{font:500 10px/1.2 var(--ui);color:var(--ink3);margin-top:3px}
-@media (min-width:761px){.hm-bk{width:116px;height:150px;padding:12px}.hm-ba{font-size:28px}.hm-bn{font-size:12.5px}}
 /* numeri */
 .hm-stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));margin:26px 0 0;border:1px solid var(--line);border-radius:18px;background:var(--card);box-shadow:0 1px 2px rgba(0,0,0,.04)}
 .hm-st{padding:15px 6px 14px;text-align:center;min-width:0}
@@ -1072,7 +1059,43 @@ select.nbvsel:focus-visible{border-color:var(--accent);box-shadow:0 0 0 3px var(
 .hm-tt{font:600 15px var(--ui);color:var(--ink)}
 .hm-td{font-size:12.5px;line-height:1.45;color:var(--ink2)}
 .hrec{--i:0}
-@media (prefers-reduced-motion:reduce){.hm-row,.hm-hero::before,.hm-pill i{animation:none}.hm-marq{overflow-x:auto}}
+@media (prefers-reduced-motion:reduce){.hm-hero::before,.hm-pill i{animation:none}}
+/* ===== v22: titoli nel font dell'interfaccia, home piu' sobria e ottimizzata per telefono ===== */
+#home{-webkit-tap-highlight-color:transparent}
+#home button{touch-action:manipulation}
+.hm-title,.hm-sh h2,.hct,.hsn,.hrn,.hm-n,.hm-tt{font-family:var(--ui)}
+.hm-title{font-weight:700;letter-spacing:-.035em;font-size:clamp(30px,8.6vw,52px);line-height:1.06}
+.hm-sub{font-size:clamp(14.5px,3.9vw,16.5px)}
+.hm-sh{margin:30px 2px 12px}
+.hm-sh h2{font-weight:650;font-size:clamp(19px,5vw,24px);letter-spacing:-.022em;line-height:1.2}
+.hm-sh p{font-size:13.5px}
+.heb{font-size:11px;letter-spacing:.1em}
+.hct{font-weight:700;font-size:clamp(21px,5.6vw,25px);letter-spacing:-.025em;line-height:1.15}
+.hcx{font-family:var(--read)}
+.hsn{font-weight:650;font-size:15.5px;letter-spacing:-.012em}
+.hrn{font-weight:650;font-size:15.5px;letter-spacing:-.012em}
+.hm-tt{font-weight:650;font-size:15px;letter-spacing:-.01em}
+.hm-n{font-weight:700;letter-spacing:-.03em}
+.hm-l{font-size:12px}
+.hsc{font-size:11px}
+.hm-td{font-size:13px}
+/* tocchi comodi sul telefono */
+.hcont .hgo{min-height:40px}
+.hsec,.hm-tool{min-height:76px}
+.hrec{min-height:56px}
+.hm-hero{padding-top:14px}
+.hm-hero .hsearch{height:54px}
+/* effetti al passaggio solo dove esiste davvero il mouse; su touch niente "hover" bloccato dopo il tocco */
+@media (hover:none){
+  .hm-card:hover::before{opacity:0}
+  .hm-card:hover{transform:none}
+  .hm-hero::before{animation:none}
+}
+@media (max-width:380px){
+  .hm-title{font-size:29px}
+  .hm-st{padding:13px 4px 12px}
+  .hm-badges{gap:5px 11px}
+}
 </style>
 </head>
 <body>
@@ -1102,7 +1125,6 @@ select.nbvsel:focus-visible{border-color:var(--accent);box-shadow:0 0 0 3px var(
         <button type="button" class="hsearch rv" id="hsearch"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg><span>Parola, versetto o numero Strong</span></button>
         <div class="hm-badges rv"><span>Interlineare</span><span>Strong</span><span>Mappe</span><span>Note</span><span id="hm-nver">6 versioni</span></div>
       </div>
-      <div class="hm-marq rv" id="hmarq" aria-label="Libri della Bibbia"></div>
       <div class="hm-stats rv" id="hstats"></div>
       <div class="hm-bento"><div id="hcont" class="rv"></div><div id="hword" class="rv"></div></div>
       <div class="hm-sh rv"><span class="heb">Libri</span><h2>Sfoglia per sezione</h2></div>
@@ -2797,18 +2819,6 @@ const HM_TOOLS=[
   ['ver','Versioni','Confronta le traduzioni, anche inglese e spagnolo.','<rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2"/>'],
   ['com','Commenti','Spunti e commenti sul versetto.','<path d="M4 5h16v11H9l-5 4z"/>']
 ];
-function hmMarq(){
-  const m=$('#hmarq');if(!m||m.dataset.b===String(B.length))return;m.dataset.b=B.length;m.replaceChildren();
-  const half=Math.ceil(B.length/2);
-  [[0,half,''],[half,B.length,' rev']].forEach(([a,z,cls])=>{
-    const mk=()=>{const set=h('div',{class:'hm-set'});
-      for(let i=a;i<z;i++){const bk=B[i],k=4+Math.round(i/B.length*14),n=bk.v.length;
-        set.append(h('button',{type:'button',class:'hm-bk',style:'--k:'+k,tabindex:'-1','aria-label':bk.n,on:{click:()=>go(i,1,null)}},
-          h('span',{class:'hm-ba',text:(typeof ABBR!=='undefined'&&ABBR[bk.id])||bk.n.slice(0,3)}),
-          h('span',{class:'hm-bn',text:bk.n}),h('span',{class:'hm-bc',text:n+(n===1?' capitolo':' capitoli')})));}
-      return set;};
-    const row=h('div',{class:'hm-row'+cls},mk(),mk());row.lastChild.setAttribute('aria-hidden','true');m.append(row);});
-}
 function hmStats(){
   const ch=B.reduce((t,b)=>t+b.v.length,0),vs=B.reduce((t,b)=>t+b.v.reduce((x,y)=>x+(+y||0),0),0),nv=Object.keys(VERSIONS).length;
   const nvEl=$('#hm-nver');if(nvEl)nvEl.textContent=nv+' versioni';
@@ -2841,7 +2851,7 @@ function hmStart(){
 function renderHome(){
   homeDay=dayNum();lockPortrait(true);
   $('#hdate').textContent=homeDateText();
-  hmMarq();hmStats();
+  hmStats();
   /* Continua a leggere */
   const hadLast=!!lastPos(),last=lastPos()||{bi:idIdx('JHN'),c:1};
   const cont=$('#hcont');cont.replaceChildren();
