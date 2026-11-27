@@ -67,10 +67,9 @@ input,textarea,select,[contenteditable=""],[contenteditable="true"]{-webkit-user
 .titlebtn span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .titlebtn svg{width:14px;height:14px;stroke:var(--ink3);fill:none;stroke-width:2.2;flex:none}
 .spacer{flex:1}
-#navtoggle{display:grid}
+#navtoggle{display:none}
 
 #body{display:grid;grid-template-columns:288px minmax(0,1fr) 430px;min-height:0}
-#body.nav-collapsed{grid-template-columns:0 minmax(0,1fr) 430px}#body.nav-collapsed #nav{display:none}
 /* nav */
 #nav{background:var(--bg2);border-right:1px solid var(--line);overflow:auto;min-height:0;display:flex;flex-direction:column}
 .navhead{position:sticky;top:0;background:var(--bg2);padding:12px 14px 8px;z-index:2}
@@ -915,7 +914,7 @@ select.nbvsel:focus-visible{border-color:var(--accent);box-shadow:0 0 0 3px var(
 <div id="sbscrim" aria-hidden="true"></div>
 <div id="app">
   <header id="bar">
-    <button class="ibtn" id="navtoggle" aria-label="Apri o chiudi la colonna dei libri e delle note" title="Apri o chiudi la colonna dei libri e delle note"><svg viewBox="0 0 24 24"><path d="M4 5h16M4 12h16M4 19h16"/></svg></button>
+    <button class="ibtn" id="navtoggle" aria-label="Libri e capitoli"><svg viewBox="0 0 24 24"><path d="M4 5h16M4 12h16M4 19h16"/></svg></button>
     <span class="brand" role="img" aria-label="Bibbia"><svg class="blogo" viewBox="0 0 30 30" aria-hidden="true"><rect width="30" height="30" rx="9" fill="#1f1e1d"/><text x="15" y="21.7" text-anchor="middle" font-size="19" font-weight="700" fill="#e08b6b">B</text></svg></span>
     <button class="ibtn" id="prev" aria-label="Capitolo precedente"><svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg></button>
     <button class="titlebtn" id="titlebtn" aria-label="Scegli libro e capitolo"><span id="title" data-full="Giovanni 3">Giovanni 3</span><span id="titleab" aria-hidden="true"></span></button>
@@ -1023,22 +1022,12 @@ select.nbvsel:focus-visible{border-color:var(--accent);box-shadow:0 0 0 3px var(
 "use strict";
 /* ---------- utilities ---------- */
 const $=(s,r=document)=>r.querySelector(s), $$=(s,r=document)=>[...r.querySelectorAll(s)];
-function safeText(v){
-  if(v==null)return '';
-  if(typeof v==='string'||typeof v==='number'||typeof v==='boolean')return String(v);
-  if(Array.isArray(v))return v.map(safeText).filter(Boolean).join(' ');
-  if(typeof v==='object'){
-    for(const k of ['text','value','content','verse','t','name','label'])if(v[k]!=null)return safeText(v[k]);
-    try{return JSON.stringify(v);}catch(e){return '';}
-  }
-  return String(v);
-}
 function h(tag,props,...kids){
   const e=document.createElement(tag);
   if(props)for(const k in props){const v=props[k];if(v==null||v===false)continue;
     if(k==='class')e.className=v;else if(k==='on'){for(const ev in v)e.addEventListener(ev,v[ev]);}
-    else if(k==='text')e.textContent=safeText(v);else e.setAttribute(k,v===true?'':v);}
-  (function add(list){for(const k of list){if(k==null||k===false)continue;if(Array.isArray(k))add(k);else e.append(k.nodeType?k:document.createTextNode(safeText(k)));}})(kids);
+    else if(k==='text')e.textContent=v;else e.setAttribute(k,v===true?'':v);}
+  (function add(list){for(const k of list){if(k==null||k===false)continue;if(Array.isArray(k))add(k);else e.append(k.nodeType?k:document.createTextNode(String(k)));}})(kids);
   return e;
 }
 const fold=s=>s.toLowerCase().replace(/[àáâä]/g,'a').replace(/[èéêë]/g,'e').replace(/[ìíîï]/g,'i').replace(/[òóôö]/g,'o').replace(/[ùúûü]/g,'u').replace(/[’‘`´]/g,"'");
@@ -1310,7 +1299,7 @@ function buildSaved(list){
       h('div',{class:'r'},store.hl[k]?h('span',{class:'dot',style:'background:'+HLC[store.hl[k]]+';box-shadow:0 0 0 1px var(--line) inset'}):null,B[bi].n+' '+c+':'+v,store.bm[k]?h('span',{class:'pill',text:'Segnalibro'}):null),t,store.nt[k]?h('div',{class:'n',text:store.nt[k]}):null));
   });
 }
-const plain=t=>safeText(t).replace(/[\u0001\u0002]/g,'').replace(/\n/g,' ');
+const plain=t=>t.replace(/[\u0001\u0002]/g,'').replace(/\n/g,' ');
 function setBarB(){const b=$('#bar');if(!b)return;const r=b.getBoundingClientRect(),st=document.documentElement.style;if(r.height>0)st.setProperty('--barb',Math.round(r.bottom)+'px');else st.removeProperty('--barb');}
 function syncNavFlags(){document.body.classList.toggle('saved-open',document.body.classList.contains('nav-open')&&S.navView==='saved');}
 function openNav(){setBarB();document.body.classList.add('nav-open');setTimeout(syncNavFlags,0);$('#nav').classList.add('open');$('#scrim').classList.add('on');S.scrimFor='nav';}
@@ -2555,7 +2544,7 @@ async function openStrong(s){
 /* ---------- UI bindings ---------- */
 function bindUI(){
   setBarB();addEventListener('resize',setBarB);addEventListener('orientationchange',()=>setTimeout(setBarB,250));
-  $('#navtoggle').onclick=()=>{if(matchMedia('(min-width:1181px)').matches){$('#body').classList.toggle('nav-collapsed');const c=$('#body').classList.contains('nav-collapsed');$('#navtoggle').setAttribute('aria-label',c?'Apri colonna delle note':'Chiudi colonna delle note');}else{$('#nav').classList.contains('open')?closeNav():openNav();}};
+  $('#navtoggle').onclick=()=>$('#nav').classList.contains('open')?closeNav():openNav();
   $('#titlebtn').onclick=()=>{if(matchMedia('(max-width:1180px)').matches){$('#nav').classList.contains('open')?closeNav():openNav();}else{S.navOpenBook=S.bi;buildNav();const on=$('.book.on');on&&on.scrollIntoView({block:'center'});}};
   $('#prev').onclick=()=>{const p=prevCh();p&&go(p.bi,p.c,null);};
   $('#next').onclick=()=>{const p=nextCh();p&&go(p.bi,p.c,null);};
@@ -3139,17 +3128,16 @@ function verSel(){const x=h('select',{class:'nbvsel','aria-label':'Versione dell
   Object.keys(VERSIONS).forEach(k=>x.append(h('option',{value:k,text:VERSIONS[k].abbr,title:VERSIONS[k].name})));x.value=VK();return x;}
 /* "Rm 8:1-4", "1 Cor 13,4-7", "Sal 23". exact: niente completamento del nome (per i riferimenti nel testo) */
 function parseP(q,exact){q=String(q||'').trim().replace(/[–—]/g,'-');if(!B.length)return null;
-  const m=q.match(/^(.+?)\s*(\d{1,3})(?:\s*[:,.]\s*(.+))?$/);if(!m)return null;
+  const m=q.match(/^(.+?)\s*(\d{1,3})(?:\s*[:,.]\s*(\d{1,3})(?:\s*-\s*(\d{1,3}))?)?$/);if(!m)return null;
   const key=norm(m[1]);if(!key)return null;let bi=ALIAS[key];
   if(bi==null&&!exact&&key.length>=2){const ks=Object.keys(ALIAS).filter(k=>k.startsWith(key)&&ALIAS[k]>=0);if(ks.length)bi=Math.min(...ks.map(k=>ALIAS[k]));}
   if(bi==null||bi<0||!B[bi])return null;
-  const c=+m[2];if(c<1||c>B[bi].v.length)return null;const mx=B[bi].v[c-1],vlist=[];
-  if(m[3]){for(const part of m[3].split(',')){const z=part.trim().match(/^(\d{1,3})(?:\s*-\s*(\d{1,3}))?$/);if(!z)return null;const a=+z[1],b=+(z[2]||z[1]);if(a<1||b<a||b>mx)return null;for(let v=a;v<=b;v++)if(!vlist.includes(v))vlist.push(v);}}
-  vlist.sort((a,b)=>a-b);
-  return{bi,c,v1:vlist[0]||0,v2:vlist[vlist.length-1]||0,vlist};}
-const lbl=r=>B[r.bi].n+' '+r.c+(r.vlist&&r.vlist.length?':'+formatVerseRanges(r.vlist):r.v1?':'+r.v1+(r.v2>r.v1?'-'+r.v2:''):'');
-async function fetchP(r,ver){const d=await getVer(ver,B[r.bi].id),vs=d.c[r.c-1]||[],nums=r.vlist&&r.vlist.length?r.vlist:Array.from({length:(r.v1?r.v2-r.v1+1:vs.length)},(_,i)=>(r.v1||1)+i),o=[];
-  for(const v of nums)if(vs[v-1]!=null)o.push({v,t:plain(vs[v-1])});return o;}
+  const c=+m[2];if(c<1||c>B[bi].v.length)return null;const mx=B[bi].v[c-1];
+  let v1=m[3]?+m[3]:0,v2=m[4]?+m[4]:v1;if(v1){if(v1<1||v1>mx)return null;v2=Math.min(Math.max(v2,v1),mx);}
+  return{bi,c,v1,v2};}
+const lbl=r=>B[r.bi].n+' '+r.c+(r.v1?':'+r.v1+(r.v2>r.v1?'-'+r.v2:''):'');
+async function fetchP(r,ver){const d=await getVer(ver,B[r.bi].id),vs=d.c[r.c-1]||[],a=r.v1||1,z=r.v1?r.v2:vs.length,o=[];
+  for(let v=a;v<=z;v++)if(vs[v-1]!=null)o.push({v,t:plain(vs[v-1])});return o;}
 function pHtml(r,ver,vs,tail){const multi=vs.length>1;
   return '<blockquote><p>'+vs.map(x=>(multi?'<sup>'+x.v+'</sup>':'')+esc(x.t)).join(' ')+'</p><p><b>'+esc(lbl(r))+'</b> · '+esc(VERSIONS[ver].abbr)+'</p></blockquote>'+(tail?'<p><br></p>':'');}
 /* inserimento nel punto in cui si trovava il cursore della nota */
@@ -3192,7 +3180,7 @@ function bpEl(){if(bp)return bp.el;
   return bp.el;}
 function toggleBP(on){bpOn=on;L.s('bpon',on?'1':'');bBib.classList.toggle('on',on);bBib.setAttribute('aria-pressed',String(on));
   if(!ready||!side.isConnected)return;body.classList.toggle('bp',on);if(on)body.append(bpEl());else if(bp)bp.el.remove();}
-function bpGo(r){bp.r={bi:r.bi,c:r.c};bp.sel.clear();bp.anchor=0;bp.focus=r.v1||0;const nums=r.vlist&&r.vlist.length?r.vlist:(r.v1?Array.from({length:r.v2-r.v1+1},(_,i)=>r.v1+i):[]);nums.forEach(v=>bp.sel.add(v));L.s('bppos',JSON.stringify(bp.r));bpLoad();}
+function bpGo(r){bp.r={bi:r.bi,c:r.c};bp.sel.clear();bp.anchor=0;bp.focus=r.v1||0;if(r.v1)for(let v=r.v1;v<=r.v2;v++)bp.sel.add(v);L.s('bppos',JSON.stringify(bp.r));bpLoad();}
 function bpStep(d){let {bi,c}=bp.r;c+=d;if(c<1){if(bi<=0)return;bi--;c=B[bi].v.length;}else if(c>B[bi].v.length){if(bi>=B.length-1)return;bi++;c=1;}bpGo({bi,c});}
 const bpSecTr=(()=>{const m=new Map();return(ver,tx)=>{const k=ver+'|'+tx;if(!m.has(k))m.set(k,trOne(tx,VERSIONS[ver].lang).catch(()=>null));return m.get(k);};})();
 const bpT=i=>(bp.tx&&bp.tx[i]!=null)?bp.tx[i]:plain(bp.vs[i]);
