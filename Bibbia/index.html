@@ -748,6 +748,11 @@ html{background:var(--bg)}
   body.search-open #rotatehint,body.saved-open #rotatehint{display:flex;visibility:visible;position:fixed;inset:0;z-index:200;flex-direction:column;align-items:center;justify-content:center;gap:14px;background:var(--bg);color:var(--ink);text-align:center;padding:24px}
   #searchbtn{display:none!important}
 }
+/* effetto sul versetto raggiunto: lampeggia e poi l'evidenziazione scompare */
+@keyframes verseflash{0%,30%{background-color:color-mix(in srgb,var(--accent) 36%,transparent);box-shadow:0 0 0 6px color-mix(in srgb,var(--accent) 20%,transparent)}100%{background-color:transparent;box-shadow:0 0 0 6px transparent}}
+@keyframes verseflashring{0%,30%{box-shadow:0 0 0 6px color-mix(in srgb,var(--accent) 26%,transparent)}100%{box-shadow:0 0 0 6px transparent}}
+.v.flash{border-radius:6px;animation:verseflash 2.8s ease-out forwards}
+.v.flash[data-hl]{animation-name:verseflashring}
 </style>
 </head>
 <body>
@@ -1148,7 +1153,9 @@ function closeNav(){document.body.classList.remove('nav-open','saved-open');$('#
 /* ---------- chapter rendering ---------- */
 async function go(bi,c,v,opt={}){
   hideHome();const tok=++S.tok;
-  const prevBook=S.bi;S.bi=bi;S.c=c;S.v=v||null;S.multiMode=false;S.multiVerses=[];updateMultiToolbar();
+  /* salto a un versetto (ricerca, salvati, elenco versetti): il versetto lampeggia e poi l'evidenziazione sparisce */
+  const flashV=(v&&!opt.quiet)?v:0;
+  const prevBook=S.bi;S.bi=bi;S.c=c;S.v=(flashV&&sheetMode())?null:(v||null);S.multiMode=false;S.multiVerses=[];updateMultiToolbar();
   $('#title').textContent=B[bi].n+' '+c;$('#titleab').textContent=abbrOf(bi)+' '+c;document.title=B[bi].n+' '+c+' · Bibbia';
   S.navPick=null;if(prevBook!==bi){S.navOpenBook=null;S.word=null;}
   if(S.tab==='lex'&&!S.word?.standalone)S.word=null;
@@ -1158,12 +1165,18 @@ async function go(bi,c,v,opt={}){
   try{d=await getIt(B[bi].id);}catch(e){$('#chapter').replaceChildren(h('div',{class:'loading',text:e.message}));return;}
   if(tok!==S.tok)return;
   const vmax=(d.c[c-1]||[]).length;if(S.v&&vmax&&S.v>vmax)S.v=vmax;
+  const fv=flashV&&vmax&&flashV>vmax?vmax:flashV;
   S.loaded=d;const newCh=!(store.last&&store.last.id===B[bi].id&&store.last.c===c);store.last={id:B[bi].id,c};if(newCh||!store.recent)store.recent=[{id:B[bi].id,c},...(store.recent||[]).filter(x=>!(x.id===B[bi].id&&x.c===c))].slice(0,6);save();
   renderChapter(d,bi,c);
   renderPager();
   const rd=$('#reader');rd.style.scrollBehavior='auto';
-  if(S.v){const el=$('#v'+S.v);if(el)rd.scrollTop=Math.max(0,el.offsetTop-120);}else rd.scrollTop=0;
+  const tv=S.v||fv;
+  if(tv){const el=$('#v'+tv);if(el)rd.scrollTop=Math.max(0,el.offsetTop-120);}else rd.scrollTop=0;
   rd.style.scrollBehavior='';
+  if(fv){const fe=$('#v'+fv);if(fe){
+    const end=()=>{fe.classList.remove('flash','sel');};
+    fe.classList.add('flash');fe.addEventListener('animationend',end,{once:true});setTimeout(end,3400);
+  }}
   renderInspector();
   // Su mobile la tendina si apre soltanto con il tocco diretto su un versetto.
 }
@@ -2733,7 +2746,7 @@ if(SW_OK){
    toglie la copia dell'app salvata sul dispositivo e la riscarica, cosi' alla riapertura parte la versione nuova.
    I dati scaricati per l'uso offline (cache "data") restano. */
 (function(){
-  const APP_BUILD='2026-11-27T09:40:00+01:00';
+  const APP_BUILD='2026-11-27T10:00:00+01:00';
   const btn=document.getElementById('appupdatebtn'),hint=document.getElementById('appupdatehint');if(!btn)return;
   const say=t=>{hint.textContent=t;};
   async function remoteIsNewer(){
