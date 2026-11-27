@@ -777,7 +777,7 @@ html{background:var(--bg)}
 .nbitem .nbp{display:block;margin-top:3px;font:12.5px/1.4 var(--ui);color:var(--ink2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .nbitem small{display:block;margin-top:5px;color:var(--ink3);font-size:11.5px}
 .nbitem:hover{border-color:color-mix(in srgb,var(--accent) 35%,var(--line));box-shadow:0 5px 16px rgba(0,0,0,.10)}
-.nbitem.on{background:var(--card);border-color:var(--line);box-shadow:0 4px 14px rgba(0,0,0,.08)}
+.nbitem.on{background:var(--accent-soft);border-color:var(--accent);box-shadow:0 0 0 2px var(--accent-soft),0 5px 16px rgba(0,0,0,.10)}
 .nbitem.on b{color:var(--accent)}
 .nbsk{background:var(--card);border-color:var(--line)}
 .nbgw{position:relative;display:inline-flex}
@@ -870,7 +870,7 @@ select.nbvsel{height:34px;border:1px solid var(--line);border-radius:10px;backgr
 .nbrt p,.nbrt div{margin:0 0 .3em}
 .nbrt h1{font:700 24px/1.3 var(--ui);margin:.7em 0 .3em}.nbrt h2{font:700 20px/1.3 var(--ui);margin:.7em 0 .3em}.nbrt h3{font:600 17px/1.4 var(--ui);margin:.6em 0 .3em}
 .nbrt pre{font:14.5px/1.55 ui-monospace,Menlo,Consolas,monospace;background:var(--bg2);border:1px solid var(--line);padding:12px 14px;border-radius:12px;white-space:pre-wrap;margin:.6em 0}
-.nbrt blockquote{margin:.8em 0;padding:10px 16px;border-left:4px solid var(--accent);background:var(--accent-soft);border-radius:0 12px 12px 0;color:var(--ink2);font-style:italic}
+.nbrt blockquote{margin:.8em 0;padding:10px 16px;border-left:4px solid var(--accent);background:var(--accent-soft);border-radius:0 12px 12px 0;color:inherit;font-style:normal;font-family:inherit;font-size:inherit}
 .nbrt .nbvref{font:12px/1.4 var(--ui);color:var(--ink3);margin:-.05em 0 .7em}
 .nbrt .nbvref b{color:var(--accent);font-weight:600}
 .nbdrag-preview{position:fixed;left:0;top:0;z-index:9999;max-width:320px;min-width:190px;padding:12px 15px;border:1px solid var(--line);border-radius:16px;background:var(--card);color:var(--ink);box-shadow:0 10px 30px rgba(0,0,0,.18);font:15px/1.5 var(--serif);pointer-events:none}
@@ -3123,6 +3123,11 @@ let curEa=null,lastR=null;
 document.addEventListener('selectionchange',()=>{const x=getSelection();if(curEa&&x.rangeCount&&curEa.contains(x.anchorNode))lastR=x.getRangeAt(0).cloneRange();});
 function insertAt(html){const ea=curEa;if(!ea||!ea.isConnected)return;ea.focus();const x=getSelection();x.removeAllRanges();
   if(lastR&&ea.contains(lastR.startContainer))x.addRange(lastR);else{const r=document.createRange();r.selectNodeContents(ea);r.collapse(false);x.addRange(r);}
+  /* Mantieni il font e la dimensione attivi nel punto d'inserimento del passo. */
+  const a=x.anchorNode&&(x.anchorNode.nodeType===1?x.anchorNode:x.anchorNode.parentElement);
+  if(a&&ea.contains(a)){const cs=getComputedStyle(a),ff=cs.fontFamily,fs=cs.fontSize;
+    if(ff||fs){const t=document.createElement('div');t.innerHTML=html;const p=t.querySelector('p:not(.nbvref)');
+      if(p){if(ff)p.style.fontFamily=ff;if(fs)p.style.fontSize=fs;html=t.innerHTML;}}}
   document.execCommand('insertHTML',false,html);}
 function rangeAt(x,y){if(document.caretRangeFromPoint)return document.caretRangeFromPoint(x,y);
   if(document.caretPositionFromPoint){const p=document.caretPositionFromPoint(x,y);if(p){const r=document.createRange();r.setStart(p.offsetNode,p.offset);return r;}}return null;}
