@@ -737,6 +737,17 @@ html{background:var(--bg)}
   #smodal .sres{flex:1 1 auto;min-height:0;padding:6px calc(max(env(safe-area-inset-right),0px) + 18px) calc(18px + env(safe-area-inset-bottom)) calc(max(env(safe-area-inset-left),0px) + 18px)}
   body.search-open #insp{visibility:hidden}
 }
+/* versetti nel pannello Libri */
+.vpickhead{display:flex;align-items:center;gap:8px;padding:6px 8px 2px}
+.vptitle{flex:1;min-width:0;font-weight:600;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.vpback,.vpgo{padding:6px 11px;border-radius:999px;font-size:13px;font-weight:600;background:var(--gfill);box-shadow:0 0 0 1px var(--gline) inset;white-space:nowrap}
+.vpgo{background:var(--accent-soft);color:var(--accent);box-shadow:none}
+.vchips{padding-top:8px}
+/* orizzontale su telefono: Salvati e Cerca solo in verticale (come la home), niente icona di ricerca */
+@media (orientation:landscape) and (max-height:520px) and (hover:none){
+  body.search-open #rotatehint,body.saved-open #rotatehint{display:flex;visibility:visible;position:fixed;inset:0;z-index:200;flex-direction:column;align-items:center;justify-content:center;gap:14px;background:var(--bg);color:var(--ink);text-align:center;padding:24px}
+  #searchbtn{display:none!important}
+}
 </style>
 </head>
 <body>
@@ -785,7 +796,7 @@ html{background:var(--bg)}
     </aside>
   </div>
   <div class="scrim" id="scrim"></div>
-  <div id="rotatehint" role="status"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="7" y="2.5" width="10" height="19" rx="2.5"/><path d="M11 18.5h2"/></svg><b>Ruota il telefono in verticale</b><span>La home si usa solo in verticale.</span></div>
+  <div id="rotatehint" role="status"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="7" y="2.5" width="10" height="19" rx="2.5"/><path d="M11 18.5h2"/></svg><b>Ruota il telefono in verticale</b><span>Home, Salvati e Cerca si usano solo in verticale.</span></div>
 </div>
 
 <nav id="tabbar" aria-label="Menu principale">
@@ -1083,18 +1094,32 @@ function buildNav(){
   const open=$('.book.on',list);if(open&&!S.navScrolled){S.navScrolled=1;requestAnimationFrame(()=>open.scrollIntoView({block:'center'}));}
 }
 function chipsFor(i){
-  const b=B[i],on=i===S.bi,chips=h('div',{class:'chips'});
-  for(let c=1;c<=b.v.length;c++)chips.append(h('button',{type:'button',class:(on&&c===S.c)?'on':'','aria-label':b.n+' capitolo '+c,text:c,on:{click:()=>{go(i,c,null);closeNav();}}}));
-  return chips;
+  const b=B[i],on=i===S.bi,wrap=h('div',{class:'chipswrap'});
+  const again=()=>wrap.replaceWith(chipsFor(i));
+  const pk=S.navPick&&S.navPick.i===i?S.navPick:null;
+  if(pk){
+    /* secondo passo: scelta del versetto del capitolo toccato */
+    const n=Number(b.v[pk.c-1])||0;
+    wrap.append(h('div',{class:'vpickhead'},
+      h('button',{type:'button',class:'vpback','aria-label':'Torna ai capitoli',text:'\u2039 Capitoli',on:{click:()=>{S.navPick=null;again();}}}),
+      h('span',{class:'vptitle',text:b.n+' '+pk.c}),
+      h('button',{type:'button',class:'vpgo',text:'Apri capitolo',on:{click:()=>{S.navPick=null;go(i,pk.c,null);closeNav();}}})));
+    const vc=h('div',{class:'chips vchips'});
+    for(let v=1;v<=n;v++)vc.append(h('button',{type:'button',class:(on&&pk.c===S.c&&v===S.v)?'on':'','aria-label':b.n+' '+pk.c+' versetto '+v,text:v,on:{click:()=>{S.navPick=null;go(i,pk.c,v);closeNav();}}}));
+    wrap.append(vc);
+    return wrap;
+  }
+  const chips=h('div',{class:'chips'});
+  for(let c=1;c<=b.v.length;c++)chips.append(h('button',{type:'button',class:(on&&c===S.c)?'on':'','aria-label':b.n+' capitolo '+c,text:c,on:{click:()=>{S.navPick={i,c};again();}}}));
+  wrap.append(chips);
+  return wrap;
 }
-/* Apre/chiude i capitoli sotto il libro senza ricostruire l'elenco: il libro toccato resta fermo
-   (si compensa lo scorrimento se si chiude un elenco di capitoli che stava sopra). */
 function toggleBook(i){
   const list=$('#navlist'),li=list.querySelector('.book[data-i="'+i+'"]');
   if(!li){S.navOpenBook=i;return buildNav();}
   const btn=li.firstElementChild,before=btn.getBoundingClientRect().top;
-  const opening=!li.querySelector('.chips');
-  list.querySelectorAll('.book .chips').forEach(c=>c.remove());
+  const opening=!li.querySelector('.chipswrap');S.navPick=null;
+  list.querySelectorAll('.book .chipswrap').forEach(c=>c.remove());
   S.navOpenBook=opening?i:-1;
   if(opening)li.append(chipsFor(i));
   const delta=btn.getBoundingClientRect().top-before;
@@ -1116,15 +1141,16 @@ function buildSaved(list){
 }
 const plain=t=>t.replace(/[\u0001\u0002]/g,'').replace(/\n/g,' ');
 function setBarB(){const b=$('#bar');if(!b)return;const r=b.getBoundingClientRect(),st=document.documentElement.style;if(r.height>0)st.setProperty('--barb',Math.round(r.bottom)+'px');else st.removeProperty('--barb');}
-function openNav(){setBarB();document.body.classList.add('nav-open');$('#nav').classList.add('open');$('#scrim').classList.add('on');S.scrimFor='nav';}
-function closeNav(){document.body.classList.remove('nav-open');$('#nav').classList.remove('open');if(S.scrimFor==='nav'){$('#scrim').classList.remove('on');}}
+function syncNavFlags(){document.body.classList.toggle('saved-open',document.body.classList.contains('nav-open')&&S.navView==='saved');}
+function openNav(){setBarB();document.body.classList.add('nav-open');setTimeout(syncNavFlags,0);$('#nav').classList.add('open');$('#scrim').classList.add('on');S.scrimFor='nav';}
+function closeNav(){document.body.classList.remove('nav-open','saved-open');$('#nav').classList.remove('open');if(S.scrimFor==='nav'){$('#scrim').classList.remove('on');}}
 
 /* ---------- chapter rendering ---------- */
 async function go(bi,c,v,opt={}){
   hideHome();const tok=++S.tok;
   const prevBook=S.bi;S.bi=bi;S.c=c;S.v=v||null;S.multiMode=false;S.multiVerses=[];updateMultiToolbar();
   $('#title').textContent=B[bi].n+' '+c;$('#titleab').textContent=abbrOf(bi)+' '+c;document.title=B[bi].n+' '+c+' · Bibbia';
-  if(prevBook!==bi){S.navOpenBook=null;S.word=null;}
+  S.navPick=null;if(prevBook!==bi){S.navOpenBook=null;S.word=null;}
   if(S.tab==='lex'&&!S.word?.standalone)S.word=null;
   buildNav();
   if(!opt.noHash)setHash();
@@ -1442,7 +1468,7 @@ async function comAuthors(){
   const r=await fetch(COM_BASE+'available_commentaries.json');if(!r.ok)throw new Error('lista');
   const j=await r.json(),all=Array.isArray(j)?j:(j.commentaries||[]);
   const nm=x=>x.englishName||x.english_name||x.name||x.id;
-  comList=COM_WANT.map(re=>all.find(x=>re.test(nm(x)+' '+x.id))).filter(Boolean).map(x=>({id:x.id,n:/calvin/i.test(nm(x)+' '+x.id)?'Calvino':String(nm(x)).replace(/\s*(Bible )?Commentary.*$/i,'')}));
+  comList=COM_WANT.map(re=>all.find(x=>re.test(nm(x)+' '+x.id))).filter(Boolean).map(x=>({id:x.id,n:/calvin/i.test(nm(x)+' '+x.id)?'Calvino':/gill/i.test(nm(x)+' '+x.id)?'John G. Lake':String(nm(x)).replace(/\s*(Bible )?Commentary.*$/i,'')}));
   if(!comList.length)throw new Error('vuota');return comList;
 }
 function comText(x){if(x==null)return '';if(typeof x==='string')return x;if(Array.isArray(x))return x.map(comText).filter(Boolean).join('\n\n');return comText(x.text!=null?x.text:x.content);}
@@ -1573,7 +1599,9 @@ function flipOriginalVerseCard(originalWords,ot){
   const front=h('div',{class:'card face kjv'},h('h4',null,h('span',{text:'King James Version'}),h('span',{class:'fliphint',text:'Tocca per originale ↻'})),eq);
   const back=h('div',{class:'card face rv'},h('h4',null,h('span',{text:ot?'Testo ebraico':'Testo greco'}),h('span',{class:'fliphint',text:'Tocca per KJV ↻'})),oq);
   let loaded=false;
-  const load=()=>{if(loaded)return;loaded=true;getKjv(id,c).then(m=>{eq.textContent=m[v]||'Versetto non presente nella KJV con questa numerazione.';if(wrap._activeHighlightIndex>=0)renderPhraseHighlight(eq,eq.textContent,wrap._activePhrase);if(wrap.classList.contains('en'))fitFlipHeight(wrap,front);}).catch(()=>{loaded=false;eq.textContent='Impossibile caricare la KJV. Controlla la connessione e tocca di nuovo.';if(wrap.classList.contains('en'))fitFlipHeight(wrap,front);});};
+  const load=()=>{if(loaded)return;loaded=true;getKjv(id,c).then(async m=>{const en=m[v];eq.textContent=en||'Versetto non presente nella KJV con questa numerazione.';
+    if(en&&lexItalianMode){eq.lang='it';eq.textContent='Traduzione\u2026';if(wrap.classList.contains('en'))fitFlipHeight(wrap,front);try{eq.textContent=await translateLexText(en);}catch(e){eq.lang='en';eq.textContent=en;}}
+    if(wrap._activeHighlightIndex>=0)renderPhraseHighlight(eq,eq.textContent,wrap._activePhrase);if(wrap.classList.contains('en'))fitFlipHeight(wrap,front);}).catch(()=>{loaded=false;eq.textContent='Impossibile caricare la KJV. Controlla la connessione e tocca di nuovo.';if(wrap.classList.contains('en'))fitFlipHeight(wrap,front);});};
   const wrap=h('div',{class:'flip en',role:'button',tabindex:'0','aria-label':'Gira per passare dal testo inglese al testo originale'},h('div',{class:'flip-in'},front,back));
   const sync=()=>{const en=wrap.classList.contains('en');front.setAttribute('aria-hidden',!en);back.setAttribute('aria-hidden',en);if(en)load();fitFlipHeight(wrap,en?front:back);};
   const toggle=()=>{wrap.classList.toggle('en');sync();};
@@ -1900,6 +1928,15 @@ async function paneInt(){
       aligned=alignGreekToKjv(ws,items,kt);
     }
     aligned.forEach((word,i)=>{if(kjvLabels[i])kjvLabels[i].textContent=word||'—';});
+    /* Traduci: anche le parole KJV in arancione sotto le parole originali */
+    if(lexItalianMode){
+      const uniq=[...new Set(aligned.filter(Boolean))],map={};
+      trPool(uniq,async w=>{try{map[w]=await translateLexText(w);}catch(e){map[w]=w;}},4).then(()=>{
+        if(tok!==S.tok||S.v!==v||S.tab!=='int'||!lexItalianMode)return;
+        aligned.forEach((word,i)=>{if(word&&kjvLabels[i])kjvLabels[i].textContent=(map[word]||word).trim()||word;});
+        if(flipCard&&flipCard._activeHighlightIndex>=0)flipCard._highlightWord(flipCard._activeHighlightIndex,kjvLabels[flipCard._activeHighlightIndex]?.textContent||'');
+      });
+    }
     if(flipCard&&flipCard._activeHighlightIndex>=0)flipCard._highlightWord(flipCard._activeHighlightIndex,aligned[flipCard._activeHighlightIndex]||'');
   });
 }
@@ -2439,7 +2476,7 @@ setInterval(homeTick,60000);
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)homeTick();});
 addEventListener('focus',homeTick);
 function lastPos(){const l=store.last;if(!l)return null;const bi=idIdx(l.id);return bi<0?null:{bi,c:Math.min(l.c,B[bi].v.length),v:null};}
-function setNavView(v){S.navView=v;$$('#navseg button').forEach(x=>x.setAttribute('aria-selected',x.dataset.v===v));buildNav();}
+function setNavView(v){S.navView=v;$$('#navseg button').forEach(x=>x.setAttribute('aria-selected',x.dataset.v===v));buildNav();syncNavFlags();}
 function bindExtra(){setTimeout(bindMobile,0);setTimeout(bindDiag,0);setTimeout(bindHeal,0);
   $('#tb-books').onclick=()=>{setNavView('books');openNav();};
   $('#tb-saved').onclick=()=>{setNavView('saved');openNav();};
@@ -2696,7 +2733,7 @@ if(SW_OK){
    toglie la copia dell'app salvata sul dispositivo e la riscarica, cosi' alla riapertura parte la versione nuova.
    I dati scaricati per l'uso offline (cache "data") restano. */
 (function(){
-  const APP_BUILD='2026-11-27T08:50:00+01:00';
+  const APP_BUILD='2026-11-27T09:40:00+01:00';
   const btn=document.getElementById('appupdatebtn'),hint=document.getElementById('appupdatehint');if(!btn)return;
   const say=t=>{hint.textContent=t;};
   async function remoteIsNewer(){
