@@ -673,11 +673,18 @@ html{background:var(--bg)}
 @media (min-width:761px){.brand{display:inline-flex;align-items:center}}
 .blogo{width:28px;height:28px;display:block}
 .blogo text{font-family:var(--serif)}
-/* dimensioni del testo delle card (cursori in Personalizza) */
-.verse-card .verse-quote{font-size:calc(16px*var(--vc,1))}
-.flip .verse-quote{font-size:calc(16px*var(--fc,1))}
+/* dimensioni del testo delle card orizzontali (cursori in Personalizza) */
+.cugroup{font-size:15px;font-weight:700;margin:18px 0 0;color:var(--ink)}
+.verse-card .verse-quote,.flip .face.rv .verse-quote:not(.original-verse){font-size:calc(16px*var(--vc,1))}
+.flip .face.kjv .verse-quote{font-size:calc(16px*var(--fc,1))}
 .flip .original-verse[lang="el"]{font-size:calc(17.5px*var(--gk,1))}
 .flip .original-verse[lang="he"]{font-size:calc(17.5px*var(--hb,1))}
+/* telefono: la maniglia dei pannelli in alto (Aa, versione, download) resta ferma in cima mentre il contenuto scorre */
+@media (max-width:760px){
+  .pop{padding-top:0;background:var(--card);-webkit-backdrop-filter:none;backdrop-filter:none}
+  .pop::before{content:"";position:sticky;top:0;left:auto;z-index:3;display:block;width:auto;height:30px;margin:0 -20px 0;border-radius:0;opacity:1;
+    background:linear-gradient(color-mix(in srgb,var(--ink3) 55%,transparent),color-mix(in srgb,var(--ink3) 55%,transparent)) center 9px/38px 5px no-repeat,var(--card)}
+}
 </style>
 </head>
 <body>
@@ -759,10 +766,11 @@ html{background:var(--bg)}
     <label>Colori</label><div id="cugrid"></div>
     <label for="culh">Interlinea</label><input type="range" id="culh" min="1.3" max="2.3" step="0.05">
     <label for="cumw">Larghezza del testo</label><input type="range" id="cumw" min="30" max="64" step="1">
-    <label for="cuvc">Testo card sopra: <span id="cuvcv"></span></label><input type="range" id="cuvc" min="0.8" max="1.8" step="0.05">
-    <label for="cufc">Testo card girevole, italiano e inglese: <span id="cufcv"></span></label><input type="range" id="cufc" min="0.8" max="1.8" step="0.05">
-    <label for="cugk">Testo greco, card girevole: <span id="cugkv"></span></label><input type="range" id="cugk" min="0.8" max="1.8" step="0.05">
-    <label for="cuhb">Testo ebraico, card girevole: <span id="cuhbv"></span></label><input type="range" id="cuhb" min="0.8" max="1.8" step="0.05">
+    <div class="cugroup">Card orizzontali</div>
+    <label for="cuvc">Versione biblica: <span id="cuvcv"></span></label><input type="range" id="cuvc" min="0.8" max="1.8" step="0.05">
+    <label for="cufc">King James Version: <span id="cufcv"></span></label><input type="range" id="cufc" min="0.8" max="1.8" step="0.05">
+    <label for="cuhb">Testo ebraico: <span id="cuhbv"></span></label><input type="range" id="cuhb" min="0.8" max="1.8" step="0.05">
+    <label for="cugk">Testo greco: <span id="cugkv"></span></label><input type="range" id="cugk" min="0.8" max="1.8" step="0.05">
     <label for="cuname">Salva questo tema</label><div class="cusave"><input id="cuname" maxlength="30" placeholder="Nome del tema" autocomplete="off"><button type="button" class="btn" id="cusave">Salva</button></div>
     <div id="culist"></div>
     <div style="margin-top:10px"><button type="button" class="btn" id="cureset">Ripristina i colori</button></div>
@@ -2620,7 +2628,7 @@ if(SW_OK){
    toglie la copia dell'app salvata sul dispositivo e la riscarica, cosi' alla riapertura parte la versione nuova.
    I dati scaricati per l'uso offline (cache "data") restano. */
 (function(){
-  const APP_BUILD='2026-11-27T01:20:00+01:00';
+  const APP_BUILD='2026-11-27T01:30:00+01:00';
   const btn=document.getElementById('appupdatebtn'),hint=document.getElementById('appupdatehint');if(!btn)return;
   const say=t=>{hint.textContent=t;};
   async function remoteIsNewer(){
