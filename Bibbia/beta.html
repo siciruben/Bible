@@ -926,6 +926,22 @@ select.nbvsel:focus-visible{border-color:var(--accent);box-shadow:0 0 0 3px var(
 .nbrt ul.cl li::before{content:"";position:absolute;left:0;top:.4em;width:.85em;height:.85em;border:1.8px solid var(--ink3);border-radius:50%;cursor:pointer}
 .nbrt ul.cl li[data-c="1"]::before{background:var(--accent);border-color:var(--accent);box-shadow:inset 0 0 0 2px var(--bg)}
 .nbrt ul.cl li[data-c="1"]{color:var(--ink3);text-decoration:line-through}
+/* ===== Cerca su tablet e schermi larghi: distanza di sicurezza minima dall'alto, anche con la tastiera aperta ===== */
+@media (min-width:761px) and (min-height:521px){
+  #smodal{
+    --smt:max(9vh,calc(env(safe-area-inset-top,0px) + var(--topx,0px) + 76px));
+    top:var(--smt);
+    max-height:calc(100vh - var(--smt) - 20px);max-height:calc(100dvh - var(--smt) - 20px);
+  }
+  #smodal .sres{max-height:calc(100vh - var(--smt) - 20px - 150px);max-height:calc(100dvh - var(--smt) - 20px - 150px)}
+  /* tastiera aperta: ci si riferisce all'area realmente visibile, con almeno 16px dal bordo alto */
+  body.kb #smodal{
+    --smt:calc(var(--vvt,0px) + env(safe-area-inset-top,0px) + 16px);
+    top:var(--smt);
+    max-height:calc(var(--vvh,100dvh) - env(safe-area-inset-top,0px) - 32px);
+  }
+  body.kb #smodal .sres{max-height:calc(var(--vvh,100dvh) - env(safe-area-inset-top,0px) - 32px - 150px)}
+}
 </style>
 </head>
 <body>
