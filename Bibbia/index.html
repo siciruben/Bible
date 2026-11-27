@@ -346,7 +346,7 @@ body.home-on #prev,body.home-on #next,body.home-on #titlebtn{visibility:hidden}
 .hrn{font-family:var(--serif);font-weight:600;font-size:18px}
 .ex{font-family:var(--serif);font-size:14px;color:var(--ink2);margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 #tabbar{display:none}
-@media (min-width:761px){.hbtns #home-off,.hbtns #home-set{display:none}}
+@media (min-width:761px){.hbtns #home-ver,.hbtns #home-off,.hbtns #home-set{display:none}}
 /* Home: con un pannello aperto il velo lascia passare il tocco, cosi' un altro pulsante in alto si attiva al primo tocco */
 body.home-on.pop-open .scrim{pointer-events:none}
 @media (max-width:760px){
@@ -2981,7 +2981,6 @@ const gw=h('span',{class:'nbgw'},bSet,menu);
 document.addEventListener('click',e=>{if(!gw.contains(e.target))closeMenu();});
 const ov=h('div',{id:'nbov',role:'dialog','aria-label':'Blocco note'},
   h('div',{class:'nbtop'},h('h2',{text:'Blocco note'}),h('span',{class:'nbbeta',text:'beta'}),st,h('span',{class:'sp'}),bBib,bNew,bDel,gw,bX),body);
-bBib.classList.toggle('on',bpOn);bBib.setAttribute('aria-pressed',String(bpOn));
 ov.addEventListener('keydown',e=>{e.stopPropagation();if(e.key==='Escape'){if(menu.classList.contains('on')){closeMenu();bSet.focus();}else close();}});
 document.body.append(ov);
 const btn=h('button',{class:'ibtn',id:'notesbtn',type:'button','aria-label':'Blocco note (beta)',title:'Blocco note (beta)',on:{click:open}});
@@ -3125,7 +3124,7 @@ async function openStudy(r){hideCard(true);await close();S.word=null;S.tab='int'
   await go(r.bi,r.c,r.v1||null);}
 
 /* -- pannello Bibbia (terza colonna) -- */
-let bpOn=L.g('bpon')==='1',bp=null;
+let bpOn=L.g('bpon')==='1',bp=null;bBib.classList.toggle('on',bpOn);bBib.setAttribute('aria-pressed',String(bpOn));
 function bpEl(){if(bp)return bp.el;
   const inp=h('input',{type:'search',placeholder:'Vai a… (es. Rm 8)','aria-label':'Vai al passo',on:{
     keydown:e=>{if(e.key==='Enter'){e.preventDefault();const r=parseP(inp.value);if(r){bpGo(r);inp.value='';inp.blur();}else inp.classList.add('bad');}},input:()=>inp.classList.remove('bad')}});
