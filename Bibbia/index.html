@@ -2614,23 +2614,47 @@ const SW_OK='serviceWorker' in navigator&&/^https?:$/.test(location.protocol);
 if(SW_OK){
   addEventListener('load',()=>{navigator.serviceWorker.register('./sw.js',{updateViaCache:'none'}).then(r=>r.update()).catch(()=>{});},{once:true});
 }
-/* Pulsante Aggiorna: scarica la nuova versione (se c'e'); poi basta chiudere e riaprire l'app. */
+/* Pulsante Aggiorna.
+   APP_BUILD e' la data di questa versione: va aggiornata a ogni nuova versione pubblicata.
+   Il pulsante la confronta con quella della copia online; se online e' piu' recente (o il service worker ha una nuova versione in attesa)
+   toglie la copia dell'app salvata sul dispositivo e la riscarica, cosi' alla riapertura parte la versione nuova.
+   I dati scaricati per l'uso offline (cache "data") restano. */
 (function(){
+  const APP_BUILD='2026-11-27T01:20:00+01:00';
   const btn=document.getElementById('appupdatebtn'),hint=document.getElementById('appupdatehint');if(!btn)return;
   const say=t=>{hint.textContent=t;};
+  async function remoteIsNewer(){
+    try{
+      const u=new URL(location.href);u.hash='';u.searchParams.set('chk',String(Date.now()));
+      const r=await fetch(u.toString(),{cache:'no-store'});if(!r.ok)return false;
+      const m=(await r.text()).match(/APP_BUILD\s*=\s*'([^']+)'/);if(!m)return false;
+      const remote=new Date(m[1]).getTime(),local=new Date(APP_BUILD).getTime();
+      return !Number.isNaN(remote)&&remote>local;
+    }catch(e){return false;}
+  }
+  async function applyUpdate(){
+    try{const regs=await navigator.serviceWorker.getRegistrations();await Promise.all(regs.map(r=>r.unregister()));}catch(e){}
+    try{const keys=await caches.keys();await Promise.all(keys.filter(k=>!/data/i.test(k)).map(k=>caches.delete(k)));}catch(e){}
+    try{const u=new URL(location.href);u.hash='';u.search='';await fetch(u.toString(),{cache:'reload'});}catch(e){}
+  }
   btn.onclick=async()=>{
     if(!SW_OK){say('L\u2019aggiornamento funziona solo quando l\u2019app \u00e8 aperta da un indirizzo web (https).');return;}
     btn.disabled=true;say('Controllo aggiornamenti\u2026');
     try{
-      const reg=await navigator.serviceWorker.register('./sw.js',{updateViaCache:'none'});
-      await reg.update();
-      const w=reg.installing;
-      if(w&&w.state!=='installed'&&w.state!=='activated'&&w.state!=='redundant'){
-        await new Promise(res=>{const t=setTimeout(res,25000);w.addEventListener('statechange',()=>{if(w.state==='installed'||w.state==='activated'||w.state==='redundant'){clearTimeout(t);res();}});});
-      }
-      if(w&&w.state==='redundant')say('Aggiornamento non riuscito. Controlla la connessione e riprova.');
-      else if((w||reg.waiting)&&navigator.serviceWorker.controller)say('Nuova versione scaricata: chiudi l\u2019app e riaprila per usarla.');
-      else say('L\u2019app \u00e8 gi\u00e0 aggiornata.');
+      let pending=false;
+      try{
+        const reg=await navigator.serviceWorker.register('./sw.js',{updateViaCache:'none'});
+        await reg.update();
+        const w=reg.installing;
+        if(w&&w.state!=='installed'&&w.state!=='activated'&&w.state!=='redundant'){
+          await new Promise(res=>{const t=setTimeout(res,25000);w.addEventListener('statechange',()=>{if(w.state==='installed'||w.state==='activated'||w.state==='redundant'){clearTimeout(t);res();}});});
+        }
+        pending=!!((w&&w.state!=='redundant'||reg.waiting)&&navigator.serviceWorker.controller);
+      }catch(e){}
+      if(pending||await remoteIsNewer()){
+        await applyUpdate();
+        say('Nuova versione pronta: chiudi l\u2019app e riaprila per usarla.');
+      }else say('L\u2019app \u00e8 gi\u00e0 aggiornata.');
     }catch(e){say('Controllo non riuscito. Verifica la connessione e riprova.');}
     finally{btn.disabled=false;}
   };
