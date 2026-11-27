@@ -776,17 +776,23 @@ html{background:var(--bg)}
 .nbitem:hover::before{opacity:.6}
 .nbitem.on{background:var(--card);border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft),0 8px 22px rgba(0,0,0,.08)}
 .nbitem.on::before{opacity:1}
-.nbed{display:flex;flex-direction:column;min-width:0;min-height:0;padding:30px 44px 8px;max-width:52rem;width:calc(100% - 48px);margin:20px auto;background:var(--card);border:1px solid var(--line);border-radius:22px;box-shadow:var(--shadow)}
-.nbed input{border:0;background:none;outline:0;font:700 30px/1.25 var(--serif);letter-spacing:-.01em;color:var(--ink);padding:4px 0 14px;border-bottom:2px solid var(--accent-soft);margin-bottom:16px;width:100%}
-.nbed input::placeholder{color:var(--ink3);font-weight:500}
-.nbed input:focus{border-bottom-color:var(--accent)}
-.nbed textarea{flex:1;resize:none;border:0;outline:0;background:none;font:17px/1.7 var(--serif);color:var(--ink)}
+.nbed{display:flex;flex-direction:column;min-width:0;min-height:0;padding:16px 28px 0}
+.nbsheetw{flex:1 1 auto;min-height:0;overflow:auto;display:flex;align-items:stretch;padding:0 0 28px;scrollbar-width:thin}
+.nbfade{animation:rise .35s cubic-bezier(.2,.7,.2,1)}
+.nbsk{pointer-events:none}
+.nbsk::before{display:none}
+.nbsk .skeleton{border-radius:6px}
+.nbsk-t{height:14px;width:72%;margin-bottom:9px}
+.nbsk-d{height:10px;width:26%}
+.nbskbar{height:44px;border-radius:99px;max-width:52rem;width:100%;margin:0 auto 12px;flex:none}
+.nbsksheet{max-width:52rem;width:100%;margin:0 auto 28px;flex:1 1 auto;background:var(--card);border:1px solid var(--line);border-radius:22px;box-shadow:var(--shadow);padding:44px 52px;overflow:hidden}
+.nbsksheet .skeleton{height:15px;margin:0 0 16px;border-radius:6px}
 .nbmsg{margin:auto;max-width:27rem;text-align:center;color:var(--ink2);line-height:1.6;padding:34px 30px;background:var(--card);border:1px dashed var(--line);border-radius:22px}
 .nbmsg h3{margin:0 0 8px;font:600 22px var(--serif);color:var(--ink)}
 .nbmsg .btn{margin:6px 4px 0;padding:10px 16px}
 .nbmsg .hint{font-size:12.5px;color:var(--ink3);margin-top:14px}
 .nbwide{grid-column:1/-1}
-.nbtbw{position:relative;margin:2px 0 12px}
+.nbtbw{position:relative;margin:0 auto 12px;width:100%;max-width:52rem;flex:none}
 .nbbar{display:flex;align-items:center;gap:2px;padding:5px 12px;background:var(--bg2);border:1px solid var(--line);border-radius:99px;overflow-x:auto;scrollbar-width:none;box-shadow:0 2px 8px rgba(0,0,0,.05)}
 .nbbar::-webkit-scrollbar{display:none}
 .nbbar .tb{flex:none;min-width:30px;height:30px;padding:0 8px;border-radius:99px;display:inline-grid;place-items:center;color:var(--ink2);font:600 13px var(--ui)}
@@ -798,7 +804,7 @@ html{background:var(--bg)}
 .nbpal{position:absolute;top:calc(100% + 6px);z-index:5;display:none;gap:6px;align-items:center;padding:8px 10px;background:var(--card);border:1px solid var(--line);border-radius:99px;box-shadow:var(--shadow)}
 .nbpal.on{display:flex}
 .nbpal button{width:24px;height:24px;border-radius:50%;border:1px solid var(--line)}
-.nbrt{flex:1;min-height:0;overflow:auto;outline:0;font:18px/1.8 var(--serif);color:var(--ink);padding:4px 4px 40px;scrollbar-width:thin}
+.nbrt{flex:1 1 auto;width:100%;max-width:52rem;margin:0 auto;outline:0;font:18px/1.8 var(--serif);color:var(--ink);background:var(--card);border:1px solid var(--line);border-radius:22px;box-shadow:var(--shadow);padding:44px 52px 60px}
 .nbrt p,.nbrt div{margin:0 0 .3em}
 .nbrt h1{font:700 24px/1.3 var(--ui);margin:.7em 0 .3em}.nbrt h2{font:700 20px/1.3 var(--ui);margin:.7em 0 .3em}.nbrt h3{font:600 17px/1.4 var(--ui);margin:.6em 0 .3em}
 .nbrt pre{font:14.5px/1.55 ui-monospace,Menlo,Consolas,monospace;background:var(--bg2);border:1px solid var(--line);padding:12px 14px;border-radius:12px;white-space:pre-wrap;margin:.6em 0}
@@ -2895,7 +2901,7 @@ const CLIENT_ID='3566754261-qqoba7hgehd65octe5o4fog13ob2vmuf.apps.googleusercont
 const SCOPE='https://www.googleapis.com/auth/drive.file',FOLDER='Bibbia Note',API='https://www.googleapis.com/';
 const L={g:k=>{try{return localStorage.getItem('nb:'+k)}catch(e){return null}},s:(k,v)=>{try{localStorage.setItem('nb:'+k,v)}catch(e){}},d:k=>{try{localStorage.removeItem('nb:'+k)}catch(e){}}};
 function tokInit(){try{const o=JSON.parse(L.g('tok')||'null');return o&&o.e>Date.now()?o.t:null;}catch(e){return null;}}
-let mode=L.g('mode'),token=tokInit(),tc=null,folder=L.g('folder'),notes=[],cur=null,timer=null,dirty=false,tokWait=null;
+let mode=L.g('mode'),token=tokInit(),tc=null,folder=L.g('folder'),notes=[],cur=null,timer=null,dirty=false,tokWait=null,ready=false;
 const id=x=>document.getElementById(x);
 const st=h('span',{class:'nbst'}),side=h('div',{class:'nbside'}),ed=h('div',{class:'nbed'}),body=h('div',{class:'nbbody'});
 const bNew=h('button',{class:'btn',type:'button',text:'Nuova nota',on:{click:()=>newNote()}});
@@ -2957,7 +2963,14 @@ const be=()=>mode==='drive'?drive:local;
 /* ---- UI ---- */
 const ago=t=>new Date(t).toLocaleDateString('it-IT',{day:'numeric',month:'short'});
 function renderList(){side.replaceChildren(...notes.map(n=>h('button',{class:'nbitem'+(cur&&cur.id===n.id?' on':''),type:'button',on:{click:()=>pick(n)}},h('b',{text:n.title||'Senza titolo'}),h('small',{text:ago(n.t)}))));}
-function mount(){body.replaceChildren(side,ed);tools(true);renderList();}
+function mount(){body.replaceChildren(side,ed);tools(true);renderList();[side,ed].forEach(x=>{x.classList.add('nbfade');setTimeout(()=>x.classList.remove('nbfade'),450);});}
+const sk=(c,w)=>h('div',{class:'skeleton'+(c?' '+c:''),style:w?'width:'+w:null});
+function skelSheet(){return h('div',{class:'nbsksheet'},['62%','96%','90%','94%','48%','92%','86%','70%'].map(w=>sk('',w)));}
+function skelLoad(){
+  const sd=h('div',{class:'nbside'},[0,1,2,3,4,5].map(()=>h('div',{class:'nbitem nbsk'},sk('nbsk-t'),sk('nbsk-d'))));
+  const e=h('div',{class:'nbed','aria-busy':'true','aria-label':'Caricamento delle note'},sk('nbskbar'),h('div',{class:'nbsheetw'},skelSheet()));
+  body.replaceChildren(sd,e);tools(false);}
+const titleOf=ea=>((ea.innerText||'').split('\n').map(x=>x.trim()).find(Boolean)||'Senza titolo').slice(0,80);
 /* ---- testo ricco ---- */
 const esc=t=>String(t).replace(/&/g,'&amp;').replace(/</g,'&lt;');
 const wrap=(t,f)=>'<!doctype html><meta charset="utf-8"><title>'+esc(t)+'</title><body>'+(f||'')+'</body>';
@@ -3030,10 +3043,13 @@ function toolbar(ea,ch){
   ea.addEventListener('keydown',e=>{if(/^(Arrow|Home|End|Page)/.test(e.key))pend=null;});
   const hd=(t,l,title)=>mk('<b>'+l+'</b>',title,()=>ex('formatBlock',blk()===t?'<p>':'<'+t+'>'),()=>blk()===t);
   const pal=(html,title,c,cols,none,prop)=>{
-    const b=mk(html,title,()=>{if(styleAt(prop)){ex(c,none==='ink'?getComputedStyle(ea).color:none);return;}
-      const o=!p.classList.contains('on');document.querySelectorAll('.nbpal.on').forEach(x=>x.classList.remove('on'));p.classList.toggle('on',o);
-      p.style.left=Math.max(0,b.getBoundingClientRect().left-wr.getBoundingClientRect().left)+'px';},()=>!!styleAt(prop),'tbp');
-    const p=h('div',{class:'nbpal'},cols.map(k=>{const s=h('button',{type:'button',class:'tbp',title:'Colore','aria-label':'Colore',on:{mousedown:e=>e.preventDefault(),click:()=>{ex(c,k);p.classList.remove('on');}}});s.style.background=k;return s;}));
+    let act=false;
+    const ink=()=>none==='ink'?getComputedStyle(ea).color:none;
+    const off=()=>{act=false;p.classList.remove('on');ea.focus();document.execCommand('styleWithCSS',false,true);try{document.execCommand(c,false,ink());}catch(e){}tidy();ch();syncFn&&syncFn();};
+    const b=mk(html,title,()=>{if(act||styleAt(prop)||p.classList.contains('on')){off();return;}
+      act=true;document.querySelectorAll('.nbpal.on').forEach(x=>x.classList.remove('on'));p.classList.add('on');
+      p.style.left=Math.max(0,b.getBoundingClientRect().left-wr.getBoundingClientRect().left)+'px';syncFn&&syncFn();},()=>act||!!styleAt(prop),'tbp');
+    const p=h('div',{class:'nbpal'},cols.map(k=>{const s=h('button',{type:'button',class:'tbp',title:'Colore','aria-label':'Colore',on:{mousedown:e=>e.preventDefault(),click:()=>{act=true;ex(c,k);p.classList.remove('on');syncFn&&syncFn();}}});s.style.background=k;return s;}));
     wr.append(p);bar.append(b);};
   const al=(c,icon,title)=>mk(ic(icon),title,()=>ex(document.queryCommandState(c)?'justifyLeft':c),()=>document.queryCommandState(c));
   bar.append(sel,sz,sep(),hd('h1','H1','Titolo'),hd('h2','H2','Intestazione'),hd('h3','H3','Sottotitolo'),sep(),
@@ -3053,10 +3069,9 @@ function toolbar(ea,ch){
     try{const f=(document.queryCommandValue('fontName')||'').replace(/["']/g,'').split(',')[0].trim();sel.value=FONTS[f]?f:'Literata';}catch(e){}};
   return wr;}
 function editor(n,raw){
-  const ti=h('input',{type:'text',placeholder:'Titolo','aria-label':'Titolo',value:n.title}),ea=h('div',{class:'nbrt',contenteditable:'true',spellcheck:'true',role:'textbox','aria-multiline':'true','aria-label':'Testo della nota'});
+  const ea=h('div',{class:'nbrt',contenteditable:'true',spellcheck:'true',role:'textbox','aria-multiline':'true','aria-label':'Testo della nota'});
   ea.innerHTML=toHtml(raw);n.text=ea.innerHTML;
-  const ch=()=>{n.title=ti.value.trim()||'Senza titolo';n.text=ea.innerHTML;dirty=true;status('Modifiche non salvate');clearTimeout(timer);timer=setTimeout(flush,900);};
-  ti.addEventListener('input',ch);
+  const ch=()=>{n.title=titleOf(ea);n.text=ea.innerHTML;dirty=true;status('Modifiche non salvate');clearTimeout(timer);timer=setTimeout(flush,900);};
   ea.addEventListener('input',e=>{if(e.inputType==='insertParagraph'){const s=getSelection(),x=s.anchorNode&&(s.anchorNode.nodeType===1?s.anchorNode:s.anchorNode.parentElement),li=x&&x.closest('li');if(li&&li.parentNode.classList&&li.parentNode.classList.contains('cl'))li.removeAttribute('data-c');}ch();});
   ea.addEventListener('click',e=>{const li=e.target;if(li.tagName==='LI'&&li.parentNode.classList&&li.parentNode.classList.contains('cl')&&e.offsetX<26){li.getAttribute('data-c')==='1'?li.removeAttribute('data-c'):li.setAttribute('data-c','1');ch();}});
   ea.addEventListener('paste',e=>{e.preventDefault();const cd=e.clipboardData,hx=cd.getData('text/html'),tx=cd.getData('text/plain');
@@ -3066,19 +3081,19 @@ function editor(n,raw){
   ea.addEventListener('keydown',e=>{if(e.key==='Tab'){e.preventDefault();const s=getSelection(),x=s.anchorNode&&(s.anchorNode.nodeType===1?s.anchorNode:s.anchorNode.parentElement);
       if(x&&x.closest('li'))document.execCommand(e.shiftKey?'outdent':'indent');else document.execCommand('insertText',false,'\u00a0\u00a0\u00a0\u00a0');ch();}});
   ea.addEventListener('focus',()=>{try{document.execCommand('defaultParagraphSeparator',false,'p');}catch(e){}});
-  ed.replaceChildren(toolbar(ea,ch),ti,ea);}
+  ed.replaceChildren(toolbar(ea,ch),h('div',{class:'nbsheetw'},ea));return ea;}
 
-async function pick(n){await flush();cur=n;renderList();status('Apro…');try{editor(n,n.text!=null?n.text:await be().get(n));status('');}catch(e){status('Impossibile aprire la nota');}}
+async function pick(n){await flush();cur=n;renderList();status('');if(n.text==null)ed.replaceChildren(sk('nbskbar'),h('div',{class:'nbsheetw'},skelSheet()));try{editor(n,n.text!=null?n.text:await be().get(n));status('');}catch(e){status('Impossibile aprire la nota');}}
 async function flush(){if(!dirty||!cur)return;clearTimeout(timer);const n=cur;dirty=false;status('Salvo…');
   try{await be().save(n,n.text);n.t=Date.now();status('Salvato');renderList();}catch(e){dirty=true;status('Non salvato: riprovo appena torna la connessione');}}
 window.addEventListener('online',()=>flush());
-async function newNote(){await flush();try{const n=await be().create('Nuova nota','');notes.unshift(n);cur=n;mount();editor(n,'');ed.firstChild.select();status('');}catch(e){status('Impossibile creare la nota');}}
+async function newNote(){await flush();try{const n=await be().create('Senza titolo','');notes.unshift(n);cur=n;mount();editor(n,'').focus();status('');}catch(e){status('Impossibile creare la nota');}}
 async function del(){if(!cur||!confirm('Eliminare «'+cur.title+'»?'))return;const n=cur;dirty=false;clearTimeout(timer);
   try{await be().del(n);notes=notes.filter(x=>x!==n);cur=null;ed.replaceChildren(h('div',{class:'nbmsg'},'Seleziona una nota o creane una nuova.'));renderList();status('Nota eliminata');}catch(e){status('Impossibile eliminare');}}
 function out(){if(!confirm('Scollegare Google Drive da questo browser? Le note restano nel tuo Drive.'))return;
-  try{if(token&&window.google)google.accounts.oauth2.revoke(token);}catch(e){}token=null;L.d('mode');L.d('folder');L.d('tok');L.d('hint');mode=null;folder=null;notes=[];cur=null;intro();}
-async function load(){status('Carico le note…');msg('Un momento','Sto leggendo le tue note…',null);
-  try{await be().init();if(mode==='drive'&&!L.g('hint'))api('drive/v3/about?fields=user(emailAddress)').then(r=>{if(r&&r.user)L.s('hint',r.user.emailAddress);}).catch(()=>{});notes=await be().list();status('');mount();cur=null;
+  try{if(token&&window.google)google.accounts.oauth2.revoke(token);}catch(e){}token=null;L.d('mode');L.d('folder');L.d('tok');L.d('hint');mode=null;folder=null;notes=[];cur=null;ready=false;intro();}
+async function load(){status('Carico le note…');skelLoad();ready=false;
+  try{await be().init();if(mode==='drive'&&!L.g('hint'))api('drive/v3/about?fields=user(emailAddress)').then(r=>{if(r&&r.user)L.s('hint',r.user.emailAddress);}).catch(()=>{});notes=await be().list();status('');ready=true;mount();cur=null;
     ed.replaceChildren(notes.length?h('div',{class:'nbmsg'},'Seleziona una nota a sinistra.'):h('div',{class:'nbmsg'},h('h3',{text:'Nessuna nota'}),h('p',{text:'Crea la prima con «Nuova nota».'})));
   }catch(e){status('');msg('Collegamento non riuscito',String(e.message||e),h('button',{class:'btn',type:'button',text:'Riprova',on:{click:load}}));}}
 function intro(){tools(false);status('');
@@ -3088,16 +3103,15 @@ function intro(){tools(false);status('');
   go.style.background='var(--accent)';go.style.color='var(--accent-ink)';
   const lo=h('button',{class:'btn',type:'button',text:'Usa solo su questo dispositivo',on:{click:()=>{mode='local';L.s('mode','local');load();}}});
   msg('Collega il tuo Google Drive','Le note vengono salvate come file di testo in una cartella «'+FOLDER+'» nel tuo Drive. L’app vede solo i file che crea lei, non il resto del Drive.',[go,lo],gready()?'Potrai esportare ogni nota in PDF.':'Il Client ID Google non è ancora configurato: per ora puoi provare il blocco note solo su questo dispositivo.');}
-function open(){loadFonts();ov.classList.add('on');if(mode==='drive'||mode==='local')load();else intro();}
+function open(){loadFonts();ov.classList.add('on');if(ready)return;if(mode==='drive'||mode==='local')load();else intro();}
 async function close(){await flush();ov.classList.remove('on');}
 
 /* ---- PDF (stampa del browser: mantiene la formattazione) ---- */
 const PRINT='@page{size:A4;margin:0}*{-webkit-print-color-adjust:exact;print-color-adjust:exact;box-sizing:border-box}html,body{margin:0;padding:0}body{font:11pt/1.65 Literata,Georgia,serif;color:#1c1b1a;-webkit-hyphens:auto;hyphens:auto}table.pg{width:100%;border-collapse:collapse}.sp{height:22mm}.doc{margin:0;padding:0 24mm}.doc div,.doc p{margin:0 0 .6em;orphans:3;widows:3}.doc h1,.doc h2,.doc h3{font-family:Inter,Arial,sans-serif;line-height:1.3;break-after:avoid;page-break-after:avoid}.doc h1{font-size:19pt;font-weight:650;margin:1.3em 0 .4em}.doc h2{font-size:14.5pt;font-weight:650;margin:1.2em 0 .35em}.doc h3{font-size:12pt;font-weight:600;margin:1em 0 .3em}.doc h1.t{font:700 27pt/1.2 Literata,Georgia,serif;letter-spacing:-.015em;margin:0 0 .25em}.doc .meta{font:9.5pt Inter,Arial,sans-serif;color:#8a867d;margin:0 0 1.2em;padding-bottom:1em;border-bottom:.6pt solid #d8d4ca}ul,ol{margin:0 0 .7em;padding-left:1.5em}li{margin:.12em 0}li>p,li>div{margin:0}blockquote{margin:.9em 0;padding:.1em 0 .1em 1em;border-left:2pt solid #c9c4b8;color:#4a4742;font-style:italic;break-inside:avoid}pre{font:9.5pt/1.55 Menlo,Consolas,monospace;background:#f4f2ee;border-radius:5pt;padding:9pt 11pt;white-space:pre-wrap;break-inside:avoid;margin:.8em 0}table:not(.pg){border-collapse:collapse;margin:.9em 0;break-inside:avoid}table:not(.pg) td,table:not(.pg) th{border:.5pt solid #bdb8ac;padding:5pt 9pt;vertical-align:top}hr{border:0;border-top:.6pt solid #cfcabe;margin:1.4em 0}a{color:#1d4f9f;text-decoration:underline;text-underline-offset:2pt}ul.cl{list-style:none;padding-left:2pt}ul.cl li{position:relative;padding-left:20pt}ul.cl li::before{content:"";position:absolute;left:0;top:.38em;width:9pt;height:9pt;border:1.2pt solid #8a867d;border-radius:50%}ul.cl li[data-c="1"]::before{background:#8a867d;box-shadow:inset 0 0 0 1.6pt #fff}ul.cl li[data-c="1"]{color:#8a867d;text-decoration:line-through}span[style*="background"]{border-radius:4pt;padding:.5pt 2.5pt;-webkit-box-decoration-break:clone;box-decoration-break:clone}';
 async function pdf(){if(!cur)return;await flush();
   const f=document.createElement('iframe');f.style.cssText='position:fixed;right:0;bottom:0;width:0;height:0;border:0';document.body.append(f);
-  const dt=new Date(cur.t||Date.now()).toLocaleDateString('it-IT',{day:'numeric',month:'long',year:'numeric'});
   const d=f.contentDocument;d.open();
-  d.write('<!doctype html><html lang="it"><meta charset="utf-8"><title>'+esc(cur.title)+'</title><link rel="stylesheet" href="'+GF+'"><style>'+PRINT+'</style><table class="pg"><thead><tr><td><div class="sp"></div></td></tr></thead><tfoot><tr><td><div class="sp"></div></td></tr></tfoot><tbody><tr><td><div class="doc"><h1 class="t">'+esc(cur.title)+'</h1><div class="meta">'+dt+'</div>'+toHtml(cur.text)+'</div></td></tr></tbody></table>');d.close();
+  d.write('<!doctype html><html lang="it"><meta charset="utf-8"><title>'+esc(cur.title)+'</title><link rel="stylesheet" href="'+GF+'"><style>'+PRINT+'</style><table class="pg"><thead><tr><td><div class="sp"></div></td></tr></thead><tfoot><tr><td><div class="sp"></div></td></tr></tfoot><tbody><tr><td><div class="doc">'+toHtml(cur.text)+'</div></td></tr></tbody></table>');d.close();
   status('Nella finestra di stampa scegli «Salva come PDF»');
   setTimeout(async()=>{const w=f.contentWindow;try{await Promise.race([w.document.fonts.ready,new Promise(r=>setTimeout(r,2500))]);}catch(e){}
     const old=document.title;document.title=cur.title;try{w.focus();w.print();}catch(e){status('Impossibile creare il PDF');}document.title=old;setTimeout(()=>f.remove(),2000);},400);}
