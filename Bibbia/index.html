@@ -772,12 +772,12 @@ html{background:var(--bg)}
 .nbside{border-right:1px solid var(--line);overflow:auto;padding:16px 14px;background:color-mix(in srgb,var(--bg2) 70%,transparent);scrollbar-width:thin}
 .nbsh{display:flex;align-items:center;justify-content:space-between;padding:2px 10px 10px;font:600 11px var(--ui);letter-spacing:.08em;text-transform:uppercase;color:var(--ink3)}
 .nbsh span:last-child{font-variant-numeric:tabular-nums;background:var(--accent-soft);color:var(--accent);padding:2px 8px;border-radius:99px;letter-spacing:0}
-.nbitem{display:block;width:100%;text-align:left;padding:11px 14px;border-radius:14px;margin-bottom:7px;background:var(--card);border:1px solid var(--line);box-shadow:0 4px 14px rgba(0,0,0,.08);transition:border-color .15s,box-shadow .15s}
+.nbitem{display:block;width:100%;text-align:left;padding:11px 14px;border-radius:14px;margin-bottom:4px;background:transparent;border:1px solid transparent;transition:background .15s,border-color .15s,box-shadow .15s}
 .nbitem b{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;font:600 14.5px/1.35 var(--ui);color:var(--ink)}
 .nbitem .nbp{display:block;margin-top:3px;font:12.5px/1.4 var(--ui);color:var(--ink2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .nbitem small{display:block;margin-top:5px;color:var(--ink3);font-size:11.5px}
-.nbitem:hover{border-color:color-mix(in srgb,var(--accent) 35%,var(--line));box-shadow:0 5px 16px rgba(0,0,0,.10)}
-.nbitem.on{background:var(--accent-soft);border-color:var(--accent);box-shadow:0 0 0 2px var(--accent-soft),0 5px 16px rgba(0,0,0,.10)}
+.nbitem:hover{background:var(--gfill,color-mix(in srgb,var(--ink) 6%,transparent))}
+.nbitem.on{background:var(--card);border-color:var(--line);box-shadow:0 4px 14px rgba(0,0,0,.08)}
 .nbitem.on b{color:var(--accent)}
 .nbsk{background:var(--card);border-color:var(--line)}
 .nbgw{position:relative;display:inline-flex}
@@ -3117,16 +3117,16 @@ const lbl=r=>B[r.bi].n+' '+r.c+(r.v1?':'+r.v1+(r.v2>r.v1?'-'+r.v2:''):'');
 async function fetchP(r,ver){const d=await getVer(ver,B[r.bi].id),vs=d.c[r.c-1]||[],a=r.v1||1,z=r.v1?r.v2:vs.length,o=[];
   for(let v=a;v<=z;v++)if(vs[v-1]!=null)o.push({v,t:plain(vs[v-1])});return o;}
 function pHtml(r,ver,vs,tail){const multi=vs.length>1;
-  return '<p>'+vs.map(x=>(multi?'<sup>'+x.v+'</sup>':'')+esc(x.t)).join(' ')+'</p><p class="nbvref"><b>'+esc(lbl(r))+'</b> · '+esc(VERSIONS[ver].abbr)+'</p>'+(tail?'<p><br></p>':'');}
+  return '<blockquote><p>'+vs.map(x=>(multi?'<sup>'+x.v+'</sup>':'')+esc(x.t)).join(' ')+'</p><p><b>'+esc(lbl(r))+'</b> · '+esc(VERSIONS[ver].abbr)+'</p></blockquote>'+(tail?'<p><br></p>':'');}
 /* inserimento nel punto in cui si trovava il cursore della nota */
 let curEa=null,lastR=null;
 document.addEventListener('selectionchange',()=>{const x=getSelection();if(curEa&&x.rangeCount&&curEa.contains(x.anchorNode))lastR=x.getRangeAt(0).cloneRange();});
 function insertAt(html){const ea=curEa;if(!ea||!ea.isConnected)return;ea.focus();const x=getSelection();x.removeAllRanges();
   if(lastR&&ea.contains(lastR.startContainer))x.addRange(lastR);else{const r=document.createRange();r.selectNodeContents(ea);r.collapse(false);x.addRange(r);}
-  /* Mantieni il font e la dimensione attivi nel punto d'inserimento del passo. */
+  /* Mantieni il font e la dimensione scelti nel punto d'inserimento, anche nel blocco evidenziato. */
   const a=x.anchorNode&&(x.anchorNode.nodeType===1?x.anchorNode:x.anchorNode.parentElement);
   if(a&&ea.contains(a)){const cs=getComputedStyle(a),ff=cs.fontFamily,fs=cs.fontSize;
-    if(ff||fs){const t=document.createElement('div');t.innerHTML=html;const p=t.querySelector('p:not(.nbvref)');
+    if(ff||fs){const t=document.createElement('div');t.innerHTML=html;const p=t.querySelector('blockquote > p');
       if(p){if(ff)p.style.fontFamily=ff;if(fs)p.style.fontSize=fs;html=t.innerHTML;}}}
   document.execCommand('insertHTML',false,html);}
 function rangeAt(x,y){if(document.caretRangeFromPoint)return document.caretRangeFromPoint(x,y);
