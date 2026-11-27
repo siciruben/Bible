@@ -768,7 +768,12 @@ html{background:var(--bg)}
 .nbst{font-size:12.5px;color:var(--ink3);margin-left:6px}
 .nbtop .sp{flex:1}
 .nbtop .btn:disabled{opacity:.4;cursor:default}
-.nbbody{display:grid;grid-template-columns:300px minmax(0,1fr);min-height:0}
+.nbbody{--sdw:300px;display:grid;grid-template-columns:var(--sdw) minmax(0,1fr);min-height:0;transition:grid-template-columns .28s cubic-bezier(.2,.7,.2,1)}
+.nbbody.nosd{grid-template-columns:0px minmax(0,1fr)}
+.nbside>*{min-width:calc(var(--sdw) - 28px)}
+.nbbody.nosd .nbside{padding-left:0;padding-right:0;border-right-color:transparent;opacity:0;pointer-events:none;overflow:hidden}
+.nbside{transition:opacity .2s,padding .28s}
+@media(prefers-reduced-motion:reduce){.nbbody,.nbside{transition:none}}
 .nbside{border-right:1px solid var(--line);overflow:auto;padding:16px 14px;background:color-mix(in srgb,var(--bg2) 70%,transparent);scrollbar-width:thin}
 .nbsh{display:flex;align-items:center;justify-content:space-between;padding:2px 10px 10px;font:600 11px var(--ui);letter-spacing:.08em;text-transform:uppercase;color:var(--ink3)}
 .nbsh span:last-child{font-variant-numeric:tabular-nums;background:var(--accent-soft);color:var(--accent);padding:2px 8px;border-radius:99px;letter-spacing:0}
@@ -797,8 +802,9 @@ html{background:var(--bg)}
 ::highlight(nbref){color:var(--accent);text-decoration:underline dotted;text-underline-offset:3px}
 @media(max-width:1100px){.nbsheetw{padding:4px 18px 48px}.nbtbw{padding:0 18px;max-width:calc(52rem + 36px)}.nbskbar{width:calc(100% - 36px)}.nbrt{padding:32px 30px 48px}}
 /* pannello Bibbia */
-.nbbody.bp{grid-template-columns:280px minmax(0,1fr) 380px}
-@media(max-width:1240px){.nbbody.bp{grid-template-columns:minmax(0,1fr) 360px}.nbbody.bp .nbside{display:none}}
+.nbbody.bp{--sdw:280px;grid-template-columns:var(--sdw) minmax(0,1fr) 380px}
+.nbbody.bp.nosd{grid-template-columns:0px minmax(0,1fr) 380px}
+@media(max-width:1240px){.nbbody.bp{--sdw:240px;grid-template-columns:var(--sdw) minmax(0,1fr) 340px}.nbbody.bp.nosd{grid-template-columns:0px minmax(0,1fr) 340px}}
 .nbtop .ibtn.on{background:var(--accent-soft);color:var(--accent)}
 .nbbp{margin:16px 18px 18px 0;border:1px solid var(--line);border-radius:22px;background:var(--card);box-shadow:0 1px 2px rgba(0,0,0,.05),0 10px 30px rgba(0,0,0,.08);display:flex;flex-direction:column;min-height:0;min-width:0;overflow:hidden}
 .nbbph{display:flex;gap:6px;align-items:center;padding:12px 10px 6px 12px}
@@ -1054,7 +1060,7 @@ const VERSIONS={
 };
 /* Versione di lettura (italiana o inglese). La card girevole inglese usa sempre la KJV, a parte. */
 const curVi=()=>VERSIONS[store.set.vi]?store.set.vi:'r20';
-const getVer=(code,id)=>((cache.it[code]??={})[id]??=jget(VERSIONS[code].path+id+'.json').then(d=>{d.hb={};for(const k in d.h||{}){const [c,v]=k.split(':').map(Number);(d.hb[c]??={})[v]=d.h[k];}return d;}).catch(e=>{delete cache.it[code][id];throw e;}));
+const getVer=(code,id)=>((cache.it[code]??={})[id]??=jget(VERSIONS[code].path+id+'.json').then(d=>{if(Array.isArray(d.c))d.c=d.c.map(ch=>Array.isArray(ch)?ch.map(verseStr):ch);d.hb={};for(const k in d.h||{}){const [c,v]=k.split(':').map(Number);(d.hb[c]??={})[v]=d.h[k];}return d;}).catch(e=>{delete cache.it[code][id];throw e;}));
 const getIt=id=>getVer(curVi(),id);
 const getOr=id=>cache.or[id]??=jget(`data/or/${id}.json`);
 const getLex=k=>cache.lex[k]??=jget(`data/lex_${k}.json`);
@@ -1299,7 +1305,8 @@ function buildSaved(list){
       h('div',{class:'r'},store.hl[k]?h('span',{class:'dot',style:'background:'+HLC[store.hl[k]]+';box-shadow:0 0 0 1px var(--line) inset'}):null,B[bi].n+' '+c+':'+v,store.bm[k]?h('span',{class:'pill',text:'Segnalibro'}):null),t,store.nt[k]?h('div',{class:'n',text:store.nt[k]}):null));
   });
 }
-const plain=t=>t.replace(/[\u0001\u0002]/g,'').replace(/\n/g,' ');
+const verseStr=t=>{if(t==null)return '';if(typeof t==='string')return t;if(Array.isArray(t))return t.map(verseStr).join(' ');if(typeof t==='object'){const x=t.text??t.t??t.content??t.verse;return x!=null?verseStr(x):'';}return String(t);};
+const plain=t=>verseStr(t).replace(/[\u0001\u0002]/g,'').replace(/\n/g,' ');
 function setBarB(){const b=$('#bar');if(!b)return;const r=b.getBoundingClientRect(),st=document.documentElement.style;if(r.height>0)st.setProperty('--barb',Math.round(r.bottom)+'px');else st.removeProperty('--barb');}
 function syncNavFlags(){document.body.classList.toggle('saved-open',document.body.classList.contains('nav-open')&&S.navView==='saved');}
 function openNav(){setBarB();document.body.classList.add('nav-open');setTimeout(syncNavFlags,0);$('#nav').classList.add('open');$('#scrim').classList.add('on');S.scrimFor='nav';}
@@ -1452,7 +1459,7 @@ function renderChapter(d,bi,c){
 }
 function parallelsRow(list){return h('div',{class:'par'},list.map(p=>{const r=parseRefText(p);return h('button',{type:'button',text:p,on:{click:()=>r&&(go(r.bi,r.c,r.v,{open:true}))}});}));}
 function parseRefText(s){const m=s.match(/^((?:I{1,3}\s+)?[1-3]?\s*[A-Za-zÀ-ù ]+?)\s+(\d+)(?:\s*[:,]\s*(\d+))?/);if(!m)return null;let n=m[1].trim().replace(/^III\s+/,'3 ').replace(/^II\s+/,'2 ').replace(/^I\s+/,'1 ');const bi=ALIAS[norm(n)];if(bi==null)return null;const c=Math.min(+m[2],B[bi].v.length);return{bi,c,v:m[3]?Math.min(+m[3],B[bi].v[c-1]):null};}
-function richInto(parent,t){let it=false;for(const tok of t.split(/(\u0001|\u0002|\n)/)){if(tok==='\u0001')it=true;else if(tok==='\u0002')it=false;else if(tok==='\n')parent.append(document.createElement('br'));else if(tok){if(it)parent.append(h('i',{text:tok}));else parent.append(tok);}}}
+function richInto(parent,t){let it=false;for(const tok of verseStr(t).split(/(\u0001|\u0002|\n)/)){if(tok==='\u0001')it=true;else if(tok==='\u0002')it=false;else if(tok==='\n')parent.append(document.createElement('br'));else if(tok){if(it)parent.append(h('i',{text:tok}));else parent.append(tok);}}}
 function verseNode(t,v,id,c){
   const k=id+'.'+c+'.'+v;const tr=trActive();const poem=!tr&&t.includes('\n');
   const sp=h(poem||tr?'div':'span',{class:'v'+(poem?' poem':'')+(tr?' tv':'')+((S.multiMode&&S.multiVerses.includes(v))||(!S.multiMode&&S.v===v)?' sel':''),id:'v'+v,'data-v':v,tabindex:0,role:'button','aria-label':'Versetto '+v,on:{click:()=>selectVerse(v),keydown:e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();selectVerse(v);}}}});
@@ -3000,6 +3007,12 @@ const bDel=ibtn('Elimina nota','<path d="M4 7h16M10 11v6M14 11v6M6 7l1 12a2 2 0 
 const bX=ibtn('Chiudi','<path d="M6 6l12 12M18 6L6 18"/>',()=>close());
 const bBib=ibtn('Pannello Bibbia','<path d="M3 5.5A1.5 1.5 0 0 1 4.5 4H9a3 3 0 0 1 3 3v13a2.5 2.5 0 0 0-2.5-2.5H4.5A1.5 1.5 0 0 1 3 16zM21 5.5A1.5 1.5 0 0 0 19.5 4H15a3 3 0 0 0-3 3v13a2.5 2.5 0 0 1 2.5-2.5h5a1.5 1.5 0 0 0 1.5-1.5z"/>',()=>toggleBP(!bpOn));
 bBib.setAttribute('aria-pressed','false');
+/* pulsante per aprire/chiudere l'elenco delle note (si ricorda la scelta) */
+let sideOn=L.g('side')!=='0';
+const bSide=ibtn('Elenco note','<rect x="3" y="4" width="18" height="16" rx="2.5"/><path d="M9.5 4v16"/>',()=>toggleSide(!sideOn));
+function toggleSide(on){sideOn=on;L.s('side',on?'1':'0');body.classList.toggle('nosd',!on);bSide.setAttribute('aria-expanded',String(on));
+  const t=on?'Chiudi l\u2019elenco delle note':'Apri l\u2019elenco delle note';bSide.title=t;bSide.setAttribute('aria-label',t);}
+toggleSide(sideOn);
 function closeMenu(){menu.classList.remove('on');bSet.setAttribute('aria-expanded','false');}
 const bPdf=h('button',{type:'button',role:'menuitem',text:'Esporta PDF',on:{click:()=>{closeMenu();pdf();}}});
 const bOut=h('button',{type:'button',role:'menuitem',text:'Scollega account',on:{click:()=>{closeMenu();out();}}});
@@ -3009,7 +3022,7 @@ bSet.setAttribute('aria-haspopup','menu');bSet.setAttribute('aria-expanded','fal
 const gw=h('span',{class:'nbgw'},bSet,menu);
 document.addEventListener('click',e=>{if(!gw.contains(e.target))closeMenu();});
 const ov=h('div',{id:'nbov',role:'dialog','aria-label':'Blocco note'},
-  h('div',{class:'nbtop'},h('h2',{text:'Blocco note'}),h('span',{class:'nbbeta',text:'beta'}),st,h('span',{class:'sp'}),bBib,bNew,bDel,gw,bX),body);
+  h('div',{class:'nbtop'},bSide,h('h2',{text:'Blocco note'}),h('span',{class:'nbbeta',text:'beta'}),st,h('span',{class:'sp'}),bBib,bNew,bDel,gw,bX),body);
 ov.addEventListener('keydown',e=>{e.stopPropagation();if(e.key==='Escape'){if(menu.classList.contains('on')){closeMenu();bSet.focus();}else close();}});
 document.body.append(ov);
 const btn=h('button',{class:'ibtn',id:'notesbtn',type:'button','aria-label':'Blocco note (beta)',title:'Blocco note (beta)',on:{click:open}});
@@ -3128,16 +3141,26 @@ function verSel(){const x=h('select',{class:'nbvsel','aria-label':'Versione dell
   Object.keys(VERSIONS).forEach(k=>x.append(h('option',{value:k,text:VERSIONS[k].abbr,title:VERSIONS[k].name})));x.value=VK();return x;}
 /* "Rm 8:1-4", "1 Cor 13,4-7", "Sal 23". exact: niente completamento del nome (per i riferimenti nel testo) */
 function parseP(q,exact){q=String(q||'').trim().replace(/[–—]/g,'-');if(!B.length)return null;
-  const m=q.match(/^(.+?)\s*(\d{1,3})(?:\s*[:,.]\s*(\d{1,3})(?:\s*-\s*(\d{1,3}))?)?$/);if(!m)return null;
-  const key=norm(m[1]);if(!key)return null;let bi=ALIAS[key];
+  const m=q.match(/^(.+?)\s*(\d{1,3})(?:\s*[:,.]\s*(\d{1,3})(?:\s*-\s*(\d{1,3}))?((?:\s*[,;]\s*\d{1,3}(?:\s*-\s*\d{1,3})?)*))?$/);if(!m)return null;
+  const key=norm(m[1]);if(!key)return null;let bi=Object.prototype.hasOwnProperty.call(ALIAS,key)?ALIAS[key]:null;
   if(bi==null&&!exact&&key.length>=2){const ks=Object.keys(ALIAS).filter(k=>k.startsWith(key)&&ALIAS[k]>=0);if(ks.length)bi=Math.min(...ks.map(k=>ALIAS[k]));}
   if(bi==null||bi<0||!B[bi])return null;
   const c=+m[2];if(c<1||c>B[bi].v.length)return null;const mx=B[bi].v[c-1];
-  let v1=m[3]?+m[3]:0,v2=m[4]?+m[4]:v1;if(v1){if(v1<1||v1>mx)return null;v2=Math.min(Math.max(v2,v1),mx);}
-  return{bi,c,v1,v2};}
-const lbl=r=>B[r.bi].n+' '+r.c+(r.v1?':'+r.v1+(r.v2>r.v1?'-'+r.v2:''):'');
-async function fetchP(r,ver){const d=await getVer(ver,B[r.bi].id),vs=d.c[r.c-1]||[],a=r.v1||1,z=r.v1?r.v2:vs.length,o=[];
-  for(let v=a;v<=z;v++)if(vs[v-1]!=null)o.push({v,t:plain(vs[v-1])});return o;}
+  let v1=m[3]?+m[3]:0,v2=m[4]?+m[4]:v1,runs=null;
+  if(v1){if(v1<1||v1>mx)return null;v2=Math.min(Math.max(v2,v1),mx);runs=[[v1,v2]];
+    /* intervalli aggiuntivi dopo la virgola: "8:3-5, 7" o "8:3-5, 7, 9-10" */
+    if(m[5])for(const part of m[5].split(/[,;]/)){const t=part.trim();if(!t)continue;const [a,z]=t.split('-').map(x=>+x.trim());if(!(a>=1)||a>mx)return null;runs.push([a,Math.min(Math.max(z||a,a),mx)]);}
+    runs.sort((x,y)=>x[0]-y[0]);const mg=[];runs.forEach(x=>{const l=mg[mg.length-1];if(l&&x[0]<=l[1]+1)l[1]=Math.max(l[1],x[1]);else mg.push([x[0],x[1]]);});
+    runs=mg;v1=runs[0][0];v2=runs[0][1];}
+  return{bi,c,v1,v2,runs};}
+const vrg=(a,b)=>a+(b>a?'-'+b:'');
+const lbl=r=>B[r.bi].n+' '+r.c+(r.v1?':'+(r.runs?r.runs.map(x=>vrg(x[0],x[1])).join(', '):vrg(r.v1,r.v2)):'');
+/* etichetta unica per più intervalli dello stesso capitolo: "Romani 8:3-5, 7" */
+function lblRuns(rs){if(!rs.length)return '';const o=[];let i=0;while(i<rs.length){const r=rs[i],g=[vrg(r.v1,r.v2)];let j=i+1;while(j<rs.length&&rs[j].bi===r.bi&&rs[j].c===r.c){g.push(vrg(rs[j].v1,rs[j].v2));j++;}o.push(B[r.bi].n+' '+r.c+':'+g.join(', '));i=j;}return o.join(' · ');}
+const runsOf=r=>r.v1?(r.runs||[[r.v1,r.v2]]).map(x=>({bi:r.bi,c:r.c,v1:x[0],v2:x[1]})):[];
+async function fetchP(r,ver){const d=await getVer(ver,B[r.bi].id),vs=d.c[r.c-1]||[],o=[];
+  const rs=r.v1?(r.runs||[[r.v1,r.v2]]):[[1,vs.length]];
+  rs.forEach(([a,z])=>{for(let v=a;v<=z;v++)if(vs[v-1]!=null)o.push({v,t:plain(vs[v-1])});});return o;}
 function pHtml(r,ver,vs,tail){const multi=vs.length>1;
   return '<blockquote><p>'+vs.map(x=>(multi?'<sup>'+x.v+'</sup>':'')+esc(x.t)).join(' ')+'</p><p><b>'+esc(lbl(r))+'</b> · '+esc(VERSIONS[ver].abbr)+'</p></blockquote>'+(tail?'<p><br></p>':'');}
 /* inserimento nel punto in cui si trovava il cursore della nota */
@@ -3180,7 +3203,7 @@ function bpEl(){if(bp)return bp.el;
   return bp.el;}
 function toggleBP(on){bpOn=on;L.s('bpon',on?'1':'');bBib.classList.toggle('on',on);bBib.setAttribute('aria-pressed',String(on));
   if(!ready||!side.isConnected)return;body.classList.toggle('bp',on);if(on)body.append(bpEl());else if(bp)bp.el.remove();}
-function bpGo(r){bp.r={bi:r.bi,c:r.c};bp.sel.clear();bp.anchor=0;bp.focus=r.v1||0;if(r.v1)for(let v=r.v1;v<=r.v2;v++)bp.sel.add(v);L.s('bppos',JSON.stringify(bp.r));bpLoad();}
+function bpGo(r){bp.r={bi:r.bi,c:r.c};bp.sel.clear();bp.anchor=0;bp.focus=r.v1||0;if(r.v1)runsOf(r).forEach(x=>{for(let v=x.v1;v<=x.v2;v++)bp.sel.add(v);});L.s('bppos',JSON.stringify(bp.r));bpLoad();}
 function bpStep(d){let {bi,c}=bp.r;c+=d;if(c<1){if(bi<=0)return;bi--;c=B[bi].v.length;}else if(c>B[bi].v.length){if(bi>=B.length-1)return;bi++;c=1;}bpGo({bi,c});}
 const bpSecTr=(()=>{const m=new Map();return(ver,tx)=>{const k=ver+'|'+tx;if(!m.has(k))m.set(k,trOne(tx,VERSIONS[ver].lang).catch(()=>null));return m.get(k);};})();
 const bpT=i=>(bp.tx&&bp.tx[i]!=null)?bp.tx[i]:plain(bp.vs[i]);
@@ -3200,7 +3223,8 @@ async function bpLoad(){const t=++bp.tok,{bi,c}=bp.r,ver=VK(),id=B[bi].id;bp.nam
   /* stesso aspetto del lettore classico: versetti di seguito nel paragrafo, numeri in apice, poesia a righe */
   const kids=[];let para=null;
   vs.forEach((tx,i)=>{const v=i+1,poem=!want&&tx.includes('\n');
-    if(hd[v]){const o=plain(String(hd[v]));kids.push(h('div',{class:'sec',text:o,'data-o':want?o:null}));para=null;}
+    const hv=hd[v],o=hv==null?'':plain(typeof hv==='object'?(hv.t||''):String(hv));
+    if(o){kids.push(h('div',{class:'sec',text:o,'data-o':want?o:null}));para=null;}
     const sp=h(poem?'div':'span',{class:'vv'+(poem?' poem':'')+(bp.sel.has(v)?' on':''),'data-v':v,draggable:'true',title:'Clic per selezionare · Maiusc+clic per un intervallo · trascina nella nota',
       on:{click:e=>bpClick(v,e),dragstart:e=>bpDrag(v,e)}});
     const vn=h('sup',{class:'vn',text:String(v)});
@@ -3221,7 +3245,7 @@ async function bpLoad(){const t=++bp.tok,{bi,c}=bp.r,ver=VK(),id=B[bi].id;bp.nam
   bpUpd();}
 function bpPaint(){bp.list.querySelectorAll('.vv').forEach(x=>x.classList.toggle('on',bp.sel.has(+x.dataset.v)));bpUpd();}
 function bpUpd(){const n=bp.sel.size;bp.ins.disabled=!n;bp.ins.textContent=n?'Inserisci ('+n+')':'Inserisci';
-  bp.info.textContent=n?bpRuns().map(r=>lbl(r)).join(', ')+' · '+VERSIONS[VK()].abbr+(bp.tx?' · tradotto':''):'Seleziona i versetti, poi inseriscili o trascinali nella nota';}
+  bp.info.textContent=n?lblRuns(bpRuns())+' · '+VERSIONS[VK()].abbr+(bp.tx?' · tradotto':''):'Seleziona i versetti, poi inseriscili o trascinali nella nota';}
 function bpClick(v,e){if(e.shiftKey&&bp.anchor){const a=Math.min(bp.anchor,v),z=Math.max(bp.anchor,v);for(let i=a;i<=z;i++)bp.sel.add(i);}
   else{bp.sel.has(v)?bp.sel.delete(v):bp.sel.add(v);bp.anchor=v;}bpPaint();}
 function bpRuns(){const a=[...bp.sel].sort((x,y)=>x-y),o=[];a.forEach(v=>{const l=o[o.length-1];if(l&&v===l.v2+1)l.v2=v;else o.push({bi:bp.r.bi,c:bp.r.c,v1:v,v2:v});});return o;}
@@ -3249,7 +3273,7 @@ card.addEventListener('mouseenter',()=>clearTimeout(hideT));card.addEventListene
 function hideCard(now){clearTimeout(hideT);const f=()=>{card.classList.remove('on');cardRef=null;};if(now)f();else hideT=setTimeout(f,260);}
 async function fillCard(){const r=cardRef;if(!r)return;const t=++cardTok,ver=VK(),tx=card.querySelector('.nbreft');tx.textContent='Carico…';
   try{const vs=await fetchP(r,ver);if(t!==cardTok)return;const multi=vs.length>1;
-    tx.replaceChildren(...vs.flatMap(x=>[multi?h('sup',{text:String(x.v)}):null,x.t+' ']));}catch(e){if(t===cardTok)tx.textContent='Testo non disponibile. Sei offline?';}}
+    tx.replaceChildren(...vs.flatMap(x=>multi?[h('sup',{text:String(x.v)}),x.t+' ']:[x.t+' ']));}catch(e){if(t===cardTok)tx.textContent='Testo non disponibile. Sei offline?';}}
 document.addEventListener('nbver',()=>{if(cardRef)fillCard();});
 function showCard(f,b){clearTimeout(hideT);if(cardRef&&card.classList.contains('on')&&lbl(cardRef)===f.k)return;cardRef=f.r;
   card.replaceChildren(h('div',{class:'nbrefh'},h('b',{text:f.k}),verSel()),h('div',{class:'nbreft'}),
@@ -3321,7 +3345,7 @@ function toolbar(ea,ch){
     try{const vs=await fetchP(r,ver);if(t!==qt)return;qvs=vs;const all=vs.map(x=>x.t).join(' ');
       qo.replaceChildren(h('b',{text:lbl(r)+' · '+VERSIONS[ver].abbr}),all.length>320?all.slice(0,320)+'…':all);qb.disabled=!vs.length;}
     catch(e){if(t===qt)qo.textContent='Testo non disponibile. Sei offline?';}}
-  function qins(){if(!qr||!qvs)return;qp.classList.remove('on');insertAt(pHtml(qr,VK(),qvs,true));qi.value='';qr=qvs=null;qb.disabled=true;qo.textContent='Scrivi un riferimento, poi premi Invio.';}
+  function qins(){if(!qr||!qvs)return;qp.classList.remove('on');const rs=runsOf(qr),vr=VK();insertAt(rs.length>1?rs.map((x,i)=>pHtml(x,vr,qvs.filter(y=>y.v>=x.v1&&y.v<=x.v2),i===rs.length-1)).join(''):pHtml(qr,vr,qvs,true));qi.value='';qr=qvs=null;qb.disabled=true;qo.textContent='Scrivi un riferimento, poi premi Invio.';}
   qi.addEventListener('input',()=>{clearTimeout(qtm);qtm=setTimeout(qprev,280);});
   qi.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();clearTimeout(qtm);if(qvs&&qr&&lbl(qr)===lbl(parseP(qi.value)||{bi:0,c:0}))qins();else qprev().then(()=>{if(qvs)qins();});}
     else if(e.key==='Escape'){e.stopPropagation();qp.classList.remove('on');ea.focus();}});
