@@ -685,6 +685,39 @@ html{background:var(--bg)}
   .pop::before{content:"";position:sticky;top:0;left:auto;z-index:3;display:block;width:auto;height:30px;margin:0 -20px 0;border-radius:0;opacity:1;
     background:linear-gradient(color-mix(in srgb,var(--ink3) 55%,transparent),color-mix(in srgb,var(--ink3) 55%,transparent)) center 9px/38px 5px no-repeat,var(--card)}
 }
+/* ===== v19: telefono in orizzontale ===== */
+@media (orientation:landscape) and (max-height:520px) and (hover:none){
+  /* distanza dai bordi (tacca e angoli): testo, pulsanti, barra in alto, home */
+  #bar{padding-left:calc(max(env(safe-area-inset-left),0px) + 18px);padding-right:calc(max(env(safe-area-inset-right),0px) + 18px)}
+  #chapter{padding-left:calc(max(env(safe-area-inset-left),0px) + 30px);padding-right:calc(max(env(safe-area-inset-right),0px) + 30px)}
+  .pager{padding-left:calc(max(env(safe-area-inset-left),0px) + 30px);padding-right:calc(max(env(safe-area-inset-right),0px) + 30px);padding-bottom:calc(40px + env(safe-area-inset-bottom))!important}
+  #nav{padding-left:max(env(safe-area-inset-left),0px)}
+  /* Studio: pannello che entra da destra con animazione, non resta fisso */
+  #body{grid-template-columns:minmax(0,1fr)!important}
+  #insp{position:fixed!important;z-index:40;top:var(--barb,52px)!important;bottom:0!important;left:auto!important;right:0!important;height:auto!important;
+    width:min(460px,56vw);max-width:100%;border-left:1px solid var(--line);border-radius:20px 0 0 0!important;box-shadow:-10px 0 40px rgba(0,0,0,.30);
+    padding-top:0;padding-right:max(env(safe-area-inset-right),0px);padding-bottom:0;
+    transform:translateX(106%);transition:transform .34s cubic-bezier(.2,.8,.2,1);display:flex!important}
+  #insp.open{transform:none}
+  #insp.tall{height:auto!important}
+  .grab{display:none!important}
+  .ihead .x{display:grid}
+  .ihead{padding-top:10px}
+  .pane{padding-bottom:calc(28px + env(safe-area-inset-bottom))}
+  body.sheet-open .pager{padding-bottom:calc(40px + env(safe-area-inset-bottom))!important}
+  body.home-on #insp{display:none!important}
+  .pop{max-height:calc(100dvh - env(safe-area-inset-top,0px) - 64px)}
+}
+/* home solo verticale: in orizzontale su telefono compare l'invito a ruotare */
+#rotatehint{display:none}
+@media (orientation:landscape) and (max-height:520px) and (hover:none){
+  body.home-on #rotatehint{display:flex;visibility:visible;position:fixed;inset:0;z-index:200;flex-direction:column;align-items:center;justify-content:center;gap:14px;background:var(--bg);color:var(--ink);text-align:center;padding:24px}
+  #rotatehint svg{width:54px;height:54px;stroke:var(--accent);fill:none;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round;animation:rotph 2.4s ease-in-out infinite}
+  #rotatehint b{font-family:var(--serif);font-size:22px}
+  #rotatehint span{font-size:14px;color:var(--ink2)}
+  body.home-on #app{visibility:hidden}
+}
+@keyframes rotph{0%,15%{transform:rotate(-90deg)}55%,100%{transform:rotate(0)}}
 </style>
 </head>
 <body>
@@ -733,6 +766,7 @@ html{background:var(--bg)}
     </aside>
   </div>
   <div class="scrim" id="scrim"></div>
+  <div id="rotatehint" role="status"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="7" y="2.5" width="10" height="19" rx="2.5"/><path d="M11 18.5h2"/></svg><b>Ruota il telefono in verticale</b><span>La home si usa solo in verticale.</span></div>
 </div>
 
 <nav id="tabbar" aria-label="Menu principale">
@@ -919,6 +953,10 @@ const S={bi:0,c:1,v:null,tab:'int',word:null,navView:'books',tok:0,loaded:null,m
 let lexItalianMode=false;
 const body=document.body;
 const isPhone=()=>matchMedia('(max-width:760px)').matches;
+/* telefono in orizzontale (schermo basso, tocco): Studio e' un pannello laterale a scomparsa */
+const LAND_Q='(orientation:landscape) and (max-height:520px) and (hover:none)';
+const isLand=()=>matchMedia(LAND_Q).matches;
+const sheetMode=()=>isPhone()||isLand();
 
 /* ---------- boot ---------- */
 (async function boot(){
@@ -927,7 +965,7 @@ const isPhone=()=>matchMedia('(max-width:760px)').matches;
     applySettings();buildNav();bindUI();
     const hadHash=!!fromHash();const r=fromHash()||lastPos()||{bi:idIdx('JHN'),c:3,v:16};
     await go(r.bi,r.c,r.v,{noHash:!location.hash,quiet:true});if(!hadHash)showHome();
-    if(!isPhone()&&S.v)renderInspector();
+    if(!sheetMode()&&S.v)renderInspector();
     window.addEventListener('hashchange',()=>{if(S.ignoreHash){S.ignoreHash=false;return;}const r=fromHash();if(r)go(r.bi,r.c,r.v,{noHash:true,open:!!r.v});});
   }catch(e){$('#chapter').replaceChildren(h('div',{class:'loading',text:'Errore di caricamento: '+e.message}));}
 })();
@@ -1234,11 +1272,11 @@ function selectVerse(v){
     $$('#chapter .v').forEach(e=>e.classList.toggle('sel',S.multiVerses.includes(+e.dataset.v)));
     if(S.multiVerses.length)S.v=S.multiVerses[0];else{S.multiMode=false;S.v=null;S.word=null;}
     updateMultiToolbar();setHash();renderInspector();
-    if(isPhone()){closeSheet();}
+    if(sheetMode()){closeSheet();}
     return;
   }
-  if(S.v===v){if(isPhone()&&!$('#insp').classList.contains('open')){openSheet();return;}S.v=null;S.word=null;$$('#chapter .v.sel').forEach(e=>e.classList.remove('sel'));setHash();renderInspector();closeSheet();return;}
-  if(isPhone()&&S.v&&S.v!==v){
+  if(S.v===v){if(sheetMode()&&!$('#insp').classList.contains('open')){openSheet();return;}S.v=null;S.word=null;$$('#chapter .v.sel').forEach(e=>e.classList.remove('sel'));setHash();renderInspector();closeSheet();return;}
+  if(sheetMode()&&S.v&&S.v!==v){
     S.multiMode=true;S.multiVerses=[S.v,v].sort((a,b)=>a-b);S.word=null;
     $$('#chapter .v').forEach(e=>e.classList.toggle('sel',S.multiVerses.includes(+e.dataset.v)));
     S.v=S.multiVerses[0];updateMultiToolbar();setHash();renderInspector();
@@ -1246,12 +1284,12 @@ function selectVerse(v){
   }
   S.v=v;S.word=null;if(S.tab==='lex')S.tab='int';
   $$('#chapter .v.sel').forEach(e=>e.classList.remove('sel'));const el=$('#v'+v);if(el)el.classList.add('sel');
-  setHash();renderInspector();if(isPhone())openSheet();
+  setHash();renderInspector();if(sheetMode())openSheet();
 }
 function updateMultiToolbar(){
   const b=$('#multiCopyToggle'),off=$('#offtop');
   if(b){b.classList.toggle('on',S.multiMode);b.setAttribute('aria-pressed',String(S.multiMode));b.setAttribute('aria-label',S.multiMode?'Disattiva selezione multipla':'Attiva selezione multipla');}
-  if(off){if(isPhone()&&S.multiMode){off.removeAttribute('data-pop');off.setAttribute('aria-label','Copia versetti');off.innerHTML='<svg viewBox="0 0 24 24"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V5a1 1 0 0 0-1-1H5a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h3"/></svg>';}
+  if(off){if(sheetMode()&&S.multiMode){off.removeAttribute('data-pop');off.setAttribute('aria-label','Copia versetti');off.innerHTML='<svg viewBox="0 0 24 24"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V5a1 1 0 0 0-1-1H5a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h3"/></svg>';}
     else{off.setAttribute('data-pop','opop');off.setAttribute('aria-label','Scarica per uso offline');off.innerHTML='<svg viewBox="0 0 24 24"><path d="M12 4v11M7.5 10.5L12 15l4.5-4.5M5 19h14"/></svg>';}}
 }
 function multiCopyText(){
@@ -1265,7 +1303,7 @@ async function copyMultiVerses(btn){
   if(!S.multiVerses.length)return;
   try{await navigator.clipboard.writeText(multiCopyText());}
   catch(e){if(btn){btn.textContent='Copia non consentita';return;}}
-  if(isPhone()){
+  if(sheetMode()){
     S.multiMode=false;S.multiVerses=[];S.multiRefText='';S.v=null;
     $$('#chapter .v.sel').forEach(e=>e.classList.remove('sel'));
     updateMultiToolbar();closeSheet();
@@ -1278,7 +1316,7 @@ function refreshVerse(v){const old=$('#v'+v);if(!old)return;const d=S.loaded;con
 function openSheet(){setBarB();$('#insp').classList.add('open');document.body.classList.add('sheet-open');revealVerse();}
 function closeSheet(){const i=$('#insp');i.style.transform='';i.classList.remove('open','tall');document.body.classList.remove('sheet-open');}
 function revealVerse(){
-  if(!isPhone()||!S.v)return;
+  if(!isPhone()||!S.v)return; /* in orizzontale il pannello e' laterale: il versetto resta visibile */
   setTimeout(()=>{const el=$('#v'+S.v),rd=$('#reader');if(!el)return;
     const r=el.getBoundingClientRect(),rr=rd.getBoundingClientRect(),top=innerHeight-$('#insp').offsetHeight;
     if(r.top<rr.top+8||r.bottom>top-16)rd.scrollTop+=r.top-rr.top-24;},80);
@@ -1287,7 +1325,7 @@ function curKey(){return B[S.bi].id+'.'+S.c+'.'+S.v;}
 async function renderInspector(){
   const pane=$('#pane');
   $('#tabs').parentElement.hidden=false;
-  if(S.multiMode&&!isPhone())return renderMultiStudio();
+  if(S.multiMode&&!sheetMode())return renderMultiStudio();
   const translateHeader=$('#lexTranslateHeader');
   translateHeader.disabled=false;
   const onCom=S.tab==='com';
@@ -2276,7 +2314,7 @@ async function openStrong(s){
   S.word={s,standalone:true,w:null};S.tab='lex';
   if(S.home){await go(S.bi,S.c,null,{noHash:true});}
   else renderInspector();
-  if(isPhone())openSheet();
+  if(sheetMode())openSheet();
 }
 
 /* ---------- UI bindings ---------- */
@@ -2293,7 +2331,7 @@ function bindUI(){
     if(S.scrimFor==='pop'&&e&&e.clientX!=null){const b=document.elementsFromPoint(e.clientX,e.clientY).find(x=>x.matches&&x.matches('[data-pop]'));if(b){e.stopPropagation();b.click();return;}}
     closeNav();closeSearch();$('#amodal').classList.remove('on');closePops();$('#scrim').classList.remove('on');};
   $('#aclose').onclick=()=>{$('#amodal').classList.remove('on');$('#scrim').classList.remove('on');};
-  $$('[data-pop]').forEach(b=>b.onclick=e=>{if(b.id==='offtop'&&isPhone()&&S.multiMode){e.preventDefault();copyMultiVerses(null);return;}togglePop(b.dataset.pop,e);});
+  $$('[data-pop]').forEach(b=>b.onclick=e=>{if(b.id==='offtop'&&sheetMode()&&S.multiMode){e.preventDefault();copyMultiVerses(null);return;}togglePop(b.dataset.pop,e);});
   $('#multiCopyToggle').onclick=()=>{S.multiMode=!S.multiMode;S.multiVerses=S.multiMode?(S.v?[S.v]:[]):[];S.multiRefText='';if(!S.multiMode){S.multiVerses=[];S.v=null;$$('#chapter .v.sel').forEach(e=>e.classList.remove('sel'));}updateMultiToolbar();renderInspector();};
   updateMultiToolbar();
   document.addEventListener('click',e=>{if(!e.target.closest('.pop')&&!e.target.closest('[data-pop]'))closePops();});
@@ -2313,7 +2351,7 @@ function bindUI(){
   $('#grab').onclick=()=>{setBarB();$('#insp').classList.toggle('tall');};
   document.addEventListener('keydown',e=>{
     const typing=/INPUT|TEXTAREA/.test(document.activeElement.tagName);
-    if(e.key==='Escape'){closeSearch();closeNav();$('#amodal').classList.remove('on');closePops();$('#scrim').classList.remove('on');if(isPhone())closeSheet();}
+    if(e.key==='Escape'){closeSearch();closeNav();$('#amodal').classList.remove('on');closePops();$('#scrim').classList.remove('on');if(sheetMode())closeSheet();}
     else if((e.key==='/'&&!typing)||((e.metaKey||e.ctrlKey)&&e.key.toLowerCase()==='k')){e.preventDefault();openSearch();}
     else if(!typing&&e.key==='ArrowRight'&&!e.metaKey){const p=nextCh();p&&go(p.bi,p.c,null);}
     else if(!typing&&e.key==='ArrowLeft'&&!e.metaKey){const p=prevCh();p&&go(p.bi,p.c,null);}
@@ -2322,7 +2360,7 @@ function bindUI(){
 
 function effTheme(){const t=store.set.th;return(t==='light'||t==='dark'||t==='pergamena'||t==='custom')?t:(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');}
 function updateTabs(){const a=$('#tb-home'),b=$('#tb-books');if(a)a.classList.toggle('on',!!S.home);if(b)b.classList.toggle('on',!S.home);}
-function hideHome(){S.home=false;document.body.classList.remove('home-on');updateTabs();}
+function hideHome(){lockPortrait(false);S.home=false;document.body.classList.remove('home-on');updateTabs();}
 function showHome(){S.home=true;document.body.classList.add('home-on');renderHome();$('#home').scrollTop=0;updateTabs();}
 /* Sigle classiche italiane dei libri (titolo su telefono) */
 const ABBR={GEN:'Gn',EXO:'Es',LEV:'Lv',NUM:'Nm',DEU:'Dt',JOS:'Gs',JDG:'Gdc',RUT:'Rt','1SA':'1Sam','2SA':'2Sam','1KI':'1Re','2KI':'2Re','1CH':'1Cr','2CH':'2Cr',EZR:'Esd',NEH:'Ne',EST:'Est',JOB:'Gb',PSA:'Sal',PRO:'Pr',ECC:'Qo',SNG:'Ct',ISA:'Is',JER:'Ger',LAM:'Lam',EZK:'Ez',DAN:'Dn',HOS:'Os',JOL:'Gl',AMO:'Am',OBA:'Abd',JON:'Gio',MIC:'Mi',NAM:'Na',HAB:'Ab',ZEP:'Sof',HAG:'Ag',ZEC:'Zc',MAL:'Ml',MAT:'Mt',MRK:'Mc',LUK:'Lc',JHN:'Gv',ACT:'At',ROM:'Rm','1CO':'1Cor','2CO':'2Cor',GAL:'Gal',EPH:'Ef',PHP:'Fil',COL:'Col','1TH':'1Ts','2TH':'2Ts','1TI':'1Tm','2TI':'2Tm',TIT:'Tt',PHM:'Fm',HEB:'Eb',JAS:'Gc','1PE':'1Pt','2PE':'2Pt','1JN':'1Gv','2JN':'2Gv','3JN':'3Gv',JUD:'Gd',REV:'Ap'};
@@ -2342,6 +2380,7 @@ function dayNum(d=new Date()){return Math.floor(Date.UTC(d.getFullYear(),d.getMo
 function wordOfDay(d){const n=WOTD.length;return WOTD[(((dayNum(d)-WOTD_ANCHOR)%n)+n)%n];}
 function homeDateText(){const s=new Intl.DateTimeFormat('it-IT',{weekday:'long',day:'numeric',month:'long'}).format(new Date());return s.charAt(0).toUpperCase()+s.slice(1);}
 let homeDay=null;
+function lockPortrait(on){try{const o=screen.orientation;if(!o||!o.lock)return;if(on)o.lock('portrait').catch(()=>{});else o.unlock();}catch(e){}}
 function openSection(id){
   const bi=idIdx(id);if(bi<0)return;
   setNavView('books');S.navOpenBook=bi;buildNav();
@@ -2349,7 +2388,7 @@ function openSection(id){
   requestAnimationFrame(()=>{const li=$('#navlist .book[data-i="'+bi+'"]');if(li)li.scrollIntoView({block:'center'});});
 }
 function renderHome(){
-  homeDay=dayNum();
+  homeDay=dayNum();lockPortrait(true);
   $('#hdate').textContent=homeDateText();
   /* Continua a leggere */
   const hadLast=!!lastPos(),last=lastPos()||{bi:idIdx('JHN'),c:1};
@@ -2424,6 +2463,15 @@ function bindMobile(){
   const mv=e=>{if(y0==null)return;dy=e.clientY-y0;insp.style.transition='none';insp.style.transform='translateY('+Math.max(dy,-40)+'px)';if(e.cancelable)e.preventDefault();};
   const en=()=>{if(y0==null)return;const delta=dy,elapsed=Date.now()-t0;y0=null;dragTarget=null;insp.style.transition='';insp.style.transform='';
     if(delta>90||(elapsed<280&&delta>35)){if(insp.classList.contains('tall'))insp.classList.remove('tall');else closeSheet();}else if(delta<-60){setBarB();insp.classList.add('tall');}};
+  /* orizzontale: un tocco sul testo fuori dai versetti chiude il pannello laterale */
+  $('#reader').addEventListener('click',e=>{if(isLand()&&insp.classList.contains('open')&&!e.target.closest('.v,.w,a,button'))closeSheet();});
+  /* orizzontale: il pannello Studio si chiude trascinando l'intestazione verso destra */
+  let x0=null,dx=0;
+  const ih=$('.ihead');
+  ih.addEventListener('pointerdown',e=>{if(!isLand()||e.button!==0||(e.target.closest&&e.target.closest('button,input,textarea,select')))return;x0=e.clientX;dx=0;try{ih.setPointerCapture(e.pointerId);}catch(_){}});
+  ih.addEventListener('pointermove',e=>{if(x0==null)return;dx=Math.max(0,e.clientX-x0);insp.style.transition='none';insp.style.transform='translateX('+dx+'px)';if(e.cancelable)e.preventDefault();});
+  const xend=()=>{if(x0==null)return;const d=dx;x0=null;insp.style.transition='';insp.style.transform='';if(d>80)closeSheet();};
+  ih.addEventListener('pointerup',xend);ih.addEventListener('pointercancel',xend);
   [$('#grab'),$('.ihead')].forEach(el=>{el.addEventListener('pointerdown',st);el.addEventListener('pointermove',mv);el.addEventListener('pointerup',en);el.addEventListener('pointercancel',en);});
 }
 /* iOS (app salvata sulla Home): dopo la tastiera il viewport resta ~59px piu' corto.
@@ -2473,6 +2521,7 @@ function bindDiag(){
   const portrait=()=>innerHeight>innerWidth;
   const full=()=>Math.max(screen.width,screen.height);
   function apply(){
+    if(ios&&stand()&&!portrait()){de.classList.remove('ios-sa');de.style.removeProperty('--sh');return;} /* orizzontale: niente altezza forzata, altrimenti la pagina resta alta come in verticale e non si scende in fondo */
     if(!ios||!stand()||!portrait()||document.body&&document.body.classList.contains('kb')){return;}
     de.style.setProperty('--sh',full()+'px');de.classList.add('ios-sa');
   }
@@ -2628,7 +2677,7 @@ if(SW_OK){
    toglie la copia dell'app salvata sul dispositivo e la riscarica, cosi' alla riapertura parte la versione nuova.
    I dati scaricati per l'uso offline (cache "data") restano. */
 (function(){
-  const APP_BUILD='2026-11-27T01:30:00+01:00';
+  const APP_BUILD='2026-11-27T08:30:00+01:00';
   const btn=document.getElementById('appupdatebtn'),hint=document.getElementById('appupdatehint');if(!btn)return;
   const say=t=>{hint.textContent=t;};
   async function remoteIsNewer(){
