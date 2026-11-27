@@ -761,12 +761,15 @@ html{background:var(--bg)}
 @media(orientation:landscape) and (max-height:520px) and (hover:none){#notesbtn{display:none!important}}
 #nbov{position:fixed;inset:0;z-index:90;background:radial-gradient(900px 480px at 85% -10%,var(--accent-soft),transparent 70%),radial-gradient(700px 420px at 0% 110%,var(--accent-soft),transparent 70%),var(--bg);color:var(--ink);display:none;grid-template-rows:auto minmax(0,1fr);font-family:var(--ui)}
 #nbov.on{display:grid}
-.nbtop{display:flex;align-items:center;gap:8px;padding:12px 20px;border-bottom:1px solid var(--line);background:var(--glass);-webkit-backdrop-filter:saturate(180%) blur(22px);backdrop-filter:saturate(180%) blur(22px)}
+.nbtop{display:flex;align-items:center;gap:6px;padding:calc(env(safe-area-inset-top) + 8px) 14px 8px;border-bottom:1px solid var(--line);background:var(--glass);-webkit-backdrop-filter:saturate(180%) blur(22px);backdrop-filter:saturate(180%) blur(22px)}
 .nbtop h2{margin:0;font:600 19px var(--serif);letter-spacing:.01em;display:flex;align-items:center;gap:10px}
 .nbtop h2::before{content:"";width:26px;height:26px;border-radius:8px;flex:none;background:linear-gradient(135deg,var(--accent),color-mix(in srgb,var(--accent) 55%,#fff));box-shadow:0 3px 10px var(--accent-soft);-webkit-mask:none;mask:none}
 .nbbeta{font-size:10.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:3px 9px;border-radius:99px;background:var(--accent-soft);color:var(--accent);border:1px solid var(--accent-soft)}
 .nbst{font-size:12.5px;color:var(--ink3);margin-left:6px}
 .nbtop .sp{flex:1}
+.nbtop .ibtn{width:36px;height:36px;border-radius:10px;flex:none}
+.nbtop .ibtn svg{width:20px;height:20px}
+.nbtop .nbgw{align-items:center}
 .nbtop .btn:disabled{opacity:.4;cursor:default}
 .nbbody{--sdw:300px;display:grid;grid-template-columns:var(--sdw) minmax(0,1fr);min-height:0;transition:grid-template-columns .28s cubic-bezier(.2,.7,.2,1)}
 .nbbody.nosd{grid-template-columns:0px minmax(0,1fr)}
@@ -802,9 +805,16 @@ html{background:var(--bg)}
 ::highlight(nbref){color:var(--accent);text-decoration:underline dotted;text-underline-offset:3px}
 @media(max-width:1100px){.nbsheetw{padding:4px 18px 48px}.nbtbw{padding:0 18px;max-width:calc(52rem + 36px)}.nbskbar{width:calc(100% - 36px)}.nbrt{padding:32px 30px 48px}}
 /* pannello Bibbia */
-.nbbody.bp{--sdw:280px;grid-template-columns:var(--sdw) minmax(0,1fr) 380px}
-.nbbody.bp.nosd{grid-template-columns:0px minmax(0,1fr) 380px}
-@media(max-width:1240px){.nbbody.bp{--sdw:240px;grid-template-columns:var(--sdw) minmax(0,1fr) 340px}.nbbody.bp.nosd{grid-template-columns:0px minmax(0,1fr) 340px}}
+.nbbody.bp{--sdw:280px;--bpw:380px;grid-template-columns:var(--sdw) minmax(0,1fr) var(--bpw)}
+.nbbody.bp.nosd{grid-template-columns:0px minmax(0,1fr) var(--bpw)}
+@media(max-width:1240px){.nbbody.bp{--sdw:240px;--bpw:340px;grid-template-columns:var(--sdw) minmax(0,1fr) var(--bpw)}.nbbody.bp.nosd{grid-template-columns:0px minmax(0,1fr) var(--bpw)}}
+/* apertura/chiusura animata del pannello Bibbia (.bpx = stato chiuso/in chiusura) */
+#nbov{overflow:hidden}
+.nbbody.bp.bpx{grid-template-columns:var(--sdw) minmax(0,1fr) 0px}
+.nbbody.bp.nosd.bpx{grid-template-columns:0px minmax(0,1fr) 0px}
+.nbbp{min-width:calc(var(--bpw) - 18px);transition:opacity .2s ease,transform .28s cubic-bezier(.2,.7,.2,1)}
+.nbbody.bpx .nbbp{opacity:0;transform:translateX(28px);pointer-events:none}
+@media(prefers-reduced-motion:reduce){.nbbp{transition:none}}
 .nbtop .ibtn.on{background:var(--accent-soft);color:var(--accent)}
 .nbbp{margin:16px 18px 18px 0;border:1px solid var(--line);border-radius:22px;background:var(--card);box-shadow:0 1px 2px rgba(0,0,0,.05),0 10px 30px rgba(0,0,0,.08);display:flex;flex-direction:column;min-height:0;min-width:0;overflow:hidden}
 .nbbph{display:flex;gap:6px;align-items:center;padding:12px 10px 6px 12px}
@@ -2997,7 +3007,7 @@ const CLIENT_ID='3566754261-qqoba7hgehd65octe5o4fog13ob2vmuf.apps.googleusercont
 const SCOPE='https://www.googleapis.com/auth/drive.file',FOLDER='Bibbia Note',API='https://www.googleapis.com/';
 const L={g:k=>{try{return localStorage.getItem('nb:'+k)}catch(e){return null}},s:(k,v)=>{try{localStorage.setItem('nb:'+k,v)}catch(e){}},d:k=>{try{localStorage.removeItem('nb:'+k)}catch(e){}}};
 function tokInit(){try{const o=JSON.parse(L.g('tok')||'null');return o&&o.e>Date.now()?o.t:null;}catch(e){return null;}}
-let mode=L.g('mode'),token=tokInit(),tc=null,folder=L.g('folder'),notes=[],cur=null,timer=null,dirty=false,tokWait=null,ready=false;
+let mode=L.g('mode'),token=tokInit(),tc=null,folder=L.g('folder'),notes=[],cur=null,timer=null,dirty=false,tokWait=null,ready=false,bpTm=0;
 const id=x=>document.getElementById(x);
 const st=h('span',{class:'nbst'}),side=h('div',{class:'nbside'}),ed=h('div',{class:'nbed'}),body=h('div',{class:'nbbody'});
 const svg=p=>'<svg viewBox="0 0 24 24">'+p+'</svg>';
@@ -3030,7 +3040,7 @@ btn.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke
 const sb=id('setbtn');sb.parentNode.insertBefore(btn,sb);
 
 function status(t){st.textContent=t||'';}
-function msg(title,text,btns,hint){body.classList.remove('bp');body.replaceChildren(h('div',{class:'nbmsg nbwide'},h('h3',{text:title}),h('p',{text}),btns,hint&&h('div',{class:'hint',text:hint})));tools(false);}
+function msg(title,text,btns,hint){clearTimeout(bpTm);body.classList.remove('bp','bpx');body.replaceChildren(h('div',{class:'nbmsg nbwide'},h('h3',{text:title}),h('p',{text}),btns,hint&&h('div',{class:'hint',text:hint})));tools(false);}
 function tools(on){bNew.disabled=bBib.disabled=!on;bPdf.disabled=bDel.disabled=!on||!cur;bOut.hidden=!mode;bSet.disabled=bPdf.disabled&&bOut.hidden;if(bSet.disabled)closeMenu();}
 
 /* ---- Google ---- */
@@ -3079,7 +3089,7 @@ function pvOf(html){try{const d=new DOMParser().parseFromString(String(html||'')
 function renderList(){tools(true);side.replaceChildren(h('div',{class:'nbsh'},h('span',{text:'Note'}),h('span',{text:String(notes.length)})),
   ...notes.map(n=>h('button',{class:'nbitem'+(cur&&cur.id===n.id?' on':''),type:'button','aria-current':cur&&cur.id===n.id?'true':null,on:{click:()=>pick(n)}},
     h('b',{text:n.title||'Senza titolo'}),n.pv?h('span',{class:'nbp',text:n.pv}):null,h('small',{text:ago(n.t)}))));}
-function mount(){body.replaceChildren(side,ed,...(bpOn?[bpEl()]:[]));body.classList.toggle('bp',bpOn);renderList();[side,ed].forEach(x=>{x.classList.add('nbfade');setTimeout(()=>x.classList.remove('nbfade'),450);});}
+function mount(){clearTimeout(bpTm);body.classList.remove('bpx');body.replaceChildren(side,ed,...(bpOn?[bpEl()]:[]));body.classList.toggle('bp',bpOn);renderList();[side,ed].forEach(x=>{x.classList.add('nbfade');setTimeout(()=>x.classList.remove('nbfade'),450);});}
 const sk=(c,w)=>h('div',{class:'skeleton'+(c?' '+c:''),style:w?'width:'+w:null});
 function skelSheet(){return h('div',{class:'nbsksheet'},['62%','96%','90%','94%','48%','92%','86%','70%'].map(w=>sk('',w)));}
 function skelLoad(){
@@ -3202,7 +3212,15 @@ function bpEl(){if(bp)return bp.el;
   bpGo(start&&B[start.bi]&&start.c<=B[start.bi].v.length?start:{bi:S.bi||0,c:S.c||1});
   return bp.el;}
 function toggleBP(on){bpOn=on;L.s('bpon',on?'1':'');bBib.classList.toggle('on',on);bBib.setAttribute('aria-pressed',String(on));
-  if(!ready||!side.isConnected)return;body.classList.toggle('bp',on);if(on)body.append(bpEl());else if(bp)bp.el.remove();}
+  if(!ready||!side.isConnected)return;clearTimeout(bpTm);
+  const fast=window.matchMedia&&matchMedia('(prefers-reduced-motion:reduce)').matches;
+  if(on){const el=bpEl();
+    if(!el.isConnected){body.classList.add('bp','bpx');body.append(el);void body.offsetWidth;requestAnimationFrame(()=>body.classList.remove('bpx'));}
+    else body.classList.remove('bpx');}
+  else{
+    if(fast){body.classList.remove('bp','bpx');if(bp)bp.el.remove();return;}
+    body.classList.add('bpx');
+    bpTm=setTimeout(()=>{if(bpOn)return;if(bp)bp.el.remove();body.classList.remove('bp','bpx');},320);}}
 function bpGo(r){bp.r={bi:r.bi,c:r.c};bp.sel.clear();bp.anchor=0;bp.focus=r.v1||0;if(r.v1)runsOf(r).forEach(x=>{for(let v=x.v1;v<=x.v2;v++)bp.sel.add(v);});L.s('bppos',JSON.stringify(bp.r));bpLoad();}
 function bpStep(d){let {bi,c}=bp.r;c+=d;if(c<1){if(bi<=0)return;bi--;c=B[bi].v.length;}else if(c>B[bi].v.length){if(bi>=B.length-1)return;bi++;c=1;}bpGo({bi,c});}
 const bpSecTr=(()=>{const m=new Map();return(ver,tx)=>{const k=ver+'|'+tx;if(!m.has(k))m.set(k,trOne(tx,VERSIONS[ver].lang).catch(()=>null));return m.get(k);};})();
