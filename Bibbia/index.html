@@ -718,6 +718,25 @@ html{background:var(--bg)}
   body.home-on #app{visibility:hidden}
 }
 @keyframes rotph{0%,15%{transform:rotate(-90deg)}55%,100%{transform:rotate(0)}}
+/* ===== v20: Libri/Salvati e Cerca in orizzontale su telefono ===== */
+@media (orientation:landscape) and (max-height:520px) and (hover:none){
+  /* Libri / Salvati: pannello a sinistra sotto la barra, con distanza dal bordo */
+  #nav{top:var(--barb,52px)!important;bottom:0!important;left:0!important;right:auto!important;height:auto!important;width:min(360px,52vw)!important;
+    padding-top:0!important;padding-left:max(env(safe-area-inset-left),0px);border-radius:0 20px 0 0!important;transform:translateX(-104%)}
+  #nav.open{transform:none}
+  .navhead{padding-top:8px}
+  .navhead::before{display:none!important}
+  #navlist{padding-bottom:calc(20px + env(safe-area-inset-bottom))}
+  /* Cerca: a tutto schermo, compatta; con la tastiera resta sopra di essa */
+  #smodal,body.kb #smodal{position:fixed;z-index:95;top:0;left:0;right:0;bottom:0;width:100%;height:auto;min-height:0;max-height:none;transform:none;border-radius:0;border:0;background:var(--bg)}
+  body.kb #smodal{top:var(--vvt,0px);bottom:auto;height:var(--vvh,100%)}
+  #smodal .sbar{padding:6px calc(max(env(safe-area-inset-right),0px) + 18px) 6px calc(max(env(safe-area-inset-left),0px) + 18px)!important}
+  #smodal .sbar input{font-size:16px}
+  #smodal .sopts{padding:8px calc(max(env(safe-area-inset-right),0px) + 18px) 0 calc(max(env(safe-area-inset-left),0px) + 18px)}
+  body.kb #smodal .sopts{display:none}
+  #smodal .sres{flex:1 1 auto;min-height:0;padding:6px calc(max(env(safe-area-inset-right),0px) + 18px) calc(18px + env(safe-area-inset-bottom)) calc(max(env(safe-area-inset-left),0px) + 18px)}
+  body.search-open #insp{visibility:hidden}
+}
 </style>
 </head>
 <body>
@@ -2677,7 +2696,7 @@ if(SW_OK){
    toglie la copia dell'app salvata sul dispositivo e la riscarica, cosi' alla riapertura parte la versione nuova.
    I dati scaricati per l'uso offline (cache "data") restano. */
 (function(){
-  const APP_BUILD='2026-11-27T08:30:00+01:00';
+  const APP_BUILD='2026-11-27T08:50:00+01:00';
   const btn=document.getElementById('appupdatebtn'),hint=document.getElementById('appupdatehint');if(!btn)return;
   const say=t=>{hint.textContent=t;};
   async function remoteIsNewer(){
