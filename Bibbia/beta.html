@@ -994,6 +994,85 @@ select.nbvsel:focus-visible{border-color:var(--accent);box-shadow:0 0 0 3px var(
   .hsec{padding:8px 14px;border-radius:999px;border:1px solid var(--line)}
   .hsn{font-size:13.5px}
 }
+/* ===== v21: home in stile "landing": hero animato, fascia di libri che scorre, numeri, card con riflesso ===== */
+#home{overflow-x:hidden}
+.hwrap{max-width:900px}
+.hm-hero{position:relative;text-align:center;padding:18px 0 6px;isolation:isolate}
+.hm-hero::before{content:"";position:absolute;z-index:-1;left:50%;top:-30px;width:min(640px,120%);height:300px;transform:translateX(-50%);background:radial-gradient(closest-side,var(--accent-soft),transparent 72%);filter:blur(8px);animation:hmglow 14s ease-in-out infinite alternate;pointer-events:none}
+@keyframes hmglow{to{transform:translate(-46%,14px) scale(1.12)}}
+.hm-pill{display:inline-flex;align-items:center;gap:8px;padding:5px 12px 5px 10px;border-radius:999px;background:var(--card);border:1px solid var(--line);font-size:12px;font-weight:600;color:var(--ink2);box-shadow:0 1px 2px rgba(0,0,0,.04)}
+.hm-pill i{width:6px;height:6px;border-radius:50%;background:var(--accent);animation:hmp 2.2s ease-out infinite}
+@keyframes hmp{0%{box-shadow:0 0 0 0 color-mix(in srgb,var(--accent) 55%,transparent)}80%,100%{box-shadow:0 0 0 7px transparent}}
+.hm-title{margin:16px auto 10px;font-size:clamp(34px,9.4vw,58px);line-height:1.04;letter-spacing:-.03em;text-wrap:balance}
+.hm-title .hmw{display:inline-block}
+#home.hm-play .hm-title .hmw{animation:hmw .85s cubic-bezier(.2,.7,.2,1) backwards;animation-delay:calc(var(--i)*90ms + 80ms)}
+@keyframes hmw{from{opacity:0;transform:translateY(.45em);filter:blur(5px)}}
+.hm-sub{max-width:31em;margin:0 auto 20px;font-size:clamp(14px,3.6vw,16.5px);line-height:1.55;color:var(--ink2)}
+.hm-hero .hsearch{max-width:540px;margin:0 auto;height:52px;font-size:15.5px;box-shadow:0 1px 2px rgba(0,0,0,.05),0 10px 28px rgba(0,0,0,.06);transition:border-color .2s,box-shadow .2s,transform .2s}
+.hm-hero .hsearch:hover{transform:translateY(-1px);border-color:var(--accent);box-shadow:0 0 0 4px var(--accent-soft),0 12px 30px rgba(0,0,0,.08)}
+.hm-badges{display:flex;flex-wrap:wrap;justify-content:center;gap:6px 13px;margin-top:16px;font-size:11.5px;font-weight:500;color:var(--ink2)}
+.hm-badges span::before{content:"";display:inline-block;width:5px;height:5px;border-radius:50%;background:var(--accent);margin-right:7px;vertical-align:1px}
+/* animazione a comparsa */
+#home.hm-anim .rv{opacity:0;transform:translateY(18px);transition:opacity .7s cubic-bezier(.2,.7,.2,1),transform .7s cubic-bezier(.2,.7,.2,1)}
+#home.hm-anim .rv.in{opacity:1;transform:none}
+#home.hm-anim .hm-stg:not(.in)>*{opacity:0}
+.hm-stg.in>*{animation:hmUp .6s cubic-bezier(.2,.7,.2,1) backwards;animation-delay:calc(var(--i,0)*60ms)}
+@keyframes hmUp{from{opacity:0;transform:translateY(14px)}}
+/* fascia di libri che scorre (due righe, direzioni opposte) */
+.hm-marq{position:relative;display:grid;gap:12px;width:100vw;margin:26px 0 0 calc(50% - 50vw);overflow:hidden;-webkit-mask-image:linear-gradient(90deg,transparent,#000 10%,#000 90%,transparent);mask-image:linear-gradient(90deg,transparent,#000 10%,#000 90%,transparent)}
+.hm-row{display:flex;width:max-content;animation:hmmq 90s linear infinite}
+.hm-row.rev{animation-direction:reverse;animation-duration:105s}
+.hm-marq:hover .hm-row{animation-play-state:paused}
+@keyframes hmmq{to{transform:translateX(-50%)}}
+.hm-set{display:flex;gap:12px;padding-right:12px}
+.hm-bk{flex:none;width:98px;height:126px;padding:10px;border-radius:14px;text-align:left;display:flex;flex-direction:column;justify-content:space-between;background:linear-gradient(158deg,color-mix(in srgb,var(--accent) calc(var(--k,8)*1%),var(--card)),var(--card) 72%);border:1px solid var(--line);box-shadow:0 1px 2px rgba(0,0,0,.05),0 8px 18px rgba(0,0,0,.06);transition:transform .25s cubic-bezier(.2,.7,.2,1),border-color .2s}
+.hm-bk:hover{transform:translateY(-4px) scale(1.03);border-color:var(--accent)}
+.hm-ba{font:700 24px/1 var(--serif);letter-spacing:-.02em;color:var(--accent)}
+.hm-bn{font:600 11px/1.2 var(--ui);letter-spacing:-.01em;color:var(--ink);margin-top:auto;padding-top:8px;overflow-wrap:break-word;-webkit-hyphens:auto;hyphens:auto}
+.hm-bc{font:500 10px/1.2 var(--ui);color:var(--ink3);margin-top:3px}
+@media (min-width:761px){.hm-bk{width:116px;height:150px;padding:12px}.hm-ba{font-size:28px}.hm-bn{font-size:12.5px}}
+/* numeri */
+.hm-stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));margin:26px 0 0;border:1px solid var(--line);border-radius:18px;background:var(--card);box-shadow:0 1px 2px rgba(0,0,0,.04)}
+.hm-st{padding:15px 6px 14px;text-align:center;min-width:0}
+.hm-st+.hm-st{border-left:1px solid var(--line)}
+.hm-n{font:700 clamp(19px,5.2vw,28px)/1 var(--serif);letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+.hm-l{margin-top:6px;font-size:11.5px;color:var(--ink2)}
+/* card con riflesso che segue il puntatore */
+.hm-card{position:relative;overflow:hidden;isolation:isolate;transition:transform .25s cubic-bezier(.2,.7,.2,1),border-color .2s,box-shadow .25s}
+.hm-card::before{content:"";position:absolute;inset:0;z-index:-1;background:radial-gradient(240px circle at var(--mx,50%) var(--my,0%),var(--accent-soft),transparent 65%);opacity:0;transition:opacity .25s;pointer-events:none}
+.hm-card:hover::before{opacity:1}
+@media (hover:hover){.hm-card:hover{transform:translateY(-2px)}}
+.hm-card:active{transform:scale(.985)}
+/* sezioni di titolo */
+.hm-sh{margin:34px 2px 12px}
+.hm-sh h2{margin:3px 0 0;font:600 clamp(20px,4.6vw,26px)/1.2 var(--serif);letter-spacing:-.018em;color:var(--ink)}
+.hm-sh p{margin:5px 0 0;font-size:13.5px;line-height:1.5;color:var(--ink2)}
+/* continua + parola del giorno affiancate */
+.hm-bento{display:grid;gap:12px;margin-top:22px}
+.hm-bento>div{min-width:0}
+.hm-bento .hcont,.hm-bento .hword{height:100%;margin:0}
+.hm-bento .hcont{background:linear-gradient(180deg,var(--card),color-mix(in srgb,var(--card) 93%,var(--accent)))}
+@media (min-width:761px){.hm-bento{grid-template-columns:minmax(0,1.35fr) minmax(0,1fr)}}
+/* sezioni */
+.hsecs{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin:0}
+@media (min-width:761px){.hsecs{grid-template-columns:repeat(3,minmax(0,1fr))}}
+.hsec{position:relative;padding:13px 14px 12px;border-radius:16px;background:var(--card);border:1px solid var(--line);display:block}
+.hsec:hover{border-color:var(--accent);background:var(--card)}
+.hsn{font-family:var(--serif);font-weight:700;font-size:16px}
+.hss{display:block;font-size:11.5px;margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hsc{display:inline-block;margin-top:9px;padding:2px 8px;border-radius:999px;background:var(--accent-soft);color:var(--accent);font-size:10.5px;font-weight:700;letter-spacing:.02em}
+/* strumenti */
+.hm-tools{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+@media (min-width:761px){.hm-tools{grid-template-columns:repeat(3,minmax(0,1fr))}}
+.hm-tool{text-align:left;padding:14px 14px 15px;border-radius:16px;background:var(--card);border:1px solid var(--line);display:flex;flex-direction:column;gap:5px}
+.hm-tool:hover{border-color:var(--accent)}
+.hm-ti{width:34px;height:34px;border-radius:10px;margin-bottom:5px;background:var(--accent-soft);color:var(--accent);display:grid;place-items:center;transition:transform .3s cubic-bezier(.2,.7,.2,1)}
+.hm-tool:hover .hm-ti{transform:rotate(-6deg) scale(1.08)}
+.hm-ti svg{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
+.hm-tt{font:600 15px var(--ui);color:var(--ink)}
+.hm-td{font-size:12.5px;line-height:1.45;color:var(--ink2)}
+.hrec{--i:0}
+@media (prefers-reduced-motion:reduce){.hm-row,.hm-hero::before,.hm-pill i{animation:none}.hm-marq{overflow-x:auto}}
 </style>
 </head>
 <body>
@@ -1016,11 +1095,22 @@ select.nbvsel:focus-visible{border-color:var(--accent);box-shadow:0 0 0 3px var(
   <div id="body">
     <section id="home" aria-label="Home"><div class="hwrap">
       <div class="htop"><div class="hid"><svg class="hlogo" viewBox="0 0 30 30" aria-hidden="true"><rect width="30" height="30" rx="9" fill="#1f1e1d"/><text x="15" y="21.7" text-anchor="middle" font-size="19" font-weight="700" fill="#e08b6b">B</text></svg><div class="hidt"><span class="hbrand">Bibbia</span><span class="hdate" id="hdate"></span></div></div><div class="hbtns"><button class="ibtn vbtn" id="home-ver" type="button" data-pop="vpop" aria-label="Versione della Bibbia"><span class="vabbr">R2020</span></button><button class="ibtn" id="home-off" type="button" data-pop="opop" aria-label="Scarica per uso offline"><svg viewBox="0 0 24 24"><path d="M12 4v11M7.5 10.5L12 15l4.5-4.5M5 19h14"/></svg></button><button class="ibtn" id="home-set" type="button" data-pop="pop" aria-label="Aspetto del testo"><svg viewBox="0 0 24 24"><path d="M3 19l5-13 5 13M5 14h6M15 19l3.5-8 3.5 8M16.3 16.5h4.4"/></svg></button></div></div>
-      <h1 class="hhead">Cosa cerchi oggi?</h1>
-      <button type="button" class="hsearch" id="hsearch"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg><span>Parola, versetto o numero Strong</span></button>
-      <div class="hgrid"><div class="hcol"><div id="hcont"></div><div id="hword"></div></div><div class="hcol"><div class="hlabel">Sfoglia per sezione</div><div class="hsecs" id="hsecs"></div>
-      <div class="hlabel">Recenti</div>
-      <div id="hrecent"></div></div></div>
+      <div class="hm-hero">
+        <div class="hm-pill rv"><i></i><span>Testo, lessico e studio in un solo posto</span></div>
+        <h1 class="hhead hm-title" aria-label="Cosa cerchi oggi?"><span class="hmw" style="--i:0">Cosa</span> <span class="hmw" style="--i:1">cerchi</span> <span class="hmw" style="--i:2">oggi?</span></h1>
+        <p class="hm-sub rv">Leggi la Bibbia, cerca parole e numeri Strong e approfondisci nel testo originale.</p>
+        <button type="button" class="hsearch rv" id="hsearch"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg><span>Parola, versetto o numero Strong</span></button>
+        <div class="hm-badges rv"><span>Interlineare</span><span>Strong</span><span>Mappe</span><span>Note</span><span id="hm-nver">6 versioni</span></div>
+      </div>
+      <div class="hm-marq rv" id="hmarq" aria-label="Libri della Bibbia"></div>
+      <div class="hm-stats rv" id="hstats"></div>
+      <div class="hm-bento"><div id="hcont" class="rv"></div><div id="hword" class="rv"></div></div>
+      <div class="hm-sh rv"><span class="heb">Libri</span><h2>Sfoglia per sezione</h2></div>
+      <div class="hsecs hm-stg" id="hsecs"></div>
+      <div class="hm-sh rv"><span class="heb">Studio</span><h2>Strumenti per approfondire</h2><p>Tocca uno strumento per aprirlo sul tuo ultimo capitolo.</p></div>
+      <div class="hm-tools hm-stg" id="htools"></div>
+      <div class="hm-sh rv"><span class="heb">Cronologia</span><h2>Recenti</h2></div>
+      <div id="hrecent" class="hm-stg"></div>
     </div></section>
     <nav id="nav" aria-label="Libri della Bibbia">
       <div class="navhead"><div class="seg" id="navseg" role="tablist"><button role="tab" aria-selected="true" data-v="books">Libri</button><button role="tab" aria-selected="false" data-v="saved">Salvati</button></div></div>
@@ -2698,32 +2788,92 @@ function openSection(id){
   if(matchMedia('(max-width:1180px)').matches)openNav();
   requestAnimationFrame(()=>{const li=$('#navlist .book[data-i="'+bi+'"]');if(li)li.scrollIntoView({block:'center'});});
 }
+let hmIO=null,hmT=0,hmFired=false,hmBound=false;
+const HM_TOOLS=[
+  ['int','Interlineare','Ogni parola nell’originale, con glossa e analisi.','<path d="M4 7h16M4 12h16M4 17h10"/>'],
+  ['lex','Lessico','Numeri Strong, definizioni e occorrenze.','<path d="M5 4h10a3 3 0 0 1 3 3v13H8a3 3 0 0 1-3-3z"/><path d="M9 8h5"/>'],
+  ['par','Mappe','I luoghi e i percorsi legati al passo.','<path d="M9 4l6 2 5-2v14l-5 2-6-2-5 2V6z"/><path d="M9 4v14M15 6v14"/>'],
+  ['note','Note','Annota e conserva i tuoi versetti.','<path d="M5 20h4L19 10a2.1 2.1 0 0 0-3-3L6 17z"/>'],
+  ['ver','Versioni','Confronta le traduzioni, anche inglese e spagnolo.','<rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2"/>'],
+  ['com','Commenti','Spunti e commenti sul versetto.','<path d="M4 5h16v11H9l-5 4z"/>']
+];
+function hmMarq(){
+  const m=$('#hmarq');if(!m||m.dataset.b===String(B.length))return;m.dataset.b=B.length;m.replaceChildren();
+  const half=Math.ceil(B.length/2);
+  [[0,half,''],[half,B.length,' rev']].forEach(([a,z,cls])=>{
+    const mk=()=>{const set=h('div',{class:'hm-set'});
+      for(let i=a;i<z;i++){const bk=B[i],k=4+Math.round(i/B.length*14),n=bk.v.length;
+        set.append(h('button',{type:'button',class:'hm-bk',style:'--k:'+k,tabindex:'-1','aria-label':bk.n,on:{click:()=>go(i,1,null)}},
+          h('span',{class:'hm-ba',text:(typeof ABBR!=='undefined'&&ABBR[bk.id])||bk.n.slice(0,3)}),
+          h('span',{class:'hm-bn',text:bk.n}),h('span',{class:'hm-bc',text:n+(n===1?' capitolo':' capitoli')})));}
+      return set;};
+    const row=h('div',{class:'hm-row'+cls},mk(),mk());row.lastChild.setAttribute('aria-hidden','true');m.append(row);});
+}
+function hmStats(){
+  const ch=B.reduce((t,b)=>t+b.v.length,0),vs=B.reduce((t,b)=>t+b.v.reduce((x,y)=>x+(+y||0),0),0),nv=Object.keys(VERSIONS).length;
+  const nvEl=$('#hm-nver');if(nvEl)nvEl.textContent=nv+' versioni';
+  $('#hstats').replaceChildren(...[[B.length,'Libri'],[ch,'Capitoli'],[vs,'Versetti'],[nv,'Versioni']].map(([n,l])=>
+    h('div',{class:'hm-st'},h('div',{class:'hm-n','data-v':n,text:'0'}),h('div',{class:'hm-l',text:l}))));
+}
+function hmCount(now){
+  $$('#hstats .hm-n').forEach(el=>{const to=+el.dataset.v,fmt=x=>Math.round(x).toLocaleString('it-IT');
+    if(now||matchMedia('(prefers-reduced-motion:reduce)').matches){el.textContent=fmt(to);return;}
+    const t0=performance.now(),D=1500;
+    const step=t=>{const p=Math.min(1,(t-t0)/D),e=1-Math.pow(1-p,3);el.textContent=fmt(to*e);if(p<1)requestAnimationFrame(step);};
+    requestAnimationFrame(step);});
+}
+function hmStart(){
+  const home=$('#home');if(!home)return;
+  const els=$$('#home .rv,#home .hm-stg');
+  clearTimeout(hmT);if(hmIO)hmIO.disconnect();hmFired=false;
+  home.classList.remove('hm-anim','hm-play');void home.offsetWidth;
+  const showAll=()=>{els.forEach(e=>e.classList.add('in'));hmCount(true);};
+  if(matchMedia('(prefers-reduced-motion:reduce)').matches||!('IntersectionObserver' in window)){showAll();return;}
+  els.forEach(e=>{e.classList.remove('in');e.style.transitionDelay='';});
+  home.classList.add('hm-anim','hm-play');
+  hmIO=new IntersectionObserver(ents=>{hmFired=true;let k=0;
+    ents.forEach(en=>{if(!en.isIntersecting)return;const t=en.target;t.style.transitionDelay=(k++*80)+'ms';t.classList.add('in');hmIO.unobserve(t);if(t.id==='hstats')hmCount();});},{root:home,threshold:.1});
+  els.forEach(e=>hmIO.observe(e));
+  hmT=setTimeout(()=>{if(!hmFired)showAll();},1800);
+  if(!hmBound){hmBound=true;
+    home.addEventListener('pointermove',e=>{const c=e.target.closest&&e.target.closest('.hm-card');if(!c)return;const r=c.getBoundingClientRect();c.style.setProperty('--mx',(e.clientX-r.left)+'px');c.style.setProperty('--my',(e.clientY-r.top)+'px');},{passive:true});}
+}
 function renderHome(){
   homeDay=dayNum();lockPortrait(true);
   $('#hdate').textContent=homeDateText();
+  hmMarq();hmStats();
   /* Continua a leggere */
   const hadLast=!!lastPos(),last=lastPos()||{bi:idIdx('JHN'),c:1};
   const cont=$('#hcont');cont.replaceChildren();
   const ex=h('div',{class:'hcx'},h('div',{class:'skeleton skel-line long'}),h('div',{class:'skeleton skel-line mid'}));
   getIt(B[last.bi].id).then(d=>{ex.textContent=plain((d.c[last.c-1]||[''])[0]);}).catch(()=>ex.replaceChildren());
   const resume=()=>go(last.bi,last.c,null);
-  cont.append(h('div',{class:'hcont',on:{click:resume}},h('div',{class:'heb',text:hadLast?'Continua a leggere':'Inizia a leggere'}),h('div',{class:'hct',text:B[last.bi].n+' '+last.c}),ex,
+  cont.append(h('div',{class:'hcont hm-card',on:{click:resume}},h('div',{class:'heb',text:hadLast?'Continua a leggere':'Inizia a leggere'}),h('div',{class:'hct',text:B[last.bi].n+' '+last.c}),ex,
     h('button',{type:'button',class:'hgo',text:hadLast?'Riprendi la lettura':'Comincia',on:{click:e=>{e.stopPropagation();resume();}}})));
   /* Parola del giorno */
   const w=wordOfDay(),he=w[0][0]==='H';
   const arrow=h('span',{class:'hwgo','aria-hidden':'true'});arrow.innerHTML='<svg viewBox="0 0 24 24"><path d="M9 5l7 7-7 7"/></svg>';
-  $('#hword').replaceChildren(h('button',{type:'button',class:'hword','aria-label':'Parola del giorno: '+w[2]+', '+w[3]+'. Apri il lessico',on:{click:()=>openStrong(w[0])}},
+  $('#hword').replaceChildren(h('button',{type:'button',class:'hword hm-card','aria-label':'Parola del giorno: '+w[2]+', '+w[3]+'. Apri il lessico',on:{click:()=>openStrong(w[0])}},
     h('div',{class:'hwb'},h('div',{class:'heb',text:'Parola del giorno'}),h('div',{class:'hwlw'},h('span',{class:'hwl',lang:he?'he':'el',dir:he?'rtl':'ltr',text:w[1]})),h('div',{class:'hwt'},h('i',{text:w[2]}),' · '+sdisp(w[0])),h('div',{class:'hwg',text:w[3]})),arrow));
   /* Sezioni */
-  $('#hsecs').replaceChildren(...HSECT.filter(([n,a,z])=>idIdx(a)>=0&&idIdx(z)>=0).map(([n,a,z])=>h('button',{type:'button',class:'hsec',on:{click:()=>openSection(a)}},h('span',{class:'hsn',text:n}),h('span',{class:'hss',text:B[idIdx(a)].n+' – '+B[idIdx(z)].n}))));
+  $('#hsecs').replaceChildren(...HSECT.filter(([n,a,z])=>idIdx(a)>=0&&idIdx(z)>=0).map(([n,a,z],i)=>{const cnt=idIdx(z)-idIdx(a)+1;
+    return h('button',{type:'button',class:'hsec hm-card',style:'--i:'+i,on:{click:()=>openSection(a)}},h('span',{class:'hsn',text:n}),h('span',{class:'hss',text:B[idIdx(a)].n+' – '+B[idIdx(z)].n}),h('span',{class:'hsc',text:cnt+(cnt===1?' libro':' libri')}));}));
+  /* Strumenti di studio */
+  const openTool=t=>{
+    if(t==='lex'){openStrong(w[0]);return;}
+    S.word=null;S.tab=t;$$('#tabs button').forEach(x=>x.setAttribute('aria-selected',String(x.dataset.t===t)));
+    go(last.bi,last.c,1,{open:true});};
+  $('#htools').replaceChildren(...HM_TOOLS.map(([t,n,d,p],i)=>{const ic=h('span',{class:'hm-ti','aria-hidden':'true'});ic.innerHTML='<svg viewBox="0 0 24 24">'+p+'</svg>';
+    return h('button',{type:'button',class:'hm-tool hm-card',style:'--i:'+i,on:{click:()=>openTool(t)}},ic,h('span',{class:'hm-tt',text:n}),h('span',{class:'hm-td',text:d}));}));
   /* Recenti (escluso il capitolo gia' nella card Continua) */
   const rl=$('#hrecent');rl.replaceChildren();
   const rec=(store.recent||[]).filter(r=>idIdx(r.id)>=0&&!(idIdx(r.id)===last.bi&&r.c===last.c)).slice(0,3);
-  if(!rec.length){rl.append(h('div',{class:'empty',text:'Qui compariranno i capitoli che leggi.'}));return;}
-  rec.forEach(r=>{const bi=idIdx(r.id),t=h('div',{class:'ex'});
+  if(!rec.length){rl.append(h('div',{class:'empty',text:'Qui compariranno i capitoli che leggi.'}));hmStart();return;}
+  rec.forEach((r,i)=>{const bi=idIdx(r.id),t=h('div',{class:'ex'});
     getIt(r.id).then(d=>{t.textContent=plain((d.c[r.c-1]||[''])[0]);}).catch(()=>{});
-    rl.append(h('button',{type:'button',class:'hrec',on:{click:()=>go(bi,r.c,null)}},h('div',{class:'hrt'},h('span',{class:'hrn',text:B[bi].n+' '+r.c})),t));
+    rl.append(h('button',{type:'button',class:'hrec',style:'--i:'+i,on:{click:()=>go(bi,r.c,null)}},h('div',{class:'hrt'},h('span',{class:'hrn',text:B[bi].n+' '+r.c})),t));
   });
+  hmStart();
 }
 /* la home si aggiorna da sola al cambio di giorno */
 function homeTick(){if(S.home&&homeDay!==dayNum())renderHome();}
