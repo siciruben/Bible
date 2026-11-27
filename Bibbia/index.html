@@ -781,7 +781,7 @@ html{background:var(--bg)}
 .nbmsg .hint{font-size:12.5px;color:var(--ink3);margin-top:14px}
 .nbwide{grid-column:1/-1}
 .nbtbw{position:relative;margin:2px 0 12px}
-.nbbar{display:flex;align-items:center;gap:2px;padding:4px 12px;background:var(--bg2);border:1px solid var(--line);border-radius:99px;overflow-x:auto;scrollbar-width:none;-webkit-mask-image:linear-gradient(90deg,transparent,#000 12px,#000 calc(100% - 12px),transparent);mask-image:linear-gradient(90deg,transparent,#000 12px,#000 calc(100% - 12px),transparent)}
+.nbbar{display:flex;align-items:center;gap:2px;padding:4px 12px;background:var(--bg2);border:1px solid var(--line);border-radius:99px;overflow-x:auto;scrollbar-width:none}
 .nbbar::-webkit-scrollbar{display:none}
 .nbbar .tb{flex:none;min-width:30px;height:30px;padding:0 8px;border-radius:99px;display:inline-grid;place-items:center;color:var(--ink2);font:600 13px var(--ui)}
 .nbbar .tb:hover{background:var(--accent-soft);color:var(--accent)}
@@ -3045,7 +3045,7 @@ function editor(n,raw){
   ea.addEventListener('keydown',e=>{if(e.key==='Tab'){e.preventDefault();const s=getSelection(),x=s.anchorNode&&(s.anchorNode.nodeType===1?s.anchorNode:s.anchorNode.parentElement);
       if(x&&x.closest('li'))document.execCommand(e.shiftKey?'outdent':'indent');else document.execCommand('insertText',false,'\u00a0\u00a0\u00a0\u00a0');ch();}});
   ea.addEventListener('focus',()=>{try{document.execCommand('defaultParagraphSeparator',false,'p');}catch(e){}});
-  ed.replaceChildren(ti,toolbar(ea,ch),ea);}
+  ed.replaceChildren(toolbar(ea,ch),ti,ea);}
 
 async function pick(n){await flush();cur=n;renderList();status('Apro…');try{editor(n,n.text!=null?n.text:await be().get(n));status('');}catch(e){status('Impossibile aprire la nota');}}
 async function flush(){if(!dirty||!cur)return;clearTimeout(timer);const n=cur;dirty=false;status('Salvo…');
