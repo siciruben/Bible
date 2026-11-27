@@ -891,7 +891,8 @@ select.nbvsel:focus-visible{border-color:var(--accent);box-shadow:0 0 0 3px var(
 .nbrt p,.nbrt div{margin:0 0 .3em}
 .nbrt h1{font:700 24px/1.3 var(--ui);margin:.7em 0 .3em}.nbrt h2{font:700 20px/1.3 var(--ui);margin:.7em 0 .3em}.nbrt h3{font:600 17px/1.4 var(--ui);margin:.6em 0 .3em}
 .nbrt pre{font:14.5px/1.55 ui-monospace,Menlo,Consolas,monospace;background:var(--bg2);border:1px solid var(--line);padding:12px 14px;border-radius:12px;white-space:pre-wrap;margin:.6em 0}
-.nbrt blockquote{margin:.8em 0;padding:10px 16px;border-left:4px solid var(--accent);background:var(--accent-soft);border-radius:0 12px 12px 0;color:inherit;font-style:normal;font-family:inherit;font-size:inherit}
+.nbrt blockquote{margin:.8em 0;padding:0;border:0;background:transparent;border-radius:0;color:inherit;font-style:normal;font-family:inherit;font-size:inherit}
+.nbrt blockquote>p:first-child{display:inline;padding:.06em .12em;background:var(--sel);border-radius:5px;-webkit-box-decoration-break:clone;box-decoration-break:clone}
 .nbrt .nbvref{font:12px/1.4 var(--ui);color:var(--ink3);margin:-.05em 0 .7em}
 .nbrt .nbvref b{color:var(--accent);font-weight:600}
 .nbdrag-preview{position:fixed;left:0;top:0;z-index:9999;max-width:320px;min-width:190px;padding:12px 15px;border:1px solid var(--line);border-radius:16px;background:var(--card);color:var(--ink);box-shadow:0 10px 30px rgba(0,0,0,.18);font:15px/1.5 var(--serif);pointer-events:none}
