@@ -673,6 +673,16 @@ html{background:var(--bg)}
 @media (min-width:761px){.brand{display:inline-flex;align-items:center}}
 .blogo{width:28px;height:28px;display:block}
 .blogo text{font-family:var(--serif)}
+/* dimensioni del testo greco ed ebraico (cursori in Personalizza) */
+.w{max-width:calc(140px*max(var(--gk,1),var(--hb,1)))}
+.w .o[lang="el"]{font-size:calc(26px*var(--gk,1))}
+.w .o[lang="he"]{font-size:calc(30px*var(--hb,1))}
+.original-verse[lang="el"]{font-size:calc(17.5px*var(--gk,1))}
+.original-verse[lang="he"]{font-size:calc(17.5px*var(--hb,1))}
+.lemma[lang="el"]{font-size:calc(43px*var(--gk,1))}
+.lemma[lang="he"]{font-size:calc(45px*var(--hb,1))}
+.hwl[lang="el"]{font-size:calc(40px*var(--gk,1))}
+.hwl[lang="he"]{font-size:calc(42px*var(--hb,1))}
 </style>
 </head>
 <body>
@@ -754,6 +764,8 @@ html{background:var(--bg)}
     <label>Colori</label><div id="cugrid"></div>
     <label for="culh">Interlinea</label><input type="range" id="culh" min="1.3" max="2.3" step="0.05">
     <label for="cumw">Larghezza del testo</label><input type="range" id="cumw" min="30" max="64" step="1">
+    <label for="cugk">Testo greco: <span id="cugkv"></span></label><input type="range" id="cugk" min="0.8" max="1.8" step="0.05">
+    <label for="cuhb">Testo ebraico: <span id="cuhbv"></span></label><input type="range" id="cuhb" min="0.8" max="1.8" step="0.05">
     <label for="cuname">Salva questo tema</label><div class="cusave"><input id="cuname" maxlength="30" placeholder="Nome del tema" autocomplete="off"><button type="button" class="btn" id="cusave">Salva</button></div>
     <div id="culist"></div>
     <div style="margin-top:10px"><button type="button" class="btn" id="cureset">Ripristina i colori</button></div>
@@ -938,18 +950,20 @@ function loadFont(f){if(!f[3]||fontLoaded[f[0]])return;fontLoaded[f[0]]=1;docume
 (function(){const g=$('#ffseg');FONTS.forEach(f=>{const b=h('button',{type:'button','data-f':f[0],text:f[1],style:'font-family:'+f[2]});g.append(b);});
 })();
 /* tema personalizzato */
-const CU_DEF={bg:'#faf9f5',bg2:'#f1efe8',card:'#ffffff',ink:'#1f1e1d',ink2:'#6a675f',accent:'#b8532f',lh:1.72,mw:44};
+const CU_DEF={bg:'#faf9f5',bg2:'#f1efe8',card:'#ffffff',ink:'#1f1e1d',ink2:'#6a675f',accent:'#b8532f',lh:1.72,mw:44,gk:1,hb:1};
 const CU_ROWS=[['bg','Sfondo'],['bg2','Barre e pannelli'],['card','Schede'],['ink','Testo'],['ink2','Testo secondario'],['accent','Accento: numeri, link, selezione']];
-const CU_KEYS=['--bg','--bg2','--card','--ink','--ink2','--ink3','--line','--accent','--accent-ink','--accent-soft','--sel','--gfill','--gline','--glass','--shadow','--lh','--mw','color-scheme'];
+const CU_KEYS=['--bg','--bg2','--card','--ink','--ink2','--ink3','--line','--accent','--accent-ink','--accent-soft','--sel','--gfill','--gline','--glass','--shadow','--lh','--mw','--gk','--hb','color-scheme'];
 const hx=c=>[1,3,5].map(i=>parseInt(c.slice(i,i+2),16));
 const rgba=(c,a)=>{const v=hx(c);return 'rgba('+v[0]+','+v[1]+','+v[2]+','+a+')';};
 const mixc=(a,b,t)=>{const A=hx(a),B=hx(b);return '#'+A.map((x,i)=>Math.round(x+(B[i]-x)*t).toString(16).padStart(2,'0')).join('');};
 const lumi=c=>{const v=hx(c).map(x=>{x/=255;return x<=.03928?x/12.92:Math.pow((x+.055)/1.055,2.4);});return .2126*v[0]+.7152*v[1]+.0722*v[2];};
-function cuVars(c){const dk=lumi(c.bg)<.4;return {'--bg':c.bg,'--bg2':c.bg2,'--card':c.card,'--ink':c.ink,'--ink2':c.ink2,'--ink3':mixc(c.ink2,c.bg,.45),'--line':rgba(c.ink,.12),'--accent':c.accent,'--accent-ink':lumi(c.accent)>.45?'#1f1e1d':'#ffffff','--accent-soft':rgba(c.accent,.13),'--sel':rgba(c.accent,.22),'--gfill':rgba(c.ink,.05),'--gline':rgba(c.ink,.12),'--glass':rgba(c.bg,.72),'--shadow':'0 14px 44px '+(dk?'rgba(0,0,0,.55)':rgba(c.ink,.16)),'--lh':c.lh,'--mw':c.mw+'rem','color-scheme':dk?'dark':'light'};}
+function cuVars(c){const dk=lumi(c.bg)<.4;return {'--bg':c.bg,'--bg2':c.bg2,'--card':c.card,'--ink':c.ink,'--ink2':c.ink2,'--ink3':mixc(c.ink2,c.bg,.45),'--line':rgba(c.ink,.12),'--accent':c.accent,'--accent-ink':lumi(c.accent)>.45?'#1f1e1d':'#ffffff','--accent-soft':rgba(c.accent,.13),'--sel':rgba(c.accent,.22),'--gfill':rgba(c.ink,.05),'--gline':rgba(c.ink,.12),'--glass':rgba(c.bg,.72),'--shadow':'0 14px 44px '+(dk?'rgba(0,0,0,.55)':rgba(c.ink,.16)),'--lh':c.lh,'--mw':c.mw+'rem','--gk':c.gk,'--hb':c.hb,'color-scheme':dk?'dark':'light'};}
 const cuGet=()=>store.set.cu||(store.set.cu={...CU_DEF});
 (function(){const g=$('#cugrid');CU_ROWS.forEach(([k,n])=>{const i=h('input',{id:'cu-'+k,'aria-label':n});i.type='color';i.oninput=()=>{cuGet()[k]=i.value;save();applySettings();};g.append(h('div',{class:'curow'},h('span',{text:n}),i));});
   $('#culh').oninput=e=>{cuGet().lh=+e.target.value;save();applySettings();};
   $('#cumw').oninput=e=>{cuGet().mw=+e.target.value;save();applySettings();};
+  $('#cugk').oninput=e=>{cuGet().gk=+e.target.value;save();applySettings();};
+  $('#cuhb').oninput=e=>{cuGet().hb=+e.target.value;save();applySettings();};
   $('#cureset').onclick=()=>{store.set.cu={...CU_DEF};save();applySettings();};
   $('#cusave').onclick=()=>{const n=$('#cuname').value.trim()||'Il mio tema';const l=store.set.cus=store.set.cus||[];const t={n,c:{...CU_DEF,...cuGet()}},ix=l.findIndex(x=>x.n===n);if(ix>=0)l[ix]=t;else l.push(t);save();$('#cuname').value='';renderCuList();const b=$('#cusave');b.textContent='Salvato';setTimeout(()=>b.textContent='Salva',1400);};})();
 function renderCuList(){const l=$('#culist');l.replaceChildren();(store.set.cus||[]).forEach((t,i)=>{l.append(h('div',{class:'cuitem'},h('button',{type:'button',class:'btn',text:t.n,on:{click:()=>{store.set.cu={...CU_DEF,...t.c};store.set.th='custom';save();applySettings();}}}),h('button',{type:'button',class:'btn','aria-label':'Elimina '+t.n,text:'×',on:{click:()=>{store.set.cus.splice(i,1);save();renderCuList();}}})));});}
@@ -960,7 +974,7 @@ function applySettings(){
   CU_KEYS.forEach(k=>r.style.removeProperty(k));
   const th=effTheme();r.setAttribute('data-theme',th);
   if(th==='custom'){const v=cuVars({...CU_DEF,...(store.set.cu||{})});Object.keys(v).forEach(k=>r.style.setProperty(k,v[k]));}
-  const cw=$('#cuwrap');if(cw){cw.hidden=th!=='custom';if(th==='custom'){const c={...CU_DEF,...(store.set.cu||{})};CU_ROWS.forEach(([k])=>{$('#cu-'+k).value=c[k];});$('#culh').value=c.lh;$('#cumw').value=c.mw;renderCuList();}}const tc=$('#tc');if(tc)tc.content=getComputedStyle(r).getPropertyValue('--bg').trim();
+  const cw=$('#cuwrap');if(cw){cw.hidden=th!=='custom';if(th==='custom'){const c={...CU_DEF,...(store.set.cu||{})};CU_ROWS.forEach(([k])=>{$('#cu-'+k).value=c[k];});$('#culh').value=c.lh;$('#cumw').value=c.mw;$('#cugk').value=c.gk;$('#cuhb').value=c.hb;$('#cugkv').textContent=Math.round(c.gk*100)+'%';$('#cuhbv').textContent=Math.round(c.hb*100)+'%';renderCuList();}}const tc=$('#tc');if(tc)tc.content=getComputedStyle(r).getPropertyValue('--bg').trim();
   $('#fs').value=store.set.fs;
   r.style.setProperty('--topx',store.set.top+'px');$('#topx').value=store.set.top;$('#topxv').textContent=store.set.top+'px';
   $$('#ffseg button').forEach(b=>b.setAttribute('aria-selected',b.dataset.f===store.set.ff));
@@ -1913,7 +1927,7 @@ async function paneLex(){
     head.append(row);
   }
   if(word.w){const m=morphLine(word.w[4],word.ot);pane.append(h('div',{class:'card'},h('h4',{text:'In questo versetto'}),h('dl',{class:'kv'},
-    h('dt',{text:'Forma'}),h('dd',{lang,style:'font-size:'+(kind==='g'?20:22)+'px;font-family:'+(kind==='g'?'var(--greek)':'var(--hebrew)'),text:word.w[0]}),
+    h('dt',{text:'Forma'}),h('dd',{lang,style:'font-size:calc('+(kind==='g'?20:22)+'px*var(--'+(kind==='g'?'gk':'hb')+',1));font-family:'+(kind==='g'?'var(--greek)':'var(--hebrew)'),text:word.w[0]}),
     h('dt',{text:'Lettura'}),h('dd',{text:word.w[1]}),h('dt',{text:'Significato'}),(sigEl=h('dd',{text:word.w[2]}),sigOrig=String(word.w[2]||''),sigEl),
     h('dt',{text:'Analisi'}),h('dd',{text:m||'—'}),h('dt',{text:'Codice'}),h('dd',{style:'font-variant-numeric:tabular-nums',text:word.w[4]})
   )));}
@@ -2246,7 +2260,7 @@ async function searchLex(q,frag,seq){
   const seen=new Set();const rows=[];
   for(const o of out){const cl=o.key.slice(0,5);if(seen.has(cl))continue;seen.add(cl);rows.push(o);if(rows.length>=60)break;}
   const list=[h('div',{class:'cnt',text:seen.size.toLocaleString('it-IT')+' voci'+(out.length>60?' · prime 60':'')})];
-  rows.forEach(o=>list.push(h('button',{type:'button',class:'srow',on:{click:()=>openStrong(o.key)}},h('div',{class:'r',text:sdisp(o.key)+' · '+(o.k==='g'?'greco':'ebraico')}),h('div',{class:'t'},h('span',{lang:o.k==='g'?'el':'he',style:'font-size:'+(o.k==='g'?21:23)+'px;margin-right:8px;font-family:'+(o.k==='g'?'var(--greek)':'var(--hebrew)'),text:o.e[0]}),h('span',{style:'font-style:italic;color:var(--ink2);margin-right:8px',text:o.e[1]||''}),h('span',{text:o.e[2]})))));
+  rows.forEach(o=>list.push(h('button',{type:'button',class:'srow',on:{click:()=>openStrong(o.key)}},h('div',{class:'r',text:sdisp(o.key)+' · '+(o.k==='g'?'greco':'ebraico')}),h('div',{class:'t'},h('span',{lang:o.k==='g'?'el':'he',style:'font-size:calc('+(o.k==='g'?21:23)+'px*var(--'+(o.k==='g'?'gk':'hb')+',1));margin-right:8px;font-family:'+(o.k==='g'?'var(--greek)':'var(--hebrew)'),text:o.e[0]}),h('span',{style:'font-style:italic;color:var(--ink2);margin-right:8px',text:o.e[1]||''}),h('span',{text:o.e[2]})))));
   if(!rows.length)list.push(h('div',{class:'empty',text:'Nessuna voce per «'+q+'». Il lessico è in inglese.'}));
   res.replaceChildren(...frag,...list);
 }
